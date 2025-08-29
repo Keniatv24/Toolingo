@@ -24,6 +24,7 @@ from django.views.generic import TemplateView
 from users.views import UserViewSet
 from catalog.views import CategoriaViewSet, ArticuloViewSet
 from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet
+from django.views.generic import TemplateView
 
 router = DefaultRouter()
 router.register("users", UserViewSet, basename="users")
@@ -42,4 +43,5 @@ urlpatterns = [
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/", include(router.urls)),
+     path("catalogo/", TemplateView.as_view(template_name="catalogo/index.html")),
 ]
