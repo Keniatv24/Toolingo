@@ -6,25 +6,27 @@
   <title>Catálogo – Toolingo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = { theme: { extend: { colors: {
-      brand: { 600:'#f97316',700:'#c2410c',100:'#ffedd5',50:'#fff7ed' }
-    }}}}
+    tailwind.config = {
+      theme: { extend: { colors: {
+        brand: { 600:'#f97316',700:'#c2410c',100:'#ffedd5',50:'#fff7ed' }
+      }}}
+    }
   </script>
 </head>
 <body class="text-slate-800">
-  <!-- Navbar simple -->
-  <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200">
+  <!-- Navbar -->
+  <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
       <a href="/" class="flex items-center gap-2">
-        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current">
+        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current transition-transform duration-300 hover:rotate-12">
           <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
         </svg>
         <span class="text-lg font-extrabold">Toolingo</span>
       </a>
       <nav class="hidden md:flex gap-6 text-sm">
-        <a href="/" class="hover:text-brand-600">Inicio</a>
-        <a href="/catalogo/" class="text-brand-700 font-semibold">Productos</a>
-        <a href="/api/docs/" class="hover:text-brand-600">API</a>
+        <a href="/" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Inicio</a>
+        <a href="/catalogo/" class="relative text-brand-700 font-semibold after:absolute after:left-0 after:-bottom-1 after:w-full after:h-0.5 after:bg-brand-600">Productos</a>
+        <a href="/api/docs/" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">API</a>
       </nav>
     </div>
   </header>
@@ -35,28 +37,28 @@
     <p class="text-slate-600 mt-1">Explora por categoría, subcategoría, precio y ubicación.</p>
 
     <!-- Filtros -->
-    <section class="mt-6 p-4 border rounded-2xl bg-white shadow-sm">
+    <section class="mt-6 p-4 border rounded-2xl bg-white shadow-sm transition hover:shadow-md">
       <form id="filters" class="grid md:grid-cols-5 gap-3 items-end">
         <div class="md:col-span-2">
           <label class="text-sm text-slate-600">Buscar (texto)</label>
-          <input id="q" type="text" class="w-full border rounded-xl px-3 py-2" placeholder="taladro, generador..." />
+          <input id="q" type="text" class="w-full border rounded-xl px-3 py-2 transition focus:ring-2 focus:ring-brand-100 outline-none" placeholder="taladro, generador..." />
         </div>
         <div>
           <label class="text-sm text-slate-600">Precio mín</label>
-          <input id="pmin" type="number" class="w-full border rounded-xl px-3 py-2" placeholder="10000" />
+          <input id="pmin" type="number" class="w-full border rounded-xl px-3 py-2 transition focus:ring-2 focus:ring-brand-100 outline-none" placeholder="10000" />
         </div>
         <div>
           <label class="text-sm text-slate-600">Precio máx</label>
-          <input id="pmax" type="number" class="w-full border rounded-xl px-3 py-2" placeholder="100000" />
+          <input id="pmax" type="number" class="w-full border rounded-xl px-3 py-2 transition focus:ring-2 focus:ring-brand-100 outline-none" placeholder="100000" />
         </div>
         <div>
           <label class="text-sm text-slate-600">Ubicación</label>
-          <input id="ubi" type="text" class="w-full border rounded-xl px-3 py-2" placeholder="Medellín..." />
+          <input id="ubi" type="text" class="w-full border rounded-xl px-3 py-2 transition focus:ring-2 focus:ring-brand-100 outline-none" placeholder="Medellín..." />
         </div>
 
         <div class="md:col-span-5 flex gap-3">
-          <button class="px-4 py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700" type="submit">Aplicar filtros</button>
-          <button id="clear" class="px-4 py-2 rounded-xl border hover:bg-slate-50" type="button">Limpiar</button>
+          <button class="px-4 py-2 rounded-xl bg-brand-600 text-white transition transform hover:bg-brand-700 hover:-translate-y-0.5" type="submit">Aplicar filtros</button>
+          <button id="clear" class="px-4 py-2 rounded-xl border transition hover:bg-slate-50 hover:-translate-y-0.5" type="button">Limpiar</button>
         </div>
       </form>
     </section>
@@ -68,7 +70,7 @@
         <div class="p-4 border rounded-2xl bg-white shadow-sm">
           <div class="flex items-center justify-between">
             <h2 class="font-semibold">Categorías</h2>
-            <a id="verTodos" href="/catalogo/" class="text-sm text-brand-700">Ver todos</a>
+            <a id="verTodos" href="/catalogo/" class="text-sm text-brand-700 transition hover:underline hover:translate-x-0.5 inline-block">Ver todos</a>
           </div>
           <div id="cats" class="mt-3 space-y-2 text-sm"></div>
         </div>
@@ -78,8 +80,6 @@
       <div class="md:col-span-8 lg:col-span-9">
         <div id="status" class="text-sm text-slate-500"></div>
         <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-3"></div>
-
-        <!-- Paginación simple cliente -->
         <div id="pager" class="mt-6 flex items-center gap-3"></div>
       </div>
     </section>
@@ -89,32 +89,22 @@
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
   <script>
-    // Utilidades
     const qs = new URLSearchParams(location.search);
     const byId = s => document.getElementById(s);
     const fmt = n => Number(n).toLocaleString('es-CO');
-
-    // Estado
-    let CATS = [];   // árbol de categorías
-    let ITEMS = [];  // artículos cargados
-    let PAGE = parseInt(qs.get('page') || '1');
+    let CATS = [], ITEMS = [], PAGE = parseInt(qs.get('page') || '1');
     const PER_PAGE = 9;
 
-    // Cargar categorías y pintar árbol (categoría -> subcategorías)
     async function loadCategorias() {
       const el = byId('cats');
       el.innerHTML = 'Cargando categorías...';
       const r = await fetch('/api/categorias/');
       CATS = await r.json();
-      // Construir mapa por parent
       const byParent = {};
       CATS.forEach(c => {
         const pid = c.parent || 'root';
-        byParent[pid] = byParent[pid] || [];
-        byParent[pid].push(c);
+        (byParent[pid] ||= []).push(c);
       });
-
-      // Render raíz y sus hijas
       function renderNode(parentId, level=0) {
         const arr = byParent[parentId] || [];
         return arr.map(c => {
@@ -122,18 +112,16 @@
           const isSelectedSub = qs.get('subcat') === c.slug;
           const children = renderNode(c.id, level+1);
           const pad = `style="padding-left:${level*8}px"`;
+          const base = "block py-1 transition inline-block hover:translate-x-1";
           const link = children.length
-            ? `<a ${pad} class="block py-1 ${isSelectedCat ? 'text-brand-700 font-semibold' : 'hover:text-brand-700'}"
-                  href="/catalogo/?cat=${c.slug}${filtersToQS()}">${c.nombre}</a>`
-            : `<a ${pad} class="block py-1 ${isSelectedSub ? 'text-brand-700 font-semibold' : 'hover:text-brand-700'}"
-                  href="/catalogo/?subcat=${c.slug}${filtersToQS()}">${c.nombre}</a>`;
+            ? `<a ${pad} class="${base} ${isSelectedCat ? 'text-brand-700 font-semibold' : 'hover:text-brand-700'}" href="/catalogo/?cat=${c.slug}${filtersToQS()}">${c.nombre}</a>`
+            : `<a ${pad} class="${base} ${isSelectedSub ? 'text-brand-700 font-semibold' : 'hover:text-brand-700'}" href="/catalogo/?subcat=${c.slug}${filtersToQS()}">${c.nombre}</a>`;
           return `<div>${link}${children.join('')}</div>`;
         });
       }
       el.innerHTML = renderNode('root').join('');
     }
 
-    // Recolecta filtros del form a QS (conserva cat/subcat)
     function filtersToQS() {
       const q = byId('q').value.trim();
       const pmin = byId('pmin').value.trim();
@@ -149,103 +137,56 @@
       return s ? '&' + s : '';
     }
 
-    // Encuentra todas las subcategorías hoja debajo de una categoría raíz por slug
     function leafSlugsUnderCatSlug(slug) {
-      const slugToCat = {};
-      CATS.forEach(c => slugToCat[c.slug] = c);
-      const start = slugToCat[slug];
-      if (!start) return [];
-      // build children map
-      const children = {};
-      CATS.forEach(c => {
-        if (c.parent) {
-          (children[c.parent] ||= []).push(c);
-        }
-      });
-      // DFS
+      const slugToCat = {}; CATS.forEach(c => slugToCat[c.slug] = c);
+      const start = slugToCat[slug]; if (!start) return [];
+      const children = {}; CATS.forEach(c => { if (c.parent) (children[c.parent] ||= []).push(c); });
       const leaves = [];
       function dfs(node) {
         const childs = children[node.id] || [];
         if (childs.length === 0) { leaves.push(node.slug); return; }
         childs.forEach(dfs);
       }
-      dfs(start);
-      return leaves;
+      dfs(start); return leaves;
     }
 
-    // Carga artículos según cat/subcat y filtros
     async function loadArticulos() {
-      const status = byId('status');
-      const grid = byId('grid');
-      grid.innerHTML = '';
-      status.textContent = 'Cargando artículos...';
-
-      // filtros
+      const status = byId('status'), grid = byId('grid');
+      grid.innerHTML = ''; status.textContent = 'Cargando artículos...';
       const q = qs.get('q') || byId('q').value.trim();
       const pmin = qs.get('pmin') || byId('pmin').value.trim();
       const pmax = qs.get('pmax') || byId('pmax').value.trim();
       const ubi  = qs.get('ubi') || byId('ubi').value.trim();
-
-      const subcat = qs.get('subcat');
-      const cat = qs.get('cat');
-
-      // Construir fetch(es)
+      const subcat = qs.get('subcat'); const cat = qs.get('cat');
       const urls = [];
       function buildUrl(slug){
         const u = new URL(location.origin + '/api/articulos/');
         u.searchParams.set('ordering', '-creado');
-        if (slug) u.searchParams.set('categoria', slug); // nuestro filtro por slug de categoría hoja
+        if (slug) u.searchParams.set('categoria', slug);
         if (pmin) u.searchParams.set('precio_min', pmin);
         if (pmax) u.searchParams.set('precio_max', pmax);
         if (ubi)  u.searchParams.set('ubicacion', ubi);
         return u.toString();
       }
-
-      if (subcat) {
-        urls.push(buildUrl(subcat));
-      } else if (cat) {
-        // trae todas las hojas bajo la categoría raíz
-        const leaves = leafSlugsUnderCatSlug(cat);
-        if (leaves.length === 0) urls.push(buildUrl(null)); // por si acaso
-        leaves.forEach(s => urls.push(buildUrl(s)));
-      } else {
-        urls.push(buildUrl(null)); // sin categoría => todos
-      }
-
-      // Hacer múltiples fetch y combinar
+      if (subcat) { urls.push(buildUrl(subcat)); }
+      else if (cat) { leafSlugsUnderCatSlug(cat).forEach(s => urls.push(buildUrl(s))); }
+      else { urls.push(buildUrl(null)); }
       const results = await Promise.all(urls.map(u => fetch(u).then(r => r.json())));
-      // Si vino la API paginada, ajusta aquí; asumimos lista simple
       let items = results.flat();
-
-      // Filtro de texto (client-side por simplicidad)
       const qlow = (q || '').toLowerCase();
-      if (qlow) {
-        items = items.filter(a =>
-          a.titulo.toLowerCase().includes(qlow) ||
-          (a.descripcion||'').toLowerCase().includes(qlow)
-        );
-      }
-
-      ITEMS = items;
-      renderPage();
-      const what = subcat ? `subcategoría: ${subcat}` : (cat ? `categoría: ${cat}` : 'todas las categorías');
-      status.textContent = `Mostrando ${ITEMS.length} resultado(s) en ${what}`;
+      if (qlow) items = items.filter(a => a.titulo.toLowerCase().includes(qlow) || (a.descripcion||'').toLowerCase().includes(qlow));
+      ITEMS = items; renderPage();
+      status.textContent = `Mostrando ${ITEMS.length} resultado(s)`;
     }
 
-    // Render de página con paginación cliente
     function renderPage() {
-      const grid = byId('grid');
-      const pager = byId('pager');
-      const total = ITEMS.length;
-      const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+      const grid = byId('grid'), pager = byId('pager');
+      const total = ITEMS.length, pages = Math.max(1, Math.ceil(total / PER_PAGE));
       if (PAGE > pages) PAGE = pages;
-
-      const start = (PAGE - 1) * PER_PAGE;
-      const slice = ITEMS.slice(start, start + PER_PAGE);
-
+      const start = (PAGE - 1) * PER_PAGE, slice = ITEMS.slice(start, start + PER_PAGE);
       grid.innerHTML = slice.map(a => `
-        <article class="rounded-2xl border bg-white shadow-sm p-5">
-          <div class="h-36 rounded-xl bg-brand-100 mb-4"></div>
+        <article class="rounded-2xl border bg-white shadow-sm p-5 transition transform hover:scale-105 hover:shadow-lg">
+          <div class="h-36 rounded-xl bg-brand-100 mb-4 transition-transform duration-500 hover:scale-110"></div>
           <h3 class="font-semibold">${a.titulo}</h3>
           <p class="text-sm text-slate-500">${a.ubicacion || ''} • $${fmt(a.precio_por_dia)}/día</p>
           <div class="mt-3">
@@ -253,52 +194,32 @@
           </div>
         </article>
       `).join('');
-
       pager.innerHTML = `
-        <button ${PAGE<=1?'disabled':''} class="px-3 py-1.5 border rounded-xl ${PAGE<=1?'opacity-50':''}"
-          onclick="goPage(${PAGE-1})">Anterior</button>
+        <button ${PAGE<=1?'disabled':''} class="px-3 py-1.5 border rounded-xl transition ${PAGE<=1?'opacity-50':''}" onclick="goPage(${PAGE-1})">Anterior</button>
         <span class="text-sm">Página ${PAGE} de ${pages}</span>
-        <button ${PAGE>=pages?'disabled':''} class="px-3 py-1.5 border rounded-xl ${PAGE>=pages?'opacity-50':''}"
-          onclick="goPage(${PAGE+1})">Siguiente</button>
+        <button ${PAGE>=pages?'disabled':''} class="px-3 py-1.5 border rounded-xl transition ${PAGE>=pages?'opacity-50':''}" onclick="goPage(${PAGE+1})">Siguiente</button>
       `;
     }
     function goPage(p) {
-      if (p<1) return;
-      PAGE = p;
+      if (p<1) return; PAGE = p;
       const params = new URLSearchParams(location.search);
       if (PAGE>1) params.set('page', PAGE); else params.delete('page');
       history.replaceState({}, '', `${location.pathname}?${params.toString()}`);
       renderPage();
     }
 
-    // Manejo de filtros (submit)
     byId('filters').addEventListener('submit', (e) => {
-      e.preventDefault();
-      PAGE = 1;
+      e.preventDefault(); PAGE = 1;
       const params = new URLSearchParams(location.search);
-      ['q','pmin','pmax','ubi'].forEach(k => {
-        const v = byId(k).value.trim();
-        if (v) params.set(k, v); else params.delete(k);
-      });
-      history.pushState({}, '', `${location.pathname}?${params.toString()}`);
-      loadArticulos();
+      ['q','pmin','pmax','ubi'].forEach(k => { const v = byId(k).value.trim(); if (v) params.set(k, v); else params.delete(k); });
+      history.pushState({}, '', `${location.pathname}?${params.toString()}`); loadArticulos();
     });
     byId('clear').addEventListener('click', () => {
       ['q','pmin','pmax','ubi'].forEach(k => byId(k).value='');
-      history.pushState({}, '', '/catalogo/');
-      PAGE = 1; loadArticulos();
+      history.pushState({}, '', '/catalogo/'); PAGE = 1; loadArticulos();
     });
-
-    // Cargar valores iniciales desde QS al form
-    (function primeFiltersFromQS(){
-      ['q','pmin','pmax','ubi'].forEach(k => { const v = qs.get(k); if (v) byId(k).value = v; });
-    })();
-
-    // Init
-    (async function init(){
-      await loadCategorias();
-      await loadArticulos();
-    })();
+    (function primeFiltersFromQS(){ ['q','pmin','pmax','ubi'].forEach(k => { const v = qs.get(k); if (v) byId(k).value = v; }); })();
+    (async function init(){ await loadCategorias(); await loadArticulos(); })();
   </script>
 </body>
 </html>

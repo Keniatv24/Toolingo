@@ -32,25 +32,26 @@
 <body class="text-slate-800">
 
   <!-- Navbar -->
-  <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200">
+  <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
       <a href="/" class="flex items-center gap-2">
         <!-- LOGO: llave inglesa + texto -->
-        <svg width="28" height="28" viewBox="0 0 24 24" class="text-brand-600 fill-current">
+        <svg width="28" height="28" viewBox="0 0 24 24" class="text-brand-600 fill-current transition-transform duration-300 hover:rotate-12">
           <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Zm-3.5-2a.75.75 0 1 0 0 1.5 1.75 1.75 0 1 1-1.75 1.75.75.75 0 1 0-1.5 0A3.25 3.25 0 1 0 17.5 5.5Z"/>
         </svg>
         <span class="text-xl font-extrabold">Toolingo</span>
       </a>
-    <nav class="hidden md:flex gap-6 text-sm">
-  <a href="#como" class="hover:text-brand-600">Cómo funciona</a>
-  <a href="#servicios" class="hover:text-brand-600">Servicios</a>
-  <a href="#destacados" class="hover:text-brand-600">Destacados</a>
-  <a href="/catalogo/" class="hover:text-brand-600 font-semibold">Productos</a> <!-- 👈 nuevo -->
-</nav>
+
+      <nav class="hidden md:flex gap-6 text-sm">
+        <a href="#como" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Cómo funciona</a>
+        <a href="#servicios" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Servicios</a>
+        <a href="#destacados" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Destacados</a>
+        <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Productos</a>
+      </nav>
 
       <div class="flex gap-3">
-        <a href="/admin/" class="px-3 py-1.5 rounded-lg border hover:bg-slate-50 text-sm">Admin</a>
-        <a href="/api/docs/" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-sm hover:bg-brand-700">API</a>
+        <a href="/admin/" class="px-3 py-1.5 rounded-lg border transition hover:bg-slate-50 hover:-translate-y-0.5">Admin</a>
+        <a href="/api/docs/" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 hover:-translate-y-0.5">API</a>
       </div>
     </div>
   </header>
@@ -68,19 +69,18 @@
           Seguro, rápido y con calificaciones verificadas.
         </p>
         <div class="mt-6 flex gap-3">
-          <a href="#servicios" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700">Explorar servicios</a>
-          <a href="/api/docs/" class="px-5 py-3 rounded-xl border border-slate-300 hover:bg-slate-50">Ver API</a>
+          <a href="#servicios" class="px-5 py-3 rounded-xl bg-brand-600 text-white transition transform hover:bg-brand-700 hover:-translate-y-1">Explorar servicios</a>
+          <a href="/api/docs/" class="px-5 py-3 rounded-xl border border-slate-300 transition transform hover:bg-slate-50 hover:-translate-y-1">Ver API</a>
         </div>
         <div class="mt-6 text-sm text-slate-500">+ Disponibilidad por días • + Depósito opcional • + Pagos seguros</div>
       </div>
 
       <!-- Tarjeta búsqueda (mock) -->
-      <div class="bg-white rounded-2xl shadow p-6 border border-slate-100">
+      <div class="bg-white rounded-2xl shadow p-6 border border-slate-100 transition hover:shadow-lg">
         <div class="text-sm mb-2 text-slate-500">Búsqueda rápida (demo)</div>
         <div class="flex gap-2">
-          <input class="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-200"
-                 placeholder="¿Qué herramienta necesitas?" />
-          <button class="px-4 rounded-xl bg-brand-600 text-white hover:bg-brand-700">Buscar</button>
+          <input class="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-200 transition" placeholder="¿Qué herramienta necesitas?" />
+          <button class="px-4 rounded-xl bg-brand-600 text-white transition hover:bg-brand-700 hover:-translate-y-0.5">Buscar</button>
         </div>
         <p class="mt-3 text-xs text-slate-500">Pronto conectaremos esto con <code>/api/articulos/</code>.</p>
       </div>
@@ -92,15 +92,15 @@
     <div class="max-w-6xl mx-auto px-4">
       <h2 class="text-2xl font-bold">¿Cómo funciona Toolingo?</h2>
       <div class="grid md:grid-cols-3 gap-6 mt-6">
-        <div class="p-6 rounded-2xl border bg-white shadow-sm">
+        <div class="p-6 rounded-2xl border bg-white shadow-sm transition transform hover:scale-105 hover:shadow-lg">
           <h3 class="font-semibold">1. Explora</h3>
           <p class="text-slate-600 mt-2">Filtra por categoría, ubicación y precio por día.</p>
         </div>
-        <div class="p-6 rounded-2xl border bg-white shadow-sm">
+        <div class="p-6 rounded-2xl border bg-white shadow-sm transition transform hover:scale-105 hover:shadow-lg">
           <h3 class="font-semibold">2. Reserva</h3>
           <p class="text-slate-600 mt-2">Elige fechas disponibles y realiza el pago seguro.</p>
         </div>
-        <div class="p-6 rounded-2xl border bg-white shadow-sm">
+        <div class="p-6 rounded-2xl border bg-white shadow-sm transition transform hover:scale-105 hover:shadow-lg">
           <h3 class="font-semibold">3. Califica</h3>
           <p class="text-slate-600 mt-2">Entrega/recibe el equipo y deja tu calificación.</p>
         </div>
@@ -115,15 +115,15 @@
       <p class="text-slate-600 mt-1">Alquila por día herramientas para construcción, jardinería y más.</p>
 
       <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
-        <div class="p-6 rounded-2xl bg-white border shadow-sm">
+        <div class="p-6 rounded-2xl bg-white border shadow-sm transition transform hover:scale-105 hover:shadow-lg">
           <div class="text-sm text-brand-700 font-semibold">Construcción</div>
           <div class="mt-2 text-slate-700">Demoledores, mezcladoras, compactadoras</div>
         </div>
-        <div class="p-6 rounded-2xl bg-white border shadow-sm">
+        <div class="p-6 rounded-2xl bg-white border shadow-sm transition transform hover:scale-105 hover:shadow-lg">
           <div class="text-sm text-brand-700 font-semibold">Eléctricas</div>
           <div class="mt-2 text-slate-700">Taladros, esmeriles, sierras</div>
         </div>
-        <div class="p-6 rounded-2xl bg-white border shadow-sm">
+        <div class="p-6 rounded-2xl bg-white border shadow-sm transition transform hover:scale-105 hover:shadow-lg">
           <div class="text-sm text-brand-700 font-semibold">Alturas</div>
           <div class="mt-2 text-slate-700">Andamios, escaleras</div>
         </div>
@@ -136,17 +136,17 @@
     <div class="max-w-6xl mx-auto px-4">
       <h2 class="text-2xl font-bold">Artículos destacados</h2>
       <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
-        <article class="rounded-2xl border bg-white shadow-sm p-5">
+        <article class="rounded-2xl border bg-white shadow-sm p-5 transition transform hover:scale-105 hover:shadow-lg">
           <div class="h-32 rounded-xl bg-brand-100 mb-4"></div>
           <h3 class="font-semibold">Taladro percutor 800W</h3>
           <p class="text-sm text-slate-500">Medellín • $35.000/día</p>
         </article>
-        <article class="rounded-2xl border bg-white shadow-sm p-5">
+        <article class="rounded-2xl border bg-white shadow-sm p-5 transition transform hover:scale-105 hover:shadow-lg">
           <div class="h-32 rounded-xl bg-brand-100 mb-4"></div>
           <h3 class="font-semibold">Generador 3kW</h3>
           <p class="text-sm text-slate-500">Envigado • $90.000/día</p>
         </article>
-        <article class="rounded-2xl border bg-white shadow-sm p-5">
+        <article class="rounded-2xl border bg-white shadow-sm p-5 transition transform hover:scale-105 hover:shadow-lg">
           <div class="h-32 rounded-xl bg-brand-100 mb-4"></div>
           <h3 class="font-semibold">Hidrolavadora</h3>
           <p class="text-sm text-slate-500">Bello • $40.000/día</p>
@@ -161,7 +161,7 @@
       <h2 class="text-3xl font-bold">¿Listo para publicar o alquilar?</h2>
       <p class="mt-2 text-brand-100">Crea tu cuenta y empieza a generar ingresos con tus herramientas.</p>
       <div class="mt-6">
-        <a href="/admin/" class="px-6 py-3 bg-white text-brand-700 rounded-xl font-semibold hover:bg-slate-100">Ir al panel</a>
+        <a href="/admin/" class="px-6 py-3 bg-white text-brand-700 rounded-xl font-semibold transition transform hover:bg-slate-100 hover:-translate-y-1">Ir al panel</a>
       </div>
     </div>
   </section>
