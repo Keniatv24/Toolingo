@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Registro – Toolingo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:{600:'#f97316',700:'#c2410c'}}}}}</script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <main class="max-w-md mx-auto p-6">
+    <a href="/" class="inline-flex items-center gap-2 mb-6">
+      <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current"><path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/></svg>
+      <span class="text-lg font-extrabold">Toolingo</span>
+    </a>
+
+    <section class="bg-white border rounded-2xl shadow p-6">
+      <h1 class="text-2xl font-bold">Crear cuenta</h1>
+      <p class="text-sm text-slate-600 mb-4">Regístrate para publicar y arrendar.</p>
+
+      <form id="regForm" class="space-y-4">
+        <div>
+          <label class="text-sm text-slate-600">Usuario</label>
+          <input id="username" class="w-full border rounded-xl px-3 py-2" placeholder="tu usuario" required />
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Email</label>
+          <input id="email" type="email" class="w-full border rounded-xl px-3 py-2" placeholder="tucorreo@ejemplo.com" required />
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Contraseña</label>
+          <input id="password" type="password" class="w-full border rounded-xl px-3 py-2" placeholder="********" required />
+        </div>
+        <button class="w-full py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition">Crear cuenta</button>
+      </form>
+
+      <div id="msg" class="text-sm mt-3"></div>
+
+      <p class="text-sm text-slate-600 mt-6">
+        ¿Ya tienes cuenta? <a class="text-brand-600 hover:underline" href="/login/">Inicia sesión</a>
+      </p>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById('regForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const msg = document.getElementById('msg'); msg.textContent = '';
+      msg.className = 'text-sm';
+
+      try {
+        // Ajusta la URL si tu endpoint de creación de usuario se llama distinto
+        const r = await fetch('/api/users/', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ username, email, password })
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(()=>({detail:'Error'}));
+          throw new Error(err.detail || 'No se pudo registrar');
+        }
+        msg.textContent = 'Cuenta creada. Redirigiendo a login...';
+        msg.classList.add('text-green-700');
+        setTimeout(()=> location.replace('/login/'), 1000);
+      } catch (e2) {
+        msg.textContent = e2.message || 'Error al registrar';
+        msg.classList.add('text-red-600');
+      }
+    });
+  </script>
+</body>
+</html>

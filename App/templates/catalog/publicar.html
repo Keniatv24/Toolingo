@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Publicar artículo – Toolingo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:{600:'#f97316',700:'#c2410c'}}}}}</script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <main class="max-w-2xl mx-auto p-6">
+    <a href="/" class="inline-flex items-center gap-2 mb-6">
+      <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current"><path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/></svg>
+      <span class="text-lg font-extrabold">Toolingo</span>
+    </a>
+
+    <section class="bg-white border rounded-2xl shadow p-6">
+      <h1 class="text-2xl font-bold">Publicar un artículo</h1>
+      <p class="text-sm text-slate-600 mb-4">Completa los datos y publica tu herramienta.</p>
+
+      <form id="pubForm" class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label class="text-sm text-slate-600">Título</label>
+          <input id="titulo" class="w-full border rounded-xl px-3 py-2" placeholder="Taladro percutor 800W" required />
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-sm text-slate-600">Descripción</label>
+          <textarea id="descripcion" rows="3" class="w-full border rounded-xl px-3 py-2" placeholder="Características, estado, incluye..."></textarea>
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Categoría</label>
+          <select id="categoria" class="w-full border rounded-xl px-3 py-2" required></select>
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Precio por día (COP)</label>
+          <input id="precio" type="number" class="w-full border rounded-xl px-3 py-2" placeholder="35000" required />
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Depósito (opcional)</label>
+          <input id="deposito" type="number" class="w-full border rounded-xl px-3 py-2" placeholder="80000" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-600">Ubicación</label>
+          <input id="ubicacion" class="w-full border rounded-xl px-3 py-2" placeholder="Medellín" />
+        </div>
+        <div class="md:col-span-2">
+          <button class="w-full py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition" type="submit">Publicar</button>
+        </div>
+      </form>
+
+      <div id="msg" class="text-sm mt-3"></div>
+    </section>
+  </main>
+
+  <script>
+    // Requiere login
+    (function authGuard(){
+      const t = localStorage.getItem('access');
+      if (!t) {
+        const next = encodeURIComponent(location.pathname);
+        location.replace(`/login/?next=${next}`);
+      }
+    })();
+
+    // Cargar categorías (solo hojas) para el select
+    (async function loadCats(){
+      try {
+        const r = await fetch('/api/categorias/');
+        const cats = await r.json();
+        // construir hijos por parent
+        const children = {}; cats.forEach(c => { if(c.parent){ (children[c.parent] ||= []).push(c); }});
+        // hojas = sin hijos
+        const hojas = cats.filter(c => !(children[c.id] && children[c.id].length));
+        const sel = document.getElementById('categoria');
+        sel.innerHTML = hojas.map(c => `<option value="${c.id}" data-slug="${c.slug}">${c.nombre}</option>`).join('');
+      } catch (e) {
+        document.getElementById('msg').textContent = 'No se pudieron cargar categorías';
+        document.getElementById('msg').className = 'text-sm text-red-600';
+      }
+    })();
+
+    document.getElementById('pubForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const titulo = document.getElementById('titulo').value.trim();
+      const descripcion = document.getElementById('descripcion').value.trim();
+      const categoria = document.getElementById('categoria').value;
+      const precio_por_dia = document.getElementById('precio').value || "0";
+      const deposito = document.getElementById('deposito').value || "0";
+      const ubicacion = document.getElementById('ubicacion').value.trim();
+      const msg = document.getElementById('msg'); msg.textContent='';
+
+      const token = localStorage.getItem('access');
+      if (!token) { location.replace('/login/?next=/publicar/'); return; }
+
+      try {
+        const r = await fetch('/api/articulos/', {
+          method: 'POST',
+          headers: {
+            'Content-Type':'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            titulo, descripcion,
+            categoria,                // si tu API espera ID
+            precio_por_dia, deposito,
+            ubicacion,
+            disponibilidad_global: true
+          })
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(()=>({detail:'Error'}));
+          throw new Error(err.detail || 'Error al publicar');
+        }
+        const data = await r.json();
+        msg.textContent = '¡Artículo publicado!';
+        msg.className = 'text-sm text-green-700';
+        // Redirige al catálogo o al detalle API
+        setTimeout(()=> location.replace('/catalogo/'), 800);
+      } catch (e2) {
+        msg.textContent = e2.message || 'Error desconocido';
+        msg.className = 'text-sm text-red-600';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -36,12 +36,19 @@ router.register("calificaciones", CalificacionViewSet, basename="calificaciones"
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="landing/index.html")),
-    path("", RedirectView.as_view(url="/api/docs/", permanent=False)),  # 👈 redirige la raíz  :) 
+    path("", RedirectView.as_view(url="/api/docs/", permanent=False)),  # redirige la raíz  :) 
     path("admin/", admin.site.urls),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema")),
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/", include(router.urls)),
-     path("catalogo/", TemplateView.as_view(template_name="catalogo/index.html")),
+    path("catalogo/", TemplateView.as_view(template_name="catalogo/index.html")),
+    path("login/", TemplateView.as_view(template_name="users/login.html")),
+    path("registro/", TemplateView.as_view(template_name="users/registro.html")),
+    path("publicar/", TemplateView.as_view(template_name="catalog/publicar.html")),
+    path("api/", include("App.urls_api")),  # API
+    path("api/docs/", include("App.urls_docs", namespace="docs")),  
+    path("admin/", admin.site.urls),
+
 ]
