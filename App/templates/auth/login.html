@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toolingo – Iniciar sesión</title>
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:'#fff3e9', 100:'#ffe3cc', 200:'#ffc59a', 300:'#ffa368',
+                     400:'#ff823d', 500:'#fb7a28', 600:'#f97316', 700:'#c2410c',
+                     800:'#9a3412', 900:'#7c2d12' }
+          },
+          boxShadow: {
+            card: '0 10px 25px rgba(0,0,0,0.07)'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-brand-50 flex items-center justify-center p-6">
+
+  <div class="w-full max-w-sm">
+    <!-- header / marca -->
+    <div class="flex items-center gap-3 mb-6">
+      <div class="h-11 w-11 rounded-2xl bg-brand-600 flex items-center justify-center shadow-card">
+        <!-- Logo simple inspirado en tu mockup -->
+        <svg viewBox="0 0 24 24" class="w-6 h-6 text-white fill-current">
+          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 leading-tight">Toolingo</h1>
+        <p class="text-slate-500 text-sm -mt-0.5">Alquila lo que necesites</p>
+      </div>
+    </div>
+
+    <!-- tarjeta -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-card p-5">
+      <h2 class="text-lg font-bold text-slate-900 mb-1">Iniciar sesión</h2>
+      <p class="text-sm text-slate-500 mb-4">Usa tu correo y contraseña</p>
+
+      <form id="loginForm" class="space-y-3" onsubmit="return false;">
+        <div class="space-y-1.5">
+          <label for="email" class="text-sm text-slate-600">Correo electrónico</label>
+          <div class="relative">
+            <input id="email" type="email" autocomplete="email" required
+                   class="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-10 focus:outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-400 placeholder:text-slate-400"
+                   placeholder="tucorreo@dominio.com" />
+            <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2 6.5A2.5 2.5 0 0 1 4.5 4h15A2.5 2.5 0 0 1 22 6.5v11A2.5 2.5 0 0 1 19.5 20h-15A2.5 2.5 0 0 1 2 17.5v-11Zm2.2-.35 7.24 4.53a1 1 0 0 0 1.12 0L19.8 6.15a.5.5 0 0 0-.3-.15H4.5a.5.5 0 0 0-.3.15Z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="password" class="text-sm text-slate-600">Contraseña</label>
+          <div class="relative">
+            <input id="password" type="password" autocomplete="current-password" required
+                   class="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-10 focus:outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-400 placeholder:text-slate-400"
+                   placeholder="••••••••" />
+            <button type="button" id="togglePwd"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-slate-400 hover:text-slate-600">
+              <svg id="eye" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"></path>
+                <circle cx="12" cy="12" r="3.5"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button id="btnLogin"
+                class="w-full mt-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-700 text-white font-semibold py-3 rounded-2xl transition disabled:opacity-60 disabled:cursor-not-allowed">
+          Continuar
+        </button>
+
+        <p id="msg" class="text-sm text-center"></p>
+      </form>
+
+      <div class="mt-4 text-center">
+        <a href="/catalogo/" class="text-sm text-slate-500 hover:text-slate-700">Explorar sin iniciar sesión</a>
+      </div>
+    </div>
+
+    <!-- footer pequeño -->
+    <p class="text-xs text-slate-400 text-center mt-4">Protegido con JWT · Sesión segura</p>
+  </div>
+
+  <script>
+    // Mostrar/ocultar contraseña
+    document.getElementById('togglePwd').addEventListener('click', () => {
+      const i = document.getElementById('password');
+      const eye = document.getElementById('eye');
+      i.type = i.type === 'password' ? 'text' : 'password';
+      eye.classList.toggle('text-brand-600');
+    });
+
+    const form = document.getElementById('loginForm');
+    const btn  = document.getElementById('btnLogin');
+    const msg  = document.getElementById('msg');
+    const nextURL = new URLSearchParams(location.search).get('next') || '/';
+
+    form.addEventListener('submit', doLogin);
+    btn.addEventListener('click', doLogin);
+
+    async function doLogin() {
+      msg.textContent = '';
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Entrando…';
+
+      try {
+        const res = await fetch('/api/token/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(()=>({}));
+          throw new Error(err.detail || 'Email o contraseña incorrectos.');
+        }
+
+        const data = await res.json();
+        localStorage.setItem('access',  data.access);
+        localStorage.setItem('refresh', data.refresh);
+
+        // (opcional) valida el token o pide /api/users/me antes de redirigir
+        location.replace(nextURL);
+      } catch (e) {
+        msg.textContent = e.message || 'No se pudo iniciar sesión.';
+        msg.className   = 'text-sm text-red-600 text-center';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Continuar';
+      }
+    }
+  </script>
+</body>
+</html>
