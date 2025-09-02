@@ -10,21 +10,36 @@ class CategoriaSerializer(serializers.ModelSerializer):
         return CategoriaSerializer(obj.hijas.all(), many=True).data
 
 class ImagenSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
     class Meta:
         model = Imagen
-        fields = ("id","imagen","descripcion")
+        fields = ("id", "url", "descripcion")
+
+    def get_url(self, obj):
+        if not obj.imagen:
+            return None
+        request = self.context.get("request")
+        url = obj.imagen.url
+        return request.build_absolute_uri(url) if request else url
 
 class ArticuloSerializer(serializers.ModelSerializer):
-    imagenes = ImagenSerializer(many=True, required=False)
+    imagenes = ImagenSerializer(many=True, read_only=True)
+    portada = serializers.SerializerMethodField()
+
     class Meta:
         model = Articulo
-        fields = ("id","propietario","titulo","descripcion","categoria","estado",
-                  "precio_por_dia","deposito","disponibilidad_global","ubicacion","creado","imagenes")
+        fields = (
+            "id","propietario","titulo","descripcion","categoria","estado",
+            "precio_por_dia","deposito","disponibilidad_global","ubicacion",
+            "creado","portada","imagenes"
+        )
         read_only_fields = ("propietario",)
 
-    def create(self, validated_data):
-        imgs = validated_data.pop("imagenes", [])
-        articulo = Articulo.objects.create(**validated_data)
-        for img in imgs:
-            Imagen.objects.create(articulo=articulo, **img)
-        return articulo
+    def get_portada(self, obj):
+        img = obj.imagenes.first()
+        if not img or not img.imagen:
+            return None
+        request = self.context.get("request")
+        url = img.imagen.url
+        return request.build_absolute_uri(url) if request else url

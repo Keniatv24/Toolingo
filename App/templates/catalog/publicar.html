@@ -44,6 +44,12 @@
           <input id="ubicacion" class="w-full border rounded-xl px-3 py-2" placeholder="Medellín" />
         </div>
         <div class="md:col-span-2">
+          <label class="text-sm text-slate-600">Fotos del artículo (mínimo 1)</label>
+          <input id="imagenes" type="file" accept="image/*" multiple required class="w-full border rounded-xl px-3 py-2" />
+          <div id="preview" class="mt-2 flex flex-wrap gap-2"></div>
+          <p class="text-xs text-slate-500">Puedes subir varias. La primera será la principal.</p>
+        </div>
+        <div class="md:col-span-2">
           <button class="w-full py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition" type="submit">Publicar</button>
         </div>
       </form>
@@ -62,14 +68,12 @@
       }
     })();
 
-    // Cargar categorías (solo hojas) para el select
+    // Cargar categorías
     (async function loadCats(){
       try {
         const r = await fetch('/api/categorias/');
         const cats = await r.json();
-        // construir hijos por parent
         const children = {}; cats.forEach(c => { if(c.parent){ (children[c.parent] ||= []).push(c); }});
-        // hojas = sin hijos
         const hojas = cats.filter(c => !(children[c.id] && children[c.id].length));
         const sel = document.getElementById('categoria');
         sel.innerHTML = hojas.map(c => `<option value="${c.id}" data-slug="${c.slug}">${c.nombre}</option>`).join('');
@@ -79,43 +83,63 @@
       }
     })();
 
+    // Preview imágenes
+    const imgInput = document.getElementById('imagenes');
+    const preview  = document.getElementById('preview');
+    imgInput?.addEventListener('change', () => {
+      preview.innerHTML = '';
+      const files = imgInput.files || [];
+      if (!files.length) return;
+      [...files].forEach(file => {
+        const url = URL.createObjectURL(file);
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = file.name;
+        img.className = 'h-16 w-16 object-cover rounded-lg border';
+        preview.appendChild(img);
+      });
+    });
+
+    // Envío del formulario
     document.getElementById('pubForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const titulo = document.getElementById('titulo').value.trim();
-      const descripcion = document.getElementById('descripcion').value.trim();
-      const categoria = document.getElementById('categoria').value;
-      const precio_por_dia = document.getElementById('precio').value || "0";
-      const deposito = document.getElementById('deposito').value || "0";
-      const ubicacion = document.getElementById('ubicacion').value.trim();
       const msg = document.getElementById('msg'); msg.textContent='';
 
       const token = localStorage.getItem('access');
       if (!token) { location.replace('/login/?next=/publicar/'); return; }
 
+      const files = document.getElementById('imagenes').files;
+      if (!files || files.length === 0) {
+        msg.textContent = 'Debes adjuntar al menos una foto.';
+        msg.className = 'text-sm text-red-600';
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('titulo', document.getElementById('titulo').value.trim());
+      fd.append('descripcion', document.getElementById('descripcion').value.trim());
+      fd.append('categoria', document.getElementById('categoria').value);
+      fd.append('precio_por_dia', document.getElementById('precio').value || '0');
+      fd.append('deposito', document.getElementById('deposito').value || '0');
+      fd.append('ubicacion', document.getElementById('ubicacion').value.trim());
+      fd.append('disponibilidad_global', 'true');
+      for (const f of files) fd.append('imagenes', f);
+
       try {
         const r = await fetch('/api/articulos/', {
           method: 'POST',
-          headers: {
-            'Content-Type':'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            titulo, descripcion,
-            categoria,                // si tu API espera ID
-            precio_por_dia, deposito,
-            ubicacion,
-            disponibilidad_global: true
-          })
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd
         });
+        if (r.status === 401) { location.replace('/login/?next=/publicar/'); return; }
         if (!r.ok) {
           const err = await r.json().catch(()=>({detail:'Error'}));
           throw new Error(err.detail || 'Error al publicar');
         }
-        const data = await r.json();
-        msg.textContent = '¡Artículo publicado!';
+        await r.json();
+        msg.textContent = '✅ ¡Artículo publicado!';
         msg.className = 'text-sm text-green-700';
-        // Redirige al catálogo o al detalle API
-        setTimeout(()=> location.replace('/catalogo/'), 800);
+        setTimeout(()=> location.replace('/catalogo/'), 900);
       } catch (e2) {
         msg.textContent = e2.message || 'Error desconocido';
         msg.className = 'text-sm text-red-600';
