@@ -7,37 +7,30 @@
 
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Configuramos un color de marca (naranja) -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
             brand: {
-              50:  '#fff7ed',
-              100: '#ffedd5',
-              200: '#fed7aa',
-              300: '#fdba74',
-              400: '#fb923c',
-              500: '#f97316',  /* naranja principal */
-              600: '#ea580c',  /* hover */
-              700: '#c2410c'
+              50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',
+              400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c'
             }
-          }
+          },
+          boxShadow: { soft: '0 8px 24px rgba(15,23,42,.06)' }
         }
       }
     }
   </script>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-800 bg-white">
 
   <!-- Navbar -->
   <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
       <a href="/" class="flex items-center gap-2">
-        <!-- LOGO: llave inglesa + texto -->
         <svg width="28" height="28" viewBox="0 0 24 24" class="text-brand-600 fill-current transition-transform duration-300 hover:rotate-12">
-          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Zm-3.5-2a.75.75 0 1 0 0 1.5 1.75 1.75 0 1 1-1.75 1.75.75.75 0 1 0-1.5 0A3.25 3.25 0 1 0 17.5 5.5Z"/>
+          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
         </svg>
         <span class="text-xl font-extrabold">Toolingo</span>
       </a>
@@ -76,7 +69,7 @@
       </div>
 
       <!-- Tarjeta búsqueda (mock) -->
-      <div class="bg-white rounded-2xl shadow p-6 border border-slate-100 transition hover:shadow-lg">
+      <div class="bg-white rounded-2xl shadow-soft p-6 border border-slate-100 transition hover:shadow-lg">
         <div class="text-sm mb-2 text-slate-500">Búsqueda rápida (demo)</div>
         <div class="flex gap-2">
           <input class="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-200 transition" placeholder="¿Qué herramienta necesitas?" />
@@ -92,15 +85,15 @@
     <div class="max-w-6xl mx-auto px-4">
       <h2 class="text-2xl font-bold">¿Cómo funciona Toolingo?</h2>
       <div class="grid md:grid-cols-3 gap-6 mt-6">
-        <div class="p-6 rounded-2xl border bg-white shadow-sm transition transform hover:scale-105 hover:shadow-lg">
+        <div class="p-6 rounded-2xl border bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
           <h3 class="font-semibold">1. Explora</h3>
           <p class="text-slate-600 mt-2">Filtra por categoría, ubicación y precio por día.</p>
         </div>
-        <div class="p-6 rounded-2xl border bg-white shadow-sm transition transform hover:scale-105 hover:shadow-lg">
+        <div class="p-6 rounded-2xl border bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
           <h3 class="font-semibold">2. Reserva</h3>
           <p class="text-slate-600 mt-2">Elige fechas disponibles y realiza el pago seguro.</p>
         </div>
-        <div class="p-6 rounded-2xl border bg-white shadow-sm transition transform hover:scale-105 hover:shadow-lg">
+        <div class="p-6 rounded-2xl border bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
           <h3 class="font-semibold">3. Califica</h3>
           <p class="text-slate-600 mt-2">Entrega/recibe el equipo y deja tu calificación.</p>
         </div>
@@ -108,22 +101,22 @@
     </div>
   </section>
 
-  <!-- Servicios / Categorías -->
+  <!-- Servicios -->
   <section id="servicios" class="py-16 bg-slate-50 border-y">
     <div class="max-w-6xl mx-auto px-4">
       <h2 class="text-2xl font-bold">Servicios principales</h2>
       <p class="text-slate-600 mt-1">Alquila por día herramientas para construcción, jardinería y más.</p>
 
       <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
-        <div class="p-6 rounded-2xl bg-white border shadow-sm transition transform hover:scale-105 hover:shadow-lg">
+        <div class="p-6 rounded-2xl bg-white border shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
           <div class="text-sm text-brand-700 font-semibold">Construcción</div>
           <div class="mt-2 text-slate-700">Demoledores, mezcladoras, compactadoras</div>
         </div>
-        <div class="p-6 rounded-2xl bg-white border shadow-sm transition transform hover:scale-105 hover:shadow-lg">
+        <div class="p-6 rounded-2xl bg-white border shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
           <div class="text-sm text-brand-700 font-semibold">Eléctricas</div>
           <div class="mt-2 text-slate-700">Taladros, esmeriles, sierras</div>
         </div>
-        <div class="p-6 rounded-2xl bg-white border shadow-sm transition transform hover:scale-105 hover:shadow-lg">
+        <div class="p-6 rounded-2xl bg-white border shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
           <div class="text-sm text-brand-700 font-semibold">Alturas</div>
           <div class="mt-2 text-slate-700">Andamios, escaleras</div>
         </div>
@@ -134,24 +127,22 @@
   <!-- Destacados -->
   <section id="destacados" class="py-16">
     <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-2xl font-bold">Artículos destacados</h2>
-      <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
-        <article class="rounded-2xl border bg-white shadow-sm p-5 transition transform hover:scale-105 hover:shadow-lg">
-          <div class="h-32 rounded-xl bg-brand-100 mb-4"></div>
-          <h3 class="font-semibold">Taladro percutor 800W</h3>
-          <p class="text-sm text-slate-500">Medellín • $35.000/día</p>
-        </article>
-        <article class="rounded-2xl border bg-white shadow-sm p-5 transition transform hover:scale-105 hover:shadow-lg">
-          <div class="h-32 rounded-xl bg-brand-100 mb-4"></div>
-          <h3 class="font-semibold">Generador 3kW</h3>
-          <p class="text-sm text-slate-500">Envigado • $90.000/día</p>
-        </article>
-        <article class="rounded-2xl border bg-white shadow-sm p-5 transition transform hover:scale-105 hover:shadow-lg">
-          <div class="h-32 rounded-xl bg-brand-100 mb-4"></div>
-          <h3 class="font-semibold">Hidrolavadora</h3>
-          <p class="text-sm text-slate-500">Bello • $40.000/día</p>
-        </article>
+      <div class="flex items-end justify-between">
+        <h2 class="text-2xl md:text-3xl font-bold">Artículos destacados</h2>
+        <a href="/catalogo/" class="text-sm text-brand-700 hover:underline">Ver todo</a>
       </div>
+
+      <!-- Grid -->
+      <div id="gridDest" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
+
+      <!-- Skeletons (se reemplazan al cargar) -->
+      <template id="card-skeleton">
+        <article class="rounded-2xl border bg-white shadow-soft p-4 animate-pulse">
+          <div class="h-44 rounded-xl bg-slate-100 mb-4"></div>
+          <div class="h-4 w-2/3 bg-slate-100 rounded mb-2"></div>
+          <div class="h-3 w-1/3 bg-slate-100 rounded"></div>
+        </article>
+      </template>
     </div>
   </section>
 
@@ -169,7 +160,67 @@
   <footer class="py-10 text-center text-sm text-slate-500">
     © <span id="y"></span> Toolingo. Hecho con Django.
   </footer>
-
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
+
+  <!-- JS destacados -->
+  <script>
+    const fmtCOP = n => Number(n||0).toLocaleString('es-CO');
+
+    function cardArticulo(a){
+      const imgUrl = a.portada || (a.imagenes && a.imagenes[0]?.url) || null;
+      return `
+        <article class="group rounded-2xl border bg-white shadow-soft overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
+          <div class="relative">
+            ${imgUrl
+              ? `<img src="${imgUrl}" alt="${a.titulo}" class="w-full h-44 object-cover">`
+              : `<div class="w-full h-44 bg-brand-100"></div>`
+            }
+            <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
+            <span class="absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-semibold bg-white/90 text-brand-700 shadow">
+              $${fmtCOP(a.precio_por_dia)}/día
+            </span>
+          </div>
+          <div class="p-4">
+            <h3 class="font-semibold line-clamp-1 group-hover:text-brand-700 transition">${a.titulo}</h3>
+            <div class="mt-1 text-xs text-slate-500 flex items-center gap-2">
+              ${a.ubicacion ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100">${a.ubicacion}</span>` : ''}
+            </div>
+            <div class="mt-3">
+              <a class="text-sm text-brand-700 hover:underline" href="/api/articulos/${a.id}/">Ver detalle (API)</a>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    async function loadDestacados(){
+      const grid = document.getElementById('gridDest');
+      // skeletons
+      grid.innerHTML = '';
+      for(let i=0;i<6;i++){
+        grid.append(document.getElementById('card-skeleton').content.cloneNode(true));
+      }
+
+      try{
+        const r = await fetch('/api/articulos/?ordering=-creado');
+        let items = await r.json();
+        items = items.slice(0,6);
+
+        if(!Array.isArray(items) || items.length === 0){
+          grid.innerHTML = `
+            <div class="col-span-full text-center text-slate-500 border rounded-2xl py-10">
+              Aún no hay artículos publicados. <a class="text-brand-700 hover:underline" href="/publicar/">¡Publica el primero!</a>
+            </div>`;
+          return;
+        }
+
+        grid.innerHTML = items.map(cardArticulo).join('');
+      }catch(e){
+        grid.innerHTML = `<div class="col-span-full text-center text-red-600">No se pudieron cargar los artículos.</div>`;
+      }
+    }
+
+    loadDestacados();
+  </script>
 </body>
 </html>
