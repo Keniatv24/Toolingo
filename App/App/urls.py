@@ -14,41 +14,55 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# App/App/urls.py
 from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import path, include
-from django.views.generic import RedirectView
+from django.views.generic import TemplateView, RedirectView
+
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from django.views.generic import TemplateView
+
+# ViewSets del proyecto
 from users.views import UserViewSet
 from catalog.views import CategoriaViewSet, ArticuloViewSet
 from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet
-from django.views.generic import TemplateView
 
 router = DefaultRouter()
-router.register("users", UserViewSet, basename="users")
-router.register("categorias", CategoriaViewSet)
-router.register("articulos", ArticuloViewSet)
-router.register("alquileres", AlquilerViewSet, basename="alquileres")
-router.register("pagos", PagoViewSet, basename="pagos")
-router.register("calificaciones", CalificacionViewSet, basename="calificaciones")
+router.register(r"users", UserViewSet, basename="users")
+router.register(r"categorias", CategoriaViewSet, basename="categorias")
+router.register(r"articulos", ArticuloViewSet, basename="articulos")
+router.register(r"alquileres", AlquilerViewSet, basename="alquileres")
+router.register(r"pagos", PagoViewSet, basename="pagos")
+router.register(r"calificaciones", CalificacionViewSet, basename="calificaciones")
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="landing/index.html")),
-    path("", RedirectView.as_view(url="/api/docs/", permanent=False)),  # redirige la raíz  :) 
-    path("admin/", admin.site.urls),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema")),
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("api/", include(router.urls)),
-    path("catalogo/", TemplateView.as_view(template_name="catalogo/index.html")),
-    path("login/", TemplateView.as_view(template_name="users/login.html")),
-    path("registro/", TemplateView.as_view(template_name="users/registro.html")),
-    path("publicar/", TemplateView.as_view(template_name="catalog/publicar.html")),
-    path("api/", include("App.urls_api")),  # API
-    path("api/docs/", include("App.urls_docs", namespace="docs")),  
+    # Páginas HTML
+    path("", TemplateView.as_view(template_name="landing/index.html"), name="landing"),
+    path("catalogo/", TemplateView.as_view(template_name="catalogo/index.html"), name="catalogo"),
+    path("publicar/", TemplateView.as_view(template_name="catalog/publicar.html"), name="publicar"),
+    path("login/", TemplateView.as_view(template_name="auth/login.html"), name="login"),
+    path("registro/", TemplateView.as_view(template_name="users/registro.html"), name="registro"),  # si existe
+
+    # Admin
     path("admin/", admin.site.urls),
 
+    # API schema & docs
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
+
+    # JWT
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+
+    # API REST
+    path("api/", include(router.urls)),
 ]
+
+# (Opcional) si quieres que la raíz redirija a las docs en lugar de la landing, comenta la landing arriba y deja esta:
+# urlpatterns.insert(0, path("", RedirectView.as_view(url="/api/docs/", permanent=False)))
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
