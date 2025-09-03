@@ -41,17 +41,14 @@
         <a href="#destacados" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Destacados</a>
         <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Productos</a>
       </nav>
-
-      <div class="flex gap-3">
-        <a href="/admin/" class="px-3 py-1.5 rounded-lg border transition hover:bg-slate-50 hover:-translate-y-0.5">Admin</a>
-        <a href="/api/docs/" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 hover:-translate-y-0.5">API</a>
-      </div>
+      <!-- (Sin botones Admin / API) -->
     </div>
   </header>
 
   <!-- Hero -->
   <section class="bg-gradient-to-b from-brand-50 to-white">
     <div class="max-w-6xl mx-auto px-4 py-16 grid md:grid-cols-2 gap-10 items-center">
+      <!-- Columna izquierda -->
       <div>
         <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">
           Toolingo es el <span class="text-brand-600">marketplace</span> para
@@ -63,12 +60,11 @@
         </p>
         <div class="mt-6 flex gap-3">
           <a href="#servicios" class="px-5 py-3 rounded-xl bg-brand-600 text-white transition transform hover:bg-brand-700 hover:-translate-y-1">Explorar servicios</a>
-          <a href="/api/docs/" class="px-5 py-3 rounded-xl border border-slate-300 transition transform hover:bg-slate-50 hover:-translate-y-1">Ver API</a>
         </div>
         <div class="mt-6 text-sm text-slate-500">+ Disponibilidad por días • + Depósito opcional • + Pagos seguros</div>
       </div>
 
-      <!-- Tarjeta búsqueda (mock) -->
+      <!-- Columna derecha: tarjeta búsqueda -->
       <div class="bg-white rounded-2xl shadow-soft p-6 border border-slate-100 transition hover:shadow-lg">
         <div class="text-sm mb-2 text-slate-500">Búsqueda rápida (demo)</div>
         <div class="flex gap-2">
@@ -135,7 +131,7 @@
       <!-- Grid -->
       <div id="gridDest" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
 
-      <!-- Skeletons (se reemplazan al cargar) -->
+      <!-- Skeletons -->
       <template id="card-skeleton">
         <article class="rounded-2xl border bg-white shadow-soft p-4 animate-pulse">
           <div class="h-44 rounded-xl bg-slate-100 mb-4"></div>
@@ -147,20 +143,18 @@
   </section>
 
   <!-- CTA -->
-  <!-- CTA -->
-<section class="py-16 bg-brand-600 text-white">
-  <div class="max-w-6xl mx-auto px-4 text-center">
-    <h2 class="text-3xl font-bold">¿Listo para publicar o alquilar?</h2>
-    <p class="mt-2 text-brand-100">Crea tu cuenta y empieza a generar ingresos con tus herramientas.</p>
-    <div class="mt-6">
-      <a href="/login/?next=/publicar/" 
-         class="px-6 py-3 bg-white text-brand-700 rounded-xl font-semibold transition transform hover:bg-slate-100 hover:-translate-y-1">
-        Inicia sesión
-      </a>
+  <section class="py-16 bg-brand-600 text-white">
+    <div class="max-w-6xl mx-auto px-4 text-center">
+      <h2 class="text-3xl font-bold">¿Listo para publicar o alquilar?</h2>
+      <p class="mt-2 text-brand-100">Crea tu cuenta y empieza a generar ingresos con tus herramientas.</p>
+      <div class="mt-6">
+        <a href="/login/?next=/publicar/"
+           class="px-6 py-3 bg-white text-brand-700 rounded-xl font-semibold transition transform hover:bg-slate-100 hover:-translate-y-1">
+          Inicia sesión
+        </a>
+      </div>
     </div>
-  </div>
-</section>
-
+  </section>
 
   <!-- JS destacados -->
   <script>
@@ -195,17 +189,14 @@
 
     async function loadDestacados(){
       const grid = document.getElementById('gridDest');
-      // skeletons
       grid.innerHTML = '';
       for(let i=0;i<6;i++){
         grid.append(document.getElementById('card-skeleton').content.cloneNode(true));
       }
-
       try{
         const r = await fetch('/api/articulos/?ordering=-creado');
         let items = await r.json();
         items = items.slice(0,6);
-
         if(!Array.isArray(items) || items.length === 0){
           grid.innerHTML = `
             <div class="col-span-full text-center text-slate-500 border rounded-2xl py-10">
@@ -213,13 +204,11 @@
             </div>`;
           return;
         }
-
         grid.innerHTML = items.map(cardArticulo).join('');
       }catch(e){
         grid.innerHTML = `<div class="col-span-full text-center text-red-600">No se pudieron cargar los artículos.</div>`;
       }
     }
-
     loadDestacados();
   </script>
 </body>
