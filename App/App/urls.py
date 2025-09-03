@@ -44,7 +44,7 @@ urlpatterns = [
     path("catalogo/", TemplateView.as_view(template_name="catalogo/index.html"), name="catalogo"),
     path("publicar/", TemplateView.as_view(template_name="catalog/publicar.html"), name="publicar"),
     path("login/", TemplateView.as_view(template_name="auth/login.html"), name="login"),
-    path("registro/", TemplateView.as_view(template_name="users/registro.html"), name="registro"),  # si existe
+    path("registro/", TemplateView.as_view(template_name="users/registro.html"), name="registro"),  
 
     # Admin
     path("admin/", admin.site.urls),
