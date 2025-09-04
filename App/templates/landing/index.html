@@ -22,6 +22,31 @@
       }
     }
   </script>
+
+  <!-- Efecto "magnetic row" -->
+  <style>
+    /* Suaviza transformaciones del rail y de las cards */
+    .rail {
+      transition: transform 250ms cubic-bezier(.22,.61,.36,1), filter 250ms;
+      will-change: transform;
+    }
+    /* Cuando hay hover en la fila, atenúa tarjetas no activas */
+    .rail.has-hover > .card-pro:not(.is-hover) {
+      opacity: .9;
+      transform: translateY(0) scale(.985);
+      filter: saturate(.95);
+    }
+    /* Tarjeta activa “flota” un poco */
+    .card-pro {
+      transition: transform 220ms cubic-bezier(.22,.61,.36,1), box-shadow 220ms, opacity 220ms, filter 220ms;
+      will-change: transform, box-shadow, filter;
+    }
+    .card-pro.is-hover {
+      transform: translateY(-6px);
+      box-shadow: 0 14px 40px rgba(15,23,42,.12);
+      filter: saturate(1.02);
+    }
+  </style>
 </head>
 <body class="text-slate-800 bg-white">
 
@@ -41,7 +66,6 @@
         <a href="#destacados" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w/full">Destacados</a>
         <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w/full">Productos</a>
       </nav>
-      <!-- (Sin botones Admin / API) -->
     </div>
   </header>
 
@@ -50,7 +74,7 @@
     <div class="max-w-6xl mx-auto px-4 py-16 grid md:grid-cols-2 gap-10 items-center">
       <!-- Columna izquierda -->
       <div>
-        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">
+        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
           Toolingo es el <span class="text-brand-600">marketplace</span> para
           alquilar equipos y herramientas cerca de ti.
         </h1>
@@ -88,7 +112,7 @@
             </div>
           </div>
 
-          <!-- Subcolumna derecha (tu bloque) -->
+          <!-- Subcolumna derecha (tip) -->
           <div class="flex">
             <div class="rounded-2xl shadow-sm p-4 border border-slate-200 transition hover:shadow-lg w-full">
               <div class="text-sm mb-2 font-semibold text-gray-700">
@@ -106,64 +130,94 @@
     </div>
   </section>
 
-  <!-- Cómo funciona -->
-  <section id="como" class="py-16">
+  <!-- Cómo funciona (mejorado + magnetic row) -->
+  <section id="como" class="py-16 bg-gradient-to-b from-white to-slate-50/60">
     <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-2xl font-bold">¿Cómo funciona Toolingo?</h2>
-      <div class="grid md:grid-cols-3 gap-6 mt-6">
-        <div class="p-6 rounded-2xl border bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
-          <h3 class="font-semibold">1. Explora</h3>
-          <p class="text-slate-600 mt-2">Filtra por categoría, ubicación y precio por día.</p>
+      <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">¿Cómo funciona Toolingo?</h2>
+      <p class="mt-1 text-slate-600">Tres pasos sencillos para rentar o publicar:</p>
+
+      <div id="gridComo" class="rail grid md:grid-cols-3 gap-6 mt-6">
+        <!-- Paso 1 -->
+        <div class="card-pro p-6 rounded-2xl border border-slate-200 bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
+          <div class="flex items-center gap-4 mb-3">
+            <div class="h-10 w-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold">1</div>
+            <h3 class="font-semibold text-lg tracking-tight">Explora</h3>
+          </div>
+          <p class="text-slate-600 leading-relaxed">
+            Filtra por categoría, ubicación y precio por día para encontrar exactamente lo que necesitas.
+          </p>
         </div>
-        <div class="p-6 rounded-2xl border bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
-          <h3 class="font-semibold">2. Reserva</h3>
-          <p class="text-slate-600 mt-2">Elige fechas disponibles y realiza el pago seguro.</p>
+
+        <!-- Paso 2 -->
+        <div class="card-pro p-6 rounded-2xl border border-slate-200 bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
+          <div class="flex items-center gap-4 mb-3">
+            <div class="h-10 w-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold">2</div>
+            <h3 class="font-semibold text-lg tracking-tight">Reserva</h3>
+          </div>
+          <p class="text-slate-600 leading-relaxed">
+            Elige fechas disponibles y realiza el pago seguro directamente desde la plataforma.
+          </p>
         </div>
-        <div class="p-6 rounded-2xl border bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
-          <h3 class="font-semibold">3. Califica</h3>
-          <p class="text-slate-600 mt-2">Entrega/recibe el equipo y deja tu calificación.</p>
+
+        <!-- Paso 3 -->
+        <div class="card-pro p-6 rounded-2xl border border-slate-200 bg-white shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
+          <div class="flex items-center gap-4 mb-3">
+            <div class="h-10 w-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold">3</div>
+            <h3 class="font-semibold text-lg tracking-tight">Califica</h3>
+          </div>
+          <p class="text-slate-600 leading-relaxed">
+            Entrega/recibe el equipo y deja tu calificación para mantener una comunidad confiable.
+          </p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Servicios -->
+  <!-- Servicios (mejorado + magnetic row) -->
   <section id="servicios" class="py-16 bg-slate-50 border-y">
     <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-2xl font-bold">Servicios principales</h2>
+      <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Servicios principales</h2>
       <p class="text-slate-600 mt-1">Alquila por día herramientas para construcción, jardinería y más.</p>
 
-      <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
-        <div class="p-6 rounded-2xl bg-white border shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
-          <div class="text-sm text-brand-700 font-semibold">Construcción</div>
-          <div class="mt-2 text-slate-700">Demoledores, mezcladoras, compactadoras</div>
+      <div id="gridServicios" class="rail grid sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
+        <div class="card-pro p-6 rounded-2xl bg-white border border-slate-200 shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
+          <div class="mb-2">
+            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">Construcción</span>
+          </div>
+          <div class="text-slate-700">Demoledores, mezcladoras, compactadoras</div>
         </div>
-        <div class="p-6 rounded-2xl bg-white border shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
-          <div class="text-sm text-brand-700 font-semibold">Eléctricas</div>
-          <div class="mt-2 text-slate-700">Taladros, esmeriles, sierras</div>
+
+        <div class="card-pro p-6 rounded-2xl bg-white border border-slate-200 shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
+          <div class="mb-2">
+            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">Eléctricas</span>
+          </div>
+          <div class="text-slate-700">Taladros, esmeriles, sierras</div>
         </div>
-        <div class="p-6 rounded-2xl bg-white border shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
-          <div class="text-sm text-brand-700 font-semibold">Alturas</div>
-          <div class="mt-2 text-slate-700">Andamios, escaleras</div>
+
+        <div class="card-pro p-6 rounded-2xl bg-white border border-slate-200 shadow-soft transition transform hover:-translate-y-1 hover:shadow-lg">
+          <div class="mb-2">
+            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">Alturas</span>
+          </div>
+          <div class="text-slate-700">Andamios, escaleras</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Destacados -->
+  <!-- Destacados (grid + magnetic row) -->
   <section id="destacados" class="py-16">
     <div class="max-w-6xl mx-auto px-4">
       <div class="flex items-end justify-between">
-        <h2 class="text-2xl md:text-3xl font-bold">Artículos destacados</h2>
+        <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Artículos destacados</h2>
         <a href="/catalogo/" class="text-sm text-brand-700 hover:underline">Ver todo</a>
       </div>
 
       <!-- Grid -->
-      <div id="gridDest" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
+      <div id="gridDest" class="rail grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
 
       <!-- Skeletons -->
       <template id="card-skeleton">
-        <article class="rounded-2xl border bg-white shadow-soft p-4 animate-pulse">
+        <article class="rounded-2xl border border-slate-200 bg-white shadow-soft p-4 animate-pulse">
           <div class="h-44 rounded-xl bg-slate-100 mb-4"></div>
           <div class="h-4 w-2/3 bg-slate-100 rounded mb-2"></div>
           <div class="h-3 w-1/3 bg-slate-100 rounded"></div>
@@ -175,7 +229,7 @@
   <!-- CTA -->
   <section class="py-16 bg-brand-600 text-white">
     <div class="max-w-6xl mx-auto px-4 text-center">
-      <h2 class="text-3xl font-bold">¿Listo para publicar o alquilar?</h2>
+      <h2 class="text-3xl font-bold tracking-tight">¿Listo para publicar o alquilar?</h2>
       <p class="mt-2 text-brand-100">Crea tu cuenta y empieza a generar ingresos con tus herramientas.</p>
       <div class="mt-6">
         <a href="/login/?next=/publicar/"
@@ -193,19 +247,19 @@
     function cardArticulo(a){
       const imgUrl = a.portada || (a.imagenes && a.imagenes[0]?.url) || null;
       return `
-        <article class="group rounded-2xl border bg-white shadow-soft overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
+        <article class="card-pro group rounded-2xl border border-slate-200 bg-white shadow-soft overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
           <div class="relative">
             ${imgUrl
-              ? `<img src="${imgUrl}" alt="${a.titulo}" class="w-full h-44 object-cover">`
-              : `<div class="w-full h-44 bg-brand-100"></div>`
+              ? `<img src="${imgUrl}" alt="${a.titulo}" class="w-full aspect-[16/10] object-cover">`
+              : `<div class="w-full aspect-[16/10] bg-brand-100"></div>`
             }
             <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
-            <span class="absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-semibold bg-white/90 text-brand-700 shadow">
+            <span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm shadow text-brand-700">
               $${fmtCOP(a.precio_por_dia)}/día
             </span>
           </div>
           <div class="p-4">
-            <h3 class="font-semibold line-clamp-1 group-hover:text-brand-700 transition">${a.titulo}</h3>
+            <h3 class="font-semibold tracking-tight line-clamp-1 group-hover:text-brand-700 transition">${a.titulo}</h3>
             <div class="mt-1 text-xs text-slate-500 flex items-center gap-2">
               ${a.ubicacion ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100">${a.ubicacion}</span>` : ''}
             </div>
@@ -270,7 +324,6 @@
           items = Array.isArray(all) ? all : [];
         }
 
-        // Filtra cliente si es necesario
         const needle = q.toLowerCase();
         const filtrados = items
           .filter(a => {
@@ -305,13 +358,12 @@
       buscar($searchInput.value);
     });
     $searchInput?.addEventListener('input', (e) => {
-      // búsqueda en vivo con debounce ligero
       const q = e.target.value;
       clearTimeout($searchInput._t);
       $searchInput._t = setTimeout(() => buscar(q), 250);
     });
 
-    // --- DESTACADOS (sección inferior) ---
+    // --- DESTACADOS (grid) ---
     async function loadDestacados(){
       const grid = document.getElementById('gridDest');
       grid.innerHTML = '';
@@ -335,6 +387,39 @@
       }
     }
     loadDestacados();
+
+    /* ---------- Magnetic Row JS ---------- */
+    function setupRailMotion(railId) {
+      const rail = document.getElementById(railId);
+      if (!rail) return;
+
+      rail.addEventListener('mouseenter', () => rail.classList.add('has-hover'));
+      rail.addEventListener('mouseleave', () => {
+        rail.classList.remove('has-hover');
+        rail.style.transform = 'translateX(0px)';
+        rail.querySelectorAll('.card-pro.is-hover').forEach(el => el.classList.remove('is-hover'));
+      });
+
+      rail.addEventListener('mousemove', (e) => {
+        const rect = rail.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const t = (x / rect.width) - 0.5; // -0.5 .. 0.5
+        const max = 10; // desplazamiento máximo en px
+        rail.style.transform = `translateX(${(t * max).toFixed(2)}px)`;
+      });
+
+      rail.addEventListener('mouseover', (e) => {
+        const card = e.target.closest('.card-pro');
+        if (!card || !rail.contains(card)) return;
+        rail.querySelectorAll('.card-pro.is-hover').forEach(el => el.classList.remove('is-hover'));
+        card.classList.add('is-hover');
+      });
+    }
+
+    // Inicializa en las tres filas
+    setupRailMotion('gridComo');
+    setupRailMotion('gridServicios');
+    setupRailMotion('gridDest');
   </script>
 </body>
 </html>
