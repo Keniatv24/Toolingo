@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Editar perfil – Toolingo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { brand: {50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c'} },
+        boxShadow: { soft: '0 8px 24px rgba(15,23,42,.06)' }
+      }}
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <main class="max-w-xl mx-auto p-6">
+    <a href="/perfil/" class="inline-flex items-center gap-2 mb-6">
+      <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current"><path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/></svg>
+      <span class="text-lg font-extrabold">Toolingo</span>
+    </a>
+
+    <section class="bg-white border rounded-2xl shadow-soft p-6">
+      <h1 class="text-2xl font-bold">Editar perfil</h1>
+      <p class="text-sm text-slate-600 mb-4">Completa tu información para poder publicar.</p>
+
+      <form id="f" class="grid gap-4">
+        <div>
+          <label class="text-sm text-slate-600">Nombre completo</label>
+          <input id="nombre_completo" class="w-full border rounded-xl px-3 py-2" required />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm text-slate-600">Tipo de documento</label>
+            <select id="tipo_documento" class="w-full border rounded-xl px-3 py-2">
+              <option value="CC">Cédula (CC)</option>
+              <option value="PASAPORTE">Pasaporte</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm text-slate-600">Número de documento</label>
+            <input id="numero_documento" class="w-full border rounded-xl px-3 py-2" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-600">Teléfono</label>
+          <input id="telefono" class="w-full border rounded-xl px-3 py-2" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm text-slate-600">País</label>
+            <input id="pais" class="w-full border rounded-xl px-3 py-2" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-600">Ciudad</label>
+            <input id="ciudad" class="w-full border rounded-xl px-3 py-2" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-600">Dirección exacta (privada)</label>
+          <input id="direccion_exacta" class="w-full border rounded-xl px-3 py-2" />
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-600">Foto de perfil (opcional)</label>
+          <input id="foto_perfil" type="file" accept="image/*" class="w-full border rounded-xl px-3 py-2" />
+        </div>
+
+        <button id="btn" class="w-full py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition" type="submit">
+          Guardar
+        </button>
+      </form>
+
+      <div id="msg" class="text-sm mt-3"></div>
+    </section>
+  </main>
+
+  <script>
+    const next = new URLSearchParams(location.search).get('next') || '/perfil/';
+
+    // Requiere login
+    (function(){
+      const t = localStorage.getItem('access');
+      if (!t) location.replace('/login/?next=' + encodeURIComponent(location.pathname + location.search));
+    })();
+
+    let PROFILE_ID = null;
+
+    async function loadMe(){
+      const token = localStorage.getItem('access');
+      const r = await fetch('/api/perfiles/me/?t=' + Date.now(), {
+        headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-store' }
+      });
+      if (r.status === 401) { location.replace('/login/?next=' + encodeURIComponent(location.pathname + location.search)); return; }
+      const p = await r.json();
+      PROFILE_ID = p.id;
+
+      // Rellenar formulario (valores por defecto para PUT completo)
+      byId('nombre_completo').value   = p.nombre_completo || '';
+      byId('tipo_documento').value    = p.tipo_documento || 'CC';
+      byId('numero_documento').value  = p.numero_documento || '';
+      byId('telefono').value          = p.telefono || '';
+      byId('pais').value              = p.pais || '';
+      byId('ciudad').value            = p.ciudad || '';
+      byId('direccion_exacta').value  = p.direccion_exacta || '';
+    }
+
+    function byId(id){ return document.getElementById(id); }
+
+    document.getElementById('f').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const msg = document.getElementById('msg'); msg.textContent = '';
+      const btn = document.getElementById('btn'); btn.disabled = true; btn.textContent = 'Guardando…';
+
+      try {
+        const token = localStorage.getItem('access');
+        if (!PROFILE_ID) throw new Error('No se pudo determinar el ID del perfil.');
+
+        // Usamos FormData para soportar foto_perfil y hacer PUT con todos los campos
+        const fd = new FormData();
+fd.append('nombre_completo', nombre);
+fd.append('tipo_documento', tipo);        // "CC" | "PASAPORTE"
+fd.append('numero_documento', numDoc);
+fd.append('telefono', telefono);
+fd.append('pais', pais);
+fd.append('ciudad', ciudad);
+fd.append('direccion_exacta', direccion);
+if (fileInput.files[0]) fd.append('foto_perfil', fileInput.files[0]);
+
+const r = await fetch(`/api/perfiles/${id}/`, {
+  method: 'PATCH',
+  headers: { 'Authorization': `Bearer ${token}` },
+  body: fd
+});
+
+
+        if (!r.ok) {
+          const err = await r.json().catch(()=>({detail:'Error al guardar'}));
+          throw new Error(err.detail || 'Error al guardar');
+        }
+
+        // Redirigir (respeta "next" si venía)
+        location.replace(next);
+      } catch (e2) {
+        msg.textContent = e2.message || 'Error desconocido';
+        msg.className = 'text-sm text-red-600';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Guardar';
+      }
+    });
+
+    loadMe();
+  </script>
+</body>
+</html>

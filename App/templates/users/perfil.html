@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mi perfil – Toolingo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { brand: {50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c'} },
+        boxShadow: { soft: '0 8px 24px rgba(15,23,42,.06)' }
+      }}
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <main class="max-w-3xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <a href="/" class="inline-flex items-center gap-2">
+        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current"><path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/></svg>
+        <span class="text-lg font-extrabold">Toolingo</span>
+      </a>
+      <div class="flex gap-2">
+        <a href="/perfil/editar/" class="px-3 py-1.5 rounded-xl border hover:bg-white">Editar</a>
+        <a id="btnPublicar" href="/publicar/" class="px-3 py-1.5 rounded-xl bg-brand-600 text-white hover:bg-brand-700">Publicar</a>
+      </div>
+    </header>
+
+    <section class="bg-white border rounded-2xl shadow-soft p-6">
+      <div class="flex items-start gap-4">
+        <div id="avatar" class="h-16 w-16 rounded-xl bg-brand-100 border"></div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <h1 id="nombre" class="text-xl font-bold">—</h1>
+            <span id="status" class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600">—</span>
+          </div>
+          <p id="ubicacion" class="text-sm text-slate-500 mt-1">—</p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-6 text-sm">
+        <div class="p-4 rounded-xl border bg-slate-50">
+          <div class="text-slate-500">Tipo documento</div>
+          <div id="tipo_documento" class="font-medium">—</div>
+        </div>
+        <div class="p-4 rounded-xl border bg-slate-50">
+          <div class="text-slate-500">Número documento</div>
+          <div id="numero_documento" class="font-medium">—</div>
+        </div>
+        <div class="p-4 rounded-xl border bg-slate-50">
+          <div class="text-slate-500">Teléfono</div>
+          <div id="telefono" class="font-medium">—</div>
+        </div>
+        <div class="p-4 rounded-xl border bg-slate-50">
+          <div class="text-slate-500">Dirección (privada)</div>
+          <div id="direccion" class="font-medium">—</div>
+        </div>
+      </div>
+    </section>
+
+    <p id="alerta" class="mt-4 text-sm"></p>
+  </main>
+
+  <script>
+    // Requiere login
+    (function(){
+      const t = localStorage.getItem('access');
+      if (!t) { location.replace('/login/?next=/perfil/'); }
+    })();
+
+    // Si no hay token, que "Publicar" lleve a login con next
+    (function(){
+      const t = localStorage.getItem('access');
+      const a = document.getElementById('btnPublicar');
+      if (!t && a) a.href = '/login/?next=/publicar/';
+    })();
+
+    async function loadProfile(){
+      const token = localStorage.getItem('access');
+      const r = await fetch('/api/perfiles/me/?t=' + Date.now(), {
+        headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-store' }
+      });
+      if (r.status === 401) { location.replace('/login/?next=/perfil/'); return; }
+      const p = await r.json();
+
+      // Avatar
+      const av = document.getElementById('avatar');
+      if (p.foto_perfil) {
+        av.innerHTML = `<img src="${p.foto_perfil}" class="h-16 w-16 object-cover rounded-xl" alt="Foto">`;
+      }
+
+      // Datos
+      document.getElementById('nombre').textContent = p.nombre_completo || '(sin nombre)';
+      document.getElementById('ubicacion').textContent = [p.ciudad, p.pais].filter(Boolean).join(', ') || '—';
+      document.getElementById('tipo_documento').textContent = p.tipo_documento || '—';
+      document.getElementById('numero_documento').textContent = p.numero_documento || '—';
+      document.getElementById('telefono').textContent = p.telefono || '—';
+
+      // direccion_exacta solo viene para dueño; si no vino, deja —
+      document.getElementById('direccion').textContent = p.direccion_exacta || '—';
+
+      // Status + aviso si INCOMPLETE
+      const st = document.getElementById('status');
+      if (p.status === 'VERIFIED') {
+        st.textContent = 'Verificado';
+        st.className = 'text-xs px-2 py-1 rounded bg-green-100 text-green-700';
+        document.getElementById('alerta').textContent = '';
+      } else {
+        st.textContent = 'Incompleto';
+        st.className = 'text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700';
+        document.getElementById('alerta').innerHTML =
+          `Tu perfil aún está incompleto. <a class="text-brand-700 underline" href="/perfil/editar/?next=/publicar/">Completar ahora</a>`;
+      }
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

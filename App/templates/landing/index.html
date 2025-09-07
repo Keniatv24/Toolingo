@@ -56,6 +56,9 @@
       <nav class="hidden md:flex gap-6 text-sm">
         <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600">Productos</a>
       </nav>
+
+      <!-- User menu mount point -->
+      <div id="userMenuMount" class="relative"></div>
     </div>
   </header>
 
@@ -446,6 +449,79 @@
       updateProgress();
       window.addEventListener('scroll', updateProgress, { passive:true });
       window.addEventListener('resize', updateProgress);
+    })();
+
+    // -------- User Menu (autenticación) --------
+    (async function renderUserMenu(){
+      const mount = document.getElementById('userMenuMount');
+      if (!mount) return;
+
+      const access = localStorage.getItem('access');
+
+      const html = String.raw;
+      const logout = () => {
+        localStorage.removeItem('access');
+        localStorage.removeItem('refresh');
+        location.replace('/');
+      };
+
+      if (!access) {
+        mount.innerHTML = html`
+          <div class="flex items-center gap-3">
+            <a href="/login/" class="px-3 py-1.5 rounded-lg border transition hover:bg-slate-50">Iniciar sesión</a>
+            <a href="/registro/" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white transition hover:bg-brand-700">Registrarse</a>
+          </div>
+        `;
+        return;
+      }
+
+      // Con sesión → obtener nombre visible
+      let displayName = '';
+      try {
+        const r1 = await fetch('/api/perfiles/me/', { headers: { Authorization: `Bearer ${access}` }});
+        if (r1.ok) {
+          const p = await r1.json();
+          displayName = (p.nombre_completo || '').trim();
+        }
+        if (!displayName) {
+          const r2 = await fetch('/api/users/me/', { headers: { Authorization: `Bearer ${access}` }});
+          if (r2.ok) {
+            const u = await r2.json();
+            displayName = (u.nombre || u.email || '').trim();
+          }
+        }
+      } catch (_) {}
+
+      if (!displayName) displayName = 'Mi cuenta';
+
+      mount.innerHTML = html`
+        <button id="btnUser"
+                class="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition hover:bg-slate-50">
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-semibold">👤</span>
+          <span class="text-sm font-medium">${displayName}</span>
+          <svg class="w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
+        </button>
+
+        <div id="menuUser" class="absolute right-0 mt-2 w-56 rounded-2xl border bg-white shadow-lg p-2 hidden">
+          <a href="/perfil/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Mi perfil</a>
+          <a href="/perfil/editar/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Editar perfil</a>
+          <a href="/publicar/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Publicar artículo</a>
+          <button id="logoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-slate-50 text-red-600">Cerrar sesión</button>
+        </div>
+      `;
+
+      const btn = document.getElementById('btnUser');
+      const menu = document.getElementById('menuUser');
+      const out  = document.getElementById('logoutBtn');
+
+      const toggle = () => menu.classList.toggle('hidden');
+      const closeOnClickOutside = (e) => {
+        if (!menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
+      };
+
+      btn.addEventListener('click', toggle);
+      document.addEventListener('click', closeOnClickOutside);
+      out.addEventListener('click', logout);
     })();
   </script>
 </body>

@@ -20,6 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
 from django.views.generic import TemplateView, RedirectView
+from users.views import ProfileViewSet
 
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -37,6 +38,7 @@ router.register(r"articulos", ArticuloViewSet, basename="articulos")
 router.register(r"alquileres", AlquilerViewSet, basename="alquileres")
 router.register(r"pagos", PagoViewSet, basename="pagos")
 router.register(r"calificaciones", CalificacionViewSet, basename="calificaciones")
+router.register("perfiles", ProfileViewSet, basename="perfiles")
 
 urlpatterns = [
     # Páginas HTML
@@ -44,7 +46,10 @@ urlpatterns = [
     path("catalogo/", TemplateView.as_view(template_name="catalogo/index.html"), name="catalogo"),
     path("publicar/", TemplateView.as_view(template_name="catalog/publicar.html"), name="publicar"),
     path("login/", TemplateView.as_view(template_name="auth/login.html"), name="login"),
-    path("registro/", TemplateView.as_view(template_name="users/registro.html"), name="registro"),  
+    path("registro/", TemplateView.as_view(template_name="users/registro.html"), name="registro"),
+
+    # API REST
+    path("api/", include(router.urls)),
 
     # Admin
     path("admin/", admin.site.urls),
@@ -56,14 +61,9 @@ urlpatterns = [
     # JWT
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("perfil/", TemplateView.as_view(template_name="users/perfil.html"), name="perfil"),
+    path("perfil/editar/", TemplateView.as_view(template_name="users/perfil_editar.html"), name="perfil_editar"),
 
-    # API REST
-    path("api/", include(router.urls)),
 ]
-
-# (Opcional) si quieres que la raíz redirija a las docs en lugar de la landing, comenta la landing arriba y deja esta:
-# urlpatterns.insert(0, path("", RedirectView.as_view(url="/api/docs/", permanent=False)))
-
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    
