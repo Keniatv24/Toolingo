@@ -1,3 +1,4 @@
+cat > App/templates/users/perfil_editar.html <<'HTML'
 <!doctype html>
 <html lang="es">
 <head>
@@ -90,7 +91,6 @@
     })();
 
     let PROFILE_ID = null;
-
     function byId(id){ return document.getElementById(id); }
 
     async function loadMe(){
@@ -102,7 +102,6 @@
       const p = await r.json();
       PROFILE_ID = p.id;
 
-      // Rellenar formulario
       byId('nombre_completo').value   = p.nombre_completo || '';
       byId('tipo_documento').value    = p.tipo_documento || 'CC';
       byId('numero_documento').value  = p.numero_documento || '';
@@ -121,7 +120,6 @@
         const token = localStorage.getItem('access');
         if (!PROFILE_ID) throw new Error('No se pudo determinar el ID del perfil.');
 
-        // Lee valores del DOM
         const nombre_completo   = byId('nombre_completo').value.trim();
         const tipo_documento    = byId('tipo_documento').value;
         const numero_documento  = byId('numero_documento').value.trim();
@@ -131,7 +129,6 @@
         const direccion_exacta  = byId('direccion_exacta').value.trim();
         const fileInput         = byId('foto_perfil');
 
-        // Construye FormData
         const fd = new FormData();
         fd.append('nombre_completo', nombre_completo);
         fd.append('tipo_documento', tipo_documento);
@@ -144,7 +141,6 @@
           fd.append('foto_perfil', fileInput.files[0]);
         }
 
-        // PATCH al perfil
         const r = await fetch(`/api/perfiles/${PROFILE_ID}/`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${token}` },
@@ -169,3 +165,6 @@
   </script>
 </body>
 </html>
+HTML
+
+
