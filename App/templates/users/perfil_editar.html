@@ -25,7 +25,7 @@
       <h1 class="text-2xl font-bold">Editar perfil</h1>
       <p class="text-sm text-slate-600 mb-4">Completa tu información para poder publicar.</p>
 
-      <form id="f" class="grid gap-4">
+      <form id="f" class="grid gap-4" enctype="multipart/form-data">
         <div>
           <label class="text-sm text-slate-600">Nombre completo</label>
           <input id="nombre_completo" class="w-full border rounded-xl px-3 py-2" required />
@@ -91,6 +91,8 @@
 
     let PROFILE_ID = null;
 
+    function byId(id){ return document.getElementById(id); }
+
     async function loadMe(){
       const token = localStorage.getItem('access');
       const r = await fetch('/api/perfiles/me/?t=' + Date.now(), {
@@ -100,7 +102,7 @@
       const p = await r.json();
       PROFILE_ID = p.id;
 
-      // Rellenar formulario (valores por defecto para PUT completo)
+      // Rellenar formulario
       byId('nombre_completo').value   = p.nombre_completo || '';
       byId('tipo_documento').value    = p.tipo_documento || 'CC';
       byId('numero_documento').value  = p.numero_documento || '';
@@ -109,8 +111,6 @@
       byId('ciudad').value            = p.ciudad || '';
       byId('direccion_exacta').value  = p.direccion_exacta || '';
     }
-
-    function byId(id){ return document.getElementById(id); }
 
     document.getElementById('f').addEventListener('submit', async (e)=>{
       e.preventDefault();
@@ -121,30 +121,41 @@
         const token = localStorage.getItem('access');
         if (!PROFILE_ID) throw new Error('No se pudo determinar el ID del perfil.');
 
-        // Usamos FormData para soportar foto_perfil y hacer PUT con todos los campos
+        // Lee valores del DOM
+        const nombre_completo   = byId('nombre_completo').value.trim();
+        const tipo_documento    = byId('tipo_documento').value;
+        const numero_documento  = byId('numero_documento').value.trim();
+        const telefono          = byId('telefono').value.trim();
+        const pais              = byId('pais').value.trim();
+        const ciudad            = byId('ciudad').value.trim();
+        const direccion_exacta  = byId('direccion_exacta').value.trim();
+        const fileInput         = byId('foto_perfil');
+
+        // Construye FormData
         const fd = new FormData();
-fd.append('nombre_completo', nombre);
-fd.append('tipo_documento', tipo);        // "CC" | "PASAPORTE"
-fd.append('numero_documento', numDoc);
-fd.append('telefono', telefono);
-fd.append('pais', pais);
-fd.append('ciudad', ciudad);
-fd.append('direccion_exacta', direccion);
-if (fileInput.files[0]) fd.append('foto_perfil', fileInput.files[0]);
+        fd.append('nombre_completo', nombre_completo);
+        fd.append('tipo_documento', tipo_documento);
+        fd.append('numero_documento', numero_documento);
+        fd.append('telefono', telefono);
+        fd.append('pais', pais);
+        fd.append('ciudad', ciudad);
+        fd.append('direccion_exacta', direccion_exacta);
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+          fd.append('foto_perfil', fileInput.files[0]);
+        }
 
-const r = await fetch(`/api/perfiles/${id}/`, {
-  method: 'PATCH',
-  headers: { 'Authorization': `Bearer ${token}` },
-  body: fd
-});
-
+        // PATCH al perfil
+        const r = await fetch(`/api/perfiles/${PROFILE_ID}/`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd
+        });
 
         if (!r.ok) {
           const err = await r.json().catch(()=>({detail:'Error al guardar'}));
           throw new Error(err.detail || 'Error al guardar');
         }
 
-        // Redirigir (respeta "next" si venía)
         location.replace(next);
       } catch (e2) {
         msg.textContent = e2.message || 'Error desconocido';

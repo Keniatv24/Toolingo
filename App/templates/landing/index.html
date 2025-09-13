@@ -45,7 +45,8 @@
 
   <!-- Navbar -->
   <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <!-- CAMBIO: quité justify-between y añadí gap-6 -->
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
       <a href="/" class="flex items-center gap-2">
         <svg width="28" height="28" viewBox="0 0 24 24" class="text-brand-600 fill-current transition-transform duration-300 hover:rotate-12">
           <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
@@ -53,11 +54,12 @@
         <span class="text-xl font-extrabold">Toolingo</span>
       </a>
 
-      <nav class="hidden md:flex gap-6 text-sm">
+      <!-- CAMBIO: ml-auto empuja el nav a la derecha, antes del userMenu -->
+      <nav class="hidden md:flex gap-6 text-sm ml-auto">
         <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600">Productos</a>
       </nav>
 
-      <!-- User menu mount point -->
+      <!-- User menu mount point (queda al extremo derecho) -->
       <div id="userMenuMount" class="relative"></div>
     </div>
   </header>
@@ -99,7 +101,7 @@
           </div>
           <div class="flex">
             <div class="rounded-2xl shadow-sm p-4 border border-slate-200 transition hover:shadow-lg w-full">
-              <div class="text-sm mb-2 font-semibold text-gray-700">Rápida (demo)</div>
+              <div class="text-sm mb-2 font-semibold text-gray-700"></div>
               <div class="mt-3 text-xs text-gray-500 space-y-2">
                 <p>Prueba el buscador con <span class="font-medium text-slate-700">“taladro”, “andamio”, “mezcladora”</span>.</p>
                 <p>Se muestran hasta 5 resultados recientes.</p>

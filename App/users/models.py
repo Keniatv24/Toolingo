@@ -26,7 +26,10 @@ class Profile(models.Model):
     class TipoDocumento(models.TextChoices):
         CC = "CC", "Cédula de ciudadanía"
         PASAPORTE = "Pasaporte", "Pasaporte"
-
+    @property
+    def nombre(self):
+        return self.nombre_completo
+    
     class Status(models.TextChoices):
         INCOMPLETE = "INCOMPLETE", "Incompleto"
         VERIFIED = "VERIFIED", "Verificado"
@@ -68,3 +71,4 @@ class Profile(models.Model):
     def accept_terms(self):
         self.terms_accepted_at = timezone.now()
         self.save(update_fields=["terms_accepted_at"])
+    
