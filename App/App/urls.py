@@ -21,6 +21,11 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from django.views.generic import TemplateView, RedirectView
 from users.views import ProfileViewSet
+from catalog import views as catalog_views
+from django.shortcuts import render
+
+
+
 
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -30,6 +35,13 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from users.views import UserViewSet
 from catalog.views import CategoriaViewSet, ArticuloViewSet
 from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet
+
+
+
+
+def articulo_detalle(request, id):
+    # id puede ser UUID o int; pásalo como string al template
+    return render(request, "catalog/detalle.html", {"articulo_id": str(id)})
 
 router = DefaultRouter()
 router.register(r"users", UserViewSet, basename="users")
@@ -63,6 +75,7 @@ urlpatterns = [
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("perfil/", TemplateView.as_view(template_name="users/perfil.html"), name="perfil"),
     path("perfil/editar/", TemplateView.as_view(template_name="users/perfil_editar.html"), name="perfil_editar"),
+    path("articulo/<uuid:id>/", articulo_detalle, name="articulo_detalle"),
 
 ]
 if settings.DEBUG:
