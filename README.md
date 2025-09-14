@@ -4,8 +4,8 @@
 Permite a propietarios publicar sus artículos y a arrendatarios explorar, reservar y contactar de forma sencilla.  
 
 ## Autores
--  **Kenia Margarita Toscano Vasquez
--  **Leidy carolina Obando Figueroa
+-  Kenia Margarita Toscano Vasquez
+-  Leidy carolina Obando Figueroa
 
 ##  Características principales
 
@@ -154,15 +154,15 @@ Toolingo/
 La API está construida con Django REST Framework.
 Endpoints principales:
 
--  **/api/articulos/ → Listado y creación de artículos
+-  /api/articulos/ → Listado y creación de artículos
 
--  **/api/articulos/<id>/ → Detalle de artículo
+-  /api/articulos/<id>/ → Detalle de artículo
 
--  **/api/categorias/ → Categorías en árbol
+-  /api/categorias/ → Categorías en árbol
 
--  **/api/users/ → Gestión de usuarios
+-  /api/users/ → Gestión de usuarios
 
--  **/api/perfiles/ → Perfiles de usuario
+-  /api/perfiles/ → Perfiles de usuario
 
 La documentación interactiva (Swagger/ReDoc) está disponible en:
 ```bash
