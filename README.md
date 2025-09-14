@@ -3,6 +3,10 @@
 **Toolingo** es un marketplace web para el alquiler de herramientas y equipos.  
 Permite a propietarios publicar sus artículos y a arrendatarios explorar, reservar y contactar de forma sencilla.  
 
+## Autores
+-  **Kenia Margarita Toscano Vasquez
+-  **Leidy carolina Obando Figueroa
+
 ##  Características principales
 
 -  **Publicación de artículos** con imágenes, precio por día y disponibilidad.  
@@ -21,7 +25,49 @@ Permite a propietarios publicar sus artículos y a arrendatarios explorar, reser
 - **Autenticación**: JWT  
 - **Infraestructura**: Python 3.12+, Node.js
 
-  ## Estructura del proyecto
+ ##  Instalación
+
+### 1. Clonar el repositorio
+  ```bash
+  git clone https://github.com/tu-usuario/toolingo.git
+  cd Toolingo
+  ```
+
+ ### 2. Configurar el entorno virtual
+ ```bash
+python -m venv .venv
+source .venv/bin/activate   # Linux/Mac
+.venv\Scripts\activate      # Windows
+
+```
+ ### 3. Instalar dependencias
+```bash
+pip install -r requirements.txt
+
+```
+
+### 4. Migrar la base de datos
+```bash
+python manage.py migrate
+
+```
+
+### 5. Crear un superusuario
+
+```bash
+python manage.py createsuperuser
+
+```
+
+### 6. Levantar el servidor backend
+
+```bash
+cd App
+python manage.py runserver
+
+```
+El backend estará disponible en http://localhost:8000 
+
 
 ##  Estructura del proyecto
 
@@ -101,3 +147,26 @@ Toolingo/
 ├── requirements.txt                     # Dependencias Python
 ├── README.md                            # Documentación del proyecto
 └── .gitignore
+
+```
+## API
+
+La API está construida con Django REST Framework.
+Endpoints principales:
+
+-  **/api/articulos/ → Listado y creación de artículos
+
+-  **/api/articulos/<id>/ → Detalle de artículo
+
+-  **/api/categorias/ → Categorías en árbol
+
+-  **/api/users/ → Gestión de usuarios
+
+-  **/api/perfiles/ → Perfiles de usuario
+
+La documentación interactiva (Swagger/ReDoc) está disponible en:
+```bash
+/api/docs/
+```
+
+
