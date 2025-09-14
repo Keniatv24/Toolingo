@@ -23,79 +23,80 @@ Permite a propietarios publicar sus artículos y a arrendatarios explorar, reser
 
   ## Estructura del proyecto
 
-- Toolingo/
-  
+##  Estructura del proyecto
+
+
+Toolingo/
 ├── App/                                # Proyecto Django principal
 │   ├── App/                            # Configuración Django (settings, urls, wsgi, asgi)
 │   │   ├── __init__.py
-│   │   ├── settings.py                 # Configuración principal
-│   │   ├── urls.py                     # URLs globales
+│   │   ├── settings.py                  # Configuración principal
+│   │   ├── urls.py                      # URLs globales
 │   │   ├── wsgi.py
 │   │   └── asgi.py
 │   │
-│   ├── catalog/                        # Aplicación Catálogo (artículos, categorías, imágenes)
-│   │   ├── migrations/                 # Migraciones de base de datos
-│   │   ├── templates/catalog/          
-│   │   │   ├── detalle.html            # Vista detalle artículo
-│   │   │   ├── listado.html            # Catálogo general
-│   │   │   └── ...                     
-│   │   ├── admin.py                    # Configuración del admin
+│   ├── catalog/                         # App de Catálogo (artículos, categorías, imágenes)
+│   │   ├── migrations/
+│   │   ├── templates/catalog/
+│   │   │   ├── detalle.html             # Vista detalle artículo
+│   │   │   ├── listado.html             # Catálogo general
+│   │   │   └── ...
+│   │   ├── admin.py
 │   │   ├── apps.py
-│   │   ├── models.py                   # Modelos: Categoria, Articulo, Imagen
-│   │   ├── serializers.py              # Serializadores DRF
-│   │   ├── urls.py                     # Rutas de la app
-│   │   ├── views.py                    # Vistas API y vistas HTML
+│   │   ├── models.py
+│   │   ├── serializers.py               # Serializadores DRF
+│   │   ├── urls.py
+│   │   ├── views.py
 │   │   └── tests.py
 │   │
-│   ├── users/                          # App de Usuarios y Perfiles
+│   ├── users/                           # App de Usuarios y Perfiles
 │   │   ├── migrations/
-│   │   ├── templates/users/            # Templates de perfil
+│   │   ├── templates/users/
 │   │   │   ├── perfil.html
 │   │   │   ├── perfil_editar.html
 │   │   │   └── ...
 │   │   ├── admin.py
 │   │   ├── apps.py
-│   │   ├── models.py                   # Modelos de UserProfile, etc.
-│   │   ├── serializers.py              # Serializadores User/Profile
+│   │   ├── models.py
+│   │   ├── serializers.py
 │   │   ├── urls.py
 │   │   ├── views.py
 │   │   └── tests.py
 │   │
-│   ├── templates/                      # Templates compartidos
-│   │   ├── base.html                    # Layout general
+│   ├── templates/                       # Templates compartidos
+│   │   ├── base.html
 │   │   ├── landing/index.html           # Landing principal
 │   │   └── ...
 │   │
-│   ├── static/                         # Archivos estáticos
+│   ├── static/                          # Archivos estáticos (CSS, JS, imágenes)
 │   │   ├── css/
 │   │   ├── js/
 │   │   ├── img/
 │   │   └── favicon.ico
 │   │
-│   └── manage.py                       # Comando principal Django
+│   └── manage.py
 │
-├── Frontend/                           # (Opcional) Cliente en React + Vite
+├── Frontend/                            # Cliente React + Vite (opcional)
 │   ├── src/
-│   │   ├── components/                 # Componentes UI
+│   │   ├── components/
 │   │   │   ├── home.jsx
-│   │   │   ├── methods/                # Métodos numéricos (ejemplo Fractal)
+│   │   │   ├── methods/
 │   │   │   └── ...
-│   │   ├── pages/                      # Páginas
+│   │   ├── pages/
 │   │   │   ├── CatalogPage.jsx
 │   │   │   ├── DetailPage.jsx
 │   │   │   └── ...
 │   │   ├── App.jsx
 │   │   ├── main.jsx
 │   │   └── index.css
-│   ├── public/
-│   │   └── index.html
+│   ├── public/index.html
 │   ├── package.json
 │   └── vite.config.js
 │
-├── media/                              # Archivos subidos (imagenes de artículos y perfiles)
+├── media/                               # Archivos subidos (imágenes de artículos/perfiles)
 │   ├── articulos/
 │   └── profiles/
 │
-├── requirements.txt                    # Dependencias Python
-├── README.md                           # Documentación del proyecto
+├── requirements.txt                     # Dependencias Python
+├── README.md                            # Documentación del proyecto
 └── .gitignore
