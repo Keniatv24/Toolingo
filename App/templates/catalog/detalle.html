@@ -11,13 +11,8 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: {
-            brand: {50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'}
-          },
-          boxShadow: {
-            soft:'0 10px 30px rgba(15,23,42,.06)',
-            lift:'0 16px 44px rgba(15,23,42,.12)'
-          }
+          colors: { brand: {50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'} },
+          boxShadow: { soft:'0 10px 30px rgba(15,23,42,.06)', lift:'0 16px 44px rgba(15,23,42,.12)' }
         }
       }
     }
@@ -57,9 +52,7 @@
       <!-- GALERÍA -->
       <section class="lg:col-span-6">
         <div class="rounded-2xl border bg-white p-3 shadow-soft">
-          <div id="galleryMain" class="aspect-[16/10] rounded-xl bg-slate-100 overflow-hidden smooth">
-            <!-- imagen principal aquí -->
-          </div>
+          <div id="galleryMain" class="aspect-[16/10] rounded-xl bg-slate-100 overflow-hidden smooth"></div>
         </div>
         <div id="thumbs" class="mt-3 flex gap-3 overflow-x-auto py-1"></div>
       </section>
@@ -68,9 +61,7 @@
       <section class="lg:col-span-6">
         <div class="flex items-start flex-wrap gap-3">
           <h1 id="title" class="text-3xl md:text-4xl font-extrabold tracking-tight">Cargando…</h1>
-          <div id="pricePill" class="ml-auto inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-sm font-semibold hidden">
-            <!-- Precio se inyecta -->
-          </div>
+          <div id="pricePill" class="ml-auto inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-sm font-semibold hidden"></div>
         </div>
         <p id="ubiprice" class="mt-2 text-slate-600"></p>
 
@@ -89,26 +80,14 @@
             <span class="inline-block h-2 w-2 rounded-full bg-brand-600"></span>
             <h2 class="font-semibold">Propietario</h2>
           </div>
-
-          <div id="owner" class="flex items-center gap-4">
-            <!-- Tarjeta propietario se inyecta aquí -->
-          </div>
+          <div id="owner" class="flex items-center gap-4"></div>
         </div>
 
         <!-- Acciones -->
         <div class="mt-6 flex flex-wrap gap-3">
-          <a id="reservarBtn" href="#"
-             class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 smooth shadow-soft hover:shadow-lift">
-            Reservar
-          </a>
-          <a id="contactarBtn" href="#"
-             class="px-5 py-3 rounded-xl border hover:bg-slate-50 smooth">
-            Contactar
-          </a>
-          <button id="shareBtn" type="button"
-                  class="px-4 py-3 rounded-xl border hover:bg-slate-50 smooth">
-            Compartir
-          </button>
+          <a id="reservarBtn" href="#" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 smooth shadow-soft hover:shadow-lift">Reservar</a>
+          <a id="contactarBtn" href="#" class="px-5 py-3 rounded-xl border hover:bg-slate-50 smooth">Contactar</a>
+          <button id="shareBtn" type="button" class="px-4 py-3 rounded-xl border hover:bg-slate-50 smooth">Compartir</button>
         </div>
       </section>
     </div>
@@ -151,18 +130,22 @@
     function avatarHtml(nameLike){
       const txt = (nameLike || '').trim();
       const ini = txt ? txt[0].toUpperCase() : '👤';
-      return `
-        <div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">
-          ${ini}
-        </div>`;
+      return `<div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">${ini}</div>`;
     }
 
     function renderOwner(a){
-      // Intenta mapear propiedades comunes del serializer
-      const p = typeof a.propietario === 'object' ? a.propietario : {};
-      const nombre = a.propietario_nombre || p.nombre || p.full_name || p.username || a.dueno_nombre || '';
-      const email  = p.email || a.propietario_email || '';
-      const tel    = p.telefono || p.phone || a.propietario_telefono || '';
+      // *** LEE propietario_info del serializer ***
+      const info = a.propietario_info || {};  // <-- NUEVO
+      // Fallbacks por si aún no actualizaste el serializer
+      const pObj = typeof a.propietario === 'object' ? a.propietario : {};
+      const nombre =
+        info.nombre ||
+        a.propietario_nombre ||
+        pObj.nombre || pObj.full_name || pObj.username ||
+        a.dueno_nombre || '';
+      const email  = info.email || pObj.email || a.propietario_email || '';
+      const tel    = info.telefono || pObj.telefono || pObj.phone || a.propietario_telefono || '';
+      const ubi    = info.ubicacion || a.ubicacion_prop || '';
 
       ownerBox.innerHTML = `
         <div class="flex items-center gap-4 w-full">
@@ -170,14 +153,14 @@
           <div class="min-w-0">
             <div class="font-semibold">${ nombre || 'Propietario' }</div>
             <div class="text-sm text-slate-500 break-all">
+              ${ ubi ? `<span class="inline-block mr-1.5 px-1.5 py-0.5 rounded bg-slate-100">${ubi}</span>` : '' }
               ${ email ? `<a class="hover:underline" href="mailto:${email}">${email}</a>` : '' }
               ${ email && tel ? ' • ' : '' }
               ${ tel ? `<a class="hover:underline" href="tel:${tel}">${tel}</a>` : '' }
               ${ (!email && !tel && a.propietario) ? `<span class="text-slate-400">${a.propietario}</span>` : '' }
             </div>
           </div>
-        </div>
-      `;
+        </div>`;
     }
 
     function renderArticulo(a){
@@ -188,10 +171,7 @@
       document.getElementById('ubiprice').textContent = [ubi, price].filter(Boolean).join(' • ') || '—';
 
       const pricePill = document.getElementById('pricePill');
-      if (price){
-        pricePill.textContent = price;
-        pricePill.classList.remove('hidden');
-      }
+      if (price){ pricePill.textContent = price; pricePill.classList.remove('hidden'); }
 
       // Descripción
       document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.';
