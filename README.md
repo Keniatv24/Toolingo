@@ -24,6 +24,7 @@ Permite a propietarios publicar sus artículos y a arrendatarios explorar, reser
   ## Estructura del proyecto
 
 - Toolingo/
+  
 ├── App/                                # Proyecto Django principal
 │   ├── App/                            # Configuración Django (settings, urls, wsgi, asgi)
 │   │   ├── __init__.py
