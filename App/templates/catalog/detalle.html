@@ -5,60 +5,110 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Detalle del artículo – Toolingo</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = { theme: { extend: { colors: {
-      brand: {50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'}
-    }}}}
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'}
+          },
+          boxShadow: {
+            soft:'0 10px 30px rgba(15,23,42,.06)',
+            lift:'0 16px 44px rgba(15,23,42,.12)'
+          }
+        }
+      }
+    }
   </script>
+
+  <style>
+    .thumb:is(button)[data-active="true"]{ outline: 2px solid #f97316; outline-offset: 0; }
+    .smooth { transition: all .25s cubic-bezier(.22,.61,.36,1); }
+  </style>
 </head>
-<body class="text-slate-800">
-  <!-- Navbar mínima -->
-  <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
+<body class="text-slate-800 bg-white">
+  <!-- NAVBAR -->
+  <header class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
       <a href="/" class="flex items-center gap-2">
-        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current"><path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/></svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current">
+          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
+        </svg>
         <span class="text-lg font-extrabold">Toolingo</span>
       </a>
-      <nav class="hidden md:flex gap-6 text-sm ml-auto">
+      <nav class="hidden md:flex ml-auto items-center gap-6 text-sm">
         <a href="/" class="hover:text-brand-600">Inicio</a>
         <a href="/catalogo/" class="font-semibold text-brand-700">Productos</a>
         <a href="/api/docs/" class="hover:text-brand-600">API</a>
-        <a href="/publicar/" class="hover:text-brand-600 font-semibold">Publicar</a>
+        <a href="/publicar/" class="font-semibold hover:text-brand-600">Publicar</a>
       </nav>
     </div>
   </header>
 
+  <!-- MAIN -->
   <main class="max-w-6xl mx-auto px-4 py-8">
-    <a href="/catalogo/" class="text-sm text-brand-700 hover:underline">&larr; Volver al catálogo</a>
+    <a href="/catalogo/" class="inline-flex items-center gap-2 text-sm text-brand-700 hover:underline">
+      <span aria-hidden="true">←</span> Volver al catálogo
+    </a>
 
-    <div id="wrap" class="mt-4 grid lg:grid-cols-12 gap-8">
-      <!-- Galería -->
+    <div class="mt-4 grid lg:grid-cols-12 gap-8">
+      <!-- GALERÍA -->
       <section class="lg:col-span-6">
-        <div id="gallery" class="rounded-2xl border bg-white p-3">
-          <div class="aspect-[16/10] rounded-xl bg-slate-100" id="galleryMain"></div>
+        <div class="rounded-2xl border bg-white p-3 shadow-soft">
+          <div id="galleryMain" class="aspect-[16/10] rounded-xl bg-slate-100 overflow-hidden smooth">
+            <!-- imagen principal aquí -->
+          </div>
         </div>
-        <div id="thumbs" class="mt-3 flex gap-2 overflow-x-auto"></div>
+        <div id="thumbs" class="mt-3 flex gap-3 overflow-x-auto py-1"></div>
       </section>
 
-      <!-- Datos -->
+      <!-- DATOS -->
       <section class="lg:col-span-6">
-        <h1 id="title" class="text-2xl md:text-3xl font-extrabold tracking-tight">Cargando...</h1>
-        <div class="mt-2 text-slate-600" id="ubiprice"></div>
+        <div class="flex items-start flex-wrap gap-3">
+          <h1 id="title" class="text-3xl md:text-4xl font-extrabold tracking-tight">Cargando…</h1>
+          <div id="pricePill" class="ml-auto inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-sm font-semibold hidden">
+            <!-- Precio se inyecta -->
+          </div>
+        </div>
+        <p id="ubiprice" class="mt-2 text-slate-600"></p>
 
-        <div class="mt-4 p-4 rounded-2xl border bg-white">
-          <h2 class="font-semibold">Descripción</h2>
-          <p id="desc" class="text-slate-700 mt-2">Cargando…</p>
+        <!-- Descripción -->
+        <div class="mt-4 p-5 rounded-2xl border bg-white shadow-soft">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="inline-block h-2 w-2 rounded-full bg-brand-600"></span>
+            <h2 class="font-semibold">Descripción</h2>
+          </div>
+          <p id="desc" class="text-slate-700 leading-relaxed">Cargando…</p>
         </div>
 
-        <div class="mt-4 p-4 rounded-2xl border bg-white">
-          <h2 class="font-semibold">Propietario</h2>
-          <div id="owner" class="text-slate-700 mt-2">Cargando…</div>
+        <!-- Propietario -->
+        <div class="mt-4 p-5 rounded-2xl border bg-white shadow-soft">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="inline-block h-2 w-2 rounded-full bg-brand-600"></span>
+            <h2 class="font-semibold">Propietario</h2>
+          </div>
+
+          <div id="owner" class="flex items-center gap-4">
+            <!-- Tarjeta propietario se inyecta aquí -->
+          </div>
         </div>
 
-        <div class="mt-6 flex gap-3">
-          <a id="reservarBtn" href="#" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition">Reservar</a>
-          <a id="contactarBtn" href="#" class="px-5 py-3 rounded-xl border hover:bg-slate-50 transition">Contactar</a>
+        <!-- Acciones -->
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a id="reservarBtn" href="#"
+             class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 smooth shadow-soft hover:shadow-lift">
+            Reservar
+          </a>
+          <a id="contactarBtn" href="#"
+             class="px-5 py-3 rounded-xl border hover:bg-slate-50 smooth">
+            Contactar
+          </a>
+          <button id="shareBtn" type="button"
+                  class="px-4 py-3 rounded-xl border hover:bg-slate-50 smooth">
+            Compartir
+          </button>
         </div>
       </section>
     </div>
@@ -68,109 +118,153 @@
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
   <script>
-    // ========== FETCH DETALLE ==========
-    const ART_ID_SERVER = "{{ articulo_id }}"; // string desde Django (uuid o int)
+    // ========= DETALLE =========
+    const ART_ID_SERVER = "{{ articulo_id }}"; // string (uuid o int)
     const fmt = n => Number(n||0).toLocaleString('es-CO');
 
-    // Obtiene ID/slug desde la URL si no vino por contexto
-    function getIdFromPath() {
+    const ownerBox = document.getElementById('owner');
+
+    function getIdFromPath(){
       const parts = location.pathname.split('/').filter(Boolean); // ["articulo","<id>"]
       return parts[1] || "";
     }
 
-    async function fetchByIdOrSlug(idOrSlug) {
-      // 1) intenta por /api/articulos/{id}/
+    // Busca por id directo, luego por slug, luego por search
+    async function fetchByIdOrSlug(idOrSlug){
       const direct = await fetch(`/api/articulos/${encodeURIComponent(idOrSlug)}/`);
       if (direct.ok) return direct.json();
 
-      // 2) si no existe como id, intenta por ?slug=
       const q = await fetch(`/api/articulos/?slug=${encodeURIComponent(idOrSlug)}`);
-      if (q.ok) {
+      if (q.ok){
         const arr = await q.json();
         if (Array.isArray(arr) && arr.length) return arr[0];
       }
 
-      // 3) como fallback, intenta buscar por search=
       const s = await fetch(`/api/articulos/?search=${encodeURIComponent(idOrSlug)}&ordering=-creado`);
-      if (s.ok) {
+      if (s.ok){
         const arr = await s.json();
         if (Array.isArray(arr) && arr.length) return arr[0];
       }
-
-      // si nada funcionó:
       throw new Error('Articulo no encontrado');
     }
 
-    function renderArticulo(a) {
-      // Título, ubicación, precio
+    function avatarHtml(nameLike){
+      const txt = (nameLike || '').trim();
+      const ini = txt ? txt[0].toUpperCase() : '👤';
+      return `
+        <div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">
+          ${ini}
+        </div>`;
+    }
+
+    function renderOwner(a){
+      // Intenta mapear propiedades comunes del serializer
+      const p = typeof a.propietario === 'object' ? a.propietario : {};
+      const nombre = a.propietario_nombre || p.nombre || p.full_name || p.username || a.dueno_nombre || '';
+      const email  = p.email || a.propietario_email || '';
+      const tel    = p.telefono || p.phone || a.propietario_telefono || '';
+
+      ownerBox.innerHTML = `
+        <div class="flex items-center gap-4 w-full">
+          ${avatarHtml(nombre || email || a.propietario)}
+          <div class="min-w-0">
+            <div class="font-semibold">${ nombre || 'Propietario' }</div>
+            <div class="text-sm text-slate-500 break-all">
+              ${ email ? `<a class="hover:underline" href="mailto:${email}">${email}</a>` : '' }
+              ${ email && tel ? ' • ' : '' }
+              ${ tel ? `<a class="hover:underline" href="tel:${tel}">${tel}</a>` : '' }
+              ${ (!email && !tel && a.propietario) ? `<span class="text-slate-400">${a.propietario}</span>` : '' }
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderArticulo(a){
+      // Título / ubicación / precio
       document.getElementById('title').textContent = a.titulo || 'Artículo';
-      const ubi = a.ubicacion ? a.ubicacion : '';
+      const ubi = a.ubicacion || '';
       const price = a.precio_por_dia ? `$${fmt(a.precio_por_dia)}/día` : '';
       document.getElementById('ubiprice').textContent = [ubi, price].filter(Boolean).join(' • ') || '—';
+
+      const pricePill = document.getElementById('pricePill');
+      if (price){
+        pricePill.textContent = price;
+        pricePill.classList.remove('hidden');
+      }
 
       // Descripción
       document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.';
 
       // Propietario
-      const owner =
-        a.propietario_nombre ||
-        a.dueno_nombre ||
-        (typeof a.propietario === 'object' ? (a.propietario.nombre || a.propietario.email) : a.propietario) ||
-        'No disponible';
-      document.getElementById('owner').textContent = owner;
+      renderOwner(a);
 
       // Galería
       const main = document.getElementById('galleryMain');
       const thumbs = document.getElementById('thumbs');
       const imagenes = [];
       if (a.portada) imagenes.push(a.portada);
-      if (Array.isArray(a.imagenes)) {
+      if (Array.isArray(a.imagenes)){
         a.imagenes.forEach(img => {
           const url = (img && (img.url || img.imagen || img.file)) || img;
           if (url) imagenes.push(url);
         });
       }
-
-      if (imagenes.length) {
-        main.innerHTML = `<img src="${imagenes[0]}" class="w-full h-full object-cover rounded-xl" alt="${a.titulo || 'Artículo'}" />`;
+      if (imagenes.length){
+        main.innerHTML = `<img src="${imagenes[0]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`;
         thumbs.innerHTML = imagenes.map((u,i)=>`
-          <button class="h-16 w-24 rounded-lg overflow-hidden border ${i===0?'ring-2 ring-brand-600':''}" data-i="${i}" type="button" aria-label="Ver imagen ${i+1}">
-            <img src="${u}" class="w-full h-full object-cover" alt="Miniatura ${i+1}" />
+          <button type="button" class="thumb h-16 w-24 rounded-lg overflow-hidden border smooth" data-i="${i}" ${i===0?'data-active="true"':''}>
+            <img src="${u}" class="w-full h-full object-cover" alt="Miniatura ${i+1}">
           </button>
         `).join('');
 
-        thumbs.addEventListener('click', (e)=>{
-          const b = e.target.closest('button[data-i]'); if(!b) return;
+        thumbs.addEventListener('click', e=>{
+          const b = e.target.closest('button.thumb'); if (!b) return;
           const idx = +b.dataset.i;
-          main.innerHTML = `<img src="${imagenes[idx]}" class="w-full h-full object-cover rounded-xl" alt="${a.titulo || 'Artículo'}" />`;
-          thumbs.querySelectorAll('button').forEach(x=>x.classList.remove('ring-2','ring-brand-600'));
-          b.classList.add('ring-2','ring-brand-600');
+          main.innerHTML = `<img src="${imagenes[idx]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`;
+          thumbs.querySelectorAll('button.thumb').forEach(x=>x.removeAttribute('data-active'));
+          b.setAttribute('data-active','true');
         });
       } else {
+        main.innerHTML = `<div class="w-full h-full rounded-xl bg-slate-100"></div>`;
         thumbs.innerHTML = '';
       }
 
-      // Botones (ajusta rutas reales)
-      const artRef = a.id || ART_ID; // usa id del objeto si existe
+      // Botones
+      const artRef = a.id || ART_ID_SERVER;
       document.getElementById('reservarBtn').href  = `/publicar/?art=${encodeURIComponent(artRef)}`;
       document.getElementById('contactarBtn').href = `/chat/?art=${encodeURIComponent(artRef)}`;
     }
 
-    async function loadArticulo() {
+    async function loadArticulo(){
       const fromContext = ART_ID_SERVER && ART_ID_SERVER !== "None" ? ART_ID_SERVER : "";
       const candidate = fromContext || getIdFromPath();
-
-      try {
+      try{
         const articulo = await fetchByIdOrSlug(candidate);
         renderArticulo(articulo);
-      } catch (err) {
+      }catch(err){
         document.getElementById('title').textContent = 'Artículo no encontrado';
         document.getElementById('desc').textContent = 'No pudimos cargar la información del artículo.';
         console.error(err);
       }
     }
 
-    // Carga
+    // Compartir
+    document.getElementById('shareBtn')?.addEventListener('click', async ()=>{
+      const url = location.href;
+      try{
+        if (navigator.share){
+          await navigator.share({ title: document.title, url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          const btn = document.getElementById('shareBtn');
+          const old = btn.textContent;
+          btn.textContent = 'Enlace copiado';
+          setTimeout(()=>btn.textContent = old, 1400);
+        }
+      }catch(_){}
+    });
+
     loadArticulo();
   </script>
 </body>
