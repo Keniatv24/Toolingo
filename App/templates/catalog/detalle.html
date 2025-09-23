@@ -96,12 +96,54 @@
   <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
+  <!-- ===== Modal Reserva ===== -->
+  <div id="reservaModal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/30" data-close="true"></div>
+    <div class="absolute inset-0 grid place-items-center p-4">
+      <div class="w-full max-w-lg rounded-2xl bg-white shadow-lift border">
+        <div class="px-5 py-4 border-b flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Reservar <span id="mArtTitle" class="font-bold"></span></h3>
+          <button type="button" class="p-2 rounded hover:bg-slate-100" data-close="true">✕</button>
+        </div>
+
+        <div class="p-5 grid gap-4">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <label class="grid gap-1">
+              <span class="text-sm text-slate-600">Fecha inicio</span>
+              <input id="fInicio" type="date" class="border rounded-lg px-3 py-2">
+            </label>
+            <label class="grid gap-1">
+              <span class="text-sm text-slate-600">Fecha fin</span>
+              <input id="fFin" type="date" class="border rounded-lg px-3 py-2">
+            </label>
+          </div>
+
+          <div id="dispMsg" class="text-sm"></div>
+
+          <div class="rounded-xl bg-slate-50 p-4 grid grid-cols-2 gap-3 text-sm">
+            <div>Días</div><div class="text-right font-semibold" id="sumDias">—</div>
+            <div>Precio por día</div><div class="text-right font-semibold" id="sumPPD">—</div>
+            <div>Total estimado</div><div class="text-right font-bold text-slate-900" id="sumTotal">—</div>
+          </div>
+
+          <div class="text-xs text-slate-500">* El precio final se confirma al crear la solicitud.</div>
+        </div>
+
+        <div class="px-5 py-4 border-t flex gap-3 justify-end">
+          <button type="button" class="px-4 py-2 rounded-lg border hover:bg-slate-50" data-close="true">Cancelar</button>
+          <button id="btnConfirmar" type="button" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ========= DETALLE =========
     const ART_ID_SERVER = "{{ articulo_id }}"; // string (uuid o int)
     const fmt = n => Number(n||0).toLocaleString('es-CO');
 
     const ownerBox = document.getElementById('owner');
+    let ARTICULO_CACHE = null;
 
     function getIdFromPath(){
       const parts = location.pathname.split('/').filter(Boolean); // ["articulo","<id>"]
@@ -134,9 +176,7 @@
     }
 
     function renderOwner(a){
-      // *** LEE propietario_info del serializer ***
-      const info = a.propietario_info || {};  // <-- NUEVO
-      // Fallbacks por si aún no actualizaste el serializer
+      const info = a.propietario_info || {};
       const pObj = typeof a.propietario === 'object' ? a.propietario : {};
       const nombre =
         info.nombre ||
@@ -211,9 +251,15 @@
       }
 
       // Botones
+      const reservarBtn = document.getElementById('reservarBtn');
       const artRef = a.id || ART_ID_SERVER;
-      document.getElementById('reservarBtn').href  = `/publicar/?art=${encodeURIComponent(artRef)}`;
       document.getElementById('contactarBtn').href = `/chat/?art=${encodeURIComponent(artRef)}`;
+
+      reservarBtn.removeAttribute('href');
+      reservarBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openReservaModal(a); // ← abre el modal
+      });
     }
 
     async function loadArticulo(){
@@ -221,6 +267,8 @@
       const candidate = fromContext || getIdFromPath();
       try{
         const articulo = await fetchByIdOrSlug(candidate);
+        window.__ARTICULO__ = articulo;
+        ARTICULO_CACHE = articulo;
         renderArticulo(articulo);
       }catch(err){
         document.getElementById('title').textContent = 'Artículo no encontrado';
@@ -244,6 +292,151 @@
         }
       }catch(_){}
     });
+
+    // ====== Reserva (modal) ======
+    function daysBetween(d1, d2){
+      const ms = (d2 - d1);
+      const days = Math.floor(ms / (1000*60*60*24)) + 1;
+      return Math.max(days, 1);
+    }
+    function toISODate(input){
+      const d = new Date(input + "T00:00:00");
+      if (isNaN(d)) return null;
+      return d;
+    }
+    function formatCOP(n){
+      return Number(n||0).toLocaleString('es-CO', {style:'currency', currency:'COP', maximumFractionDigits:0});
+    }
+    function setDispMessage(ok, text){
+      const el = document.getElementById('dispMsg');
+      el.textContent = text || '';
+      el.className = "text-sm " + (ok ? "text-emerald-600" : "text-red-600");
+    }
+    function getToken() {
+      return localStorage.getItem('access') || null; // adapta si usas otro storage
+    }
+    async function checkDisponibilidad(artId, d1, d2){
+      const from = d1.toISOString().slice(0,10);
+      const to   = d2.toISOString().slice(0,10);
+      const url = `/api/alquileres/disponibilidad/?articulo=${encodeURIComponent(artId)}&from=${from}&to=${to}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('No se pudo consultar disponibilidad');
+      return r.json();
+    }
+    async function postReserva(body){
+      const token = getToken();
+      if (!token){
+        location.href = `/login/?next=${encodeURIComponent(location.pathname)}`;
+        return;
+      }
+      const r = await fetch('/api/alquileres/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok){
+        const data = await r.json().catch(()=> ({}));
+        const msg = data?.detail || data?.non_field_errors?.[0] || 'No se pudo crear la reserva';
+        throw new Error(msg);
+      }
+      return r.json();
+    }
+    function openReservaModal(art){
+      const modal = document.getElementById('reservaModal');
+      modal.classList.remove('hidden');
+
+      document.getElementById('mArtTitle').textContent = art.titulo || 'Artículo';
+      document.getElementById('sumPPD').textContent = formatCOP(art.precio_por_dia);
+      document.getElementById('sumDias').textContent = '—';
+      document.getElementById('sumTotal').textContent = '—';
+      setDispMessage(true, 'Selecciona un rango de fechas');
+
+      const f1 = document.getElementById('fInicio');
+      const f2 = document.getElementById('fFin');
+      const today = new Date(); today.setHours(0,0,0,0);
+      f1.min = today.toISOString().slice(0,10);
+      f2.min = today.toISOString().slice(0,10);
+      f1.value = ''; f2.value = '';
+
+      const recalc = async () => {
+        const v1 = f1.value, v2 = f2.value;
+        if (!v1 || !v2) { return; }
+        const d1 = toISODate(v1), d2 = toISODate(v2);
+        if (!d1 || !d2 || d2 < d1) {
+          setDispMessage(false, 'Rango inválido');
+          return;
+        }
+        try{
+          const info = await checkDisponibilidad(art.id || ART_ID_SERVER, d1, d2);
+          const ocupados = new Set(info.dias_ocupados || []);
+          let hayOcupado = false;
+          for (let dt = new Date(d1); dt <= d2; dt.setDate(dt.getDate()+1)){
+            const iso = dt.toISOString().slice(0,10);
+            if (ocupados.has(iso)) { hayOcupado = true; break; }
+          }
+          if (hayOcupado){
+            setDispMessage(false, 'Fechas no disponibles');
+          } else {
+            setDispMessage(true, 'Fechas disponibles');
+          }
+          const dias = daysBetween(d1, d2);
+          document.getElementById('sumDias').textContent = dias;
+          document.getElementById('sumTotal').textContent = formatCOP(dias * (art.precio_por_dia || 0));
+        }catch(e){
+          setDispMessage(false, 'No se pudo validar disponibilidad');
+          console.error(e);
+        }
+      };
+
+      f1.onchange = recalc;
+      f2.onchange = recalc;
+
+      // cerrar modal
+      const closeHandler = (e) => {
+        if (e.target.matches('[data-close], [data-close] * , .bg-black\\/30')) {
+          modal.classList.add('hidden');
+          modal.removeEventListener('click', closeHandler);
+        }
+      };
+      modal.addEventListener('click', closeHandler);
+
+      // confirmar
+      document.getElementById('btnConfirmar').onclick = async () => {
+        const v1 = f1.value, v2 = f2.value;
+        if (!v1 || !v2){ setDispMessage(false, 'Selecciona inicio y fin'); return; }
+        const d1 = toISODate(v1), d2 = toISODate(v2);
+        if (!d1 || !d2 || d2 < d1){ setDispMessage(false, 'Rango inválido'); return; }
+
+        try{
+          // revalidar justo antes de enviar
+          const info = await checkDisponibilidad(art.id || ART_ID_SERVER, d1, d2);
+          const ocupados = new Set(info.dias_ocupados || []);
+          for (let dt = new Date(d1); dt <= d2; dt.setDate(dt.getDate()+1)){
+            const iso = dt.toISOString().slice(0,10);
+            if (ocupados.has(iso)) { throw new Error('Fechas no disponibles'); }
+          }
+
+          const payload = {
+            articulo: art.id || ART_ID_SERVER,
+            fecha_inicio: v1,
+            fecha_fin: v2
+          };
+          await postReserva(payload);
+
+          setDispMessage(true, 'Solicitud enviada 🎉');
+          document.getElementById('btnConfirmar').disabled = true;
+          setTimeout(()=>{
+            modal.classList.add('hidden');
+            // location.href = '/mis-alquileres/'; // opcional
+          }, 800);
+        }catch(err){
+          setDispMessage(false, err.message || 'Error al reservar');
+        }
+      };
+    }
 
     loadArticulo();
   </script>

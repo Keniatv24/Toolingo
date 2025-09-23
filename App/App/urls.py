@@ -52,6 +52,8 @@ router.register(r"pagos", PagoViewSet, basename="pagos")
 router.register(r"calificaciones", CalificacionViewSet, basename="calificaciones")
 router.register("perfiles", ProfileViewSet, basename="perfiles")
 
+
+
 urlpatterns = [
     # Páginas HTML
     path("", TemplateView.as_view(template_name="landing/index.html"), name="landing"),
