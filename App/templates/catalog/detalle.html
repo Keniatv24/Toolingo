@@ -90,10 +90,16 @@
         </div>
 
         <!-- Acciones -->
-        <div class="mt-6 flex flex-wrap gap-3">
+        <div class="mt-6 flex flex-wrap gap-3 items-center">
           <a id="reservarBtn" href="#" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 smooth shadow-soft hover:shadow-lift">Reservar</a>
           <a id="contactarBtn" href="#" class="px-5 py-3 rounded-xl border hover:bg-slate-50 smooth">Contactar</a>
           <button id="shareBtn" type="button" class="px-4 py-3 rounded-xl border hover:bg-slate-50 smooth">Compartir</button>
+
+          <!-- NUEVO: Continuar compra -->
+          <button id="checkoutBtn" type="button"
+                  class="px-5 py-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 smooth ml-auto hidden">
+            Continuar compra
+          </button>
         </div>
       </section>
     </div>
@@ -376,20 +382,31 @@
     // ==== Navbar carrito: ir a /carrito/ + badge ====
     const cartBtn = document.getElementById('cartBtn');
     const cartBadge = document.getElementById('cartBadge');
+    const checkoutBtn = document.getElementById('checkoutBtn');
 
     cartBtn?.addEventListener('click', ()=>{
       if (!getToken()) location.href = '/login/?next=/carrito/';
       else location.href = '/carrito/';
     });
 
-    // Inicializa badge si hay sesión
+    // Botón Continuar compra → /checkout/
+    checkoutBtn?.addEventListener('click', ()=>{
+      if (!getToken()) location.href = '/login/?next=/checkout/';
+      else location.href = '/checkout/';
+    });
+
+    // Inicializa badge y visibilidad del botón de checkout si hay sesión
     (async ()=>{
-      if (!getToken()) { cartBadge?.classList.add('hidden'); return; }
+      if (!getToken()) { cartBadge?.classList.add('hidden'); checkoutBtn?.classList.add('hidden'); return; }
       try{
         const items = await apiGetCart();
-        cartBadge.classList.toggle('hidden', items.length === 0);
-        cartBadge.textContent = items.length;
-      }catch(_){}
+        const hasItems = Array.isArray(items) && items.length > 0;
+        cartBadge.classList.toggle('hidden', !hasItems);
+        cartBadge.textContent = hasItems ? items.length : 0;
+        checkoutBtn.classList.toggle('hidden', !hasItems);
+      }catch(_){
+        checkoutBtn?.classList.add('hidden');
+      }
     })();
 
     // ====== Disponibilidad + Modal ======
@@ -461,11 +478,13 @@
           const payload = { articulo: art.id || ART_ID_SERVER, fecha_inicio: v1, fecha_fin: v2 };
           await apiAddToCart(payload);
 
-          // Actualiza badge y redirige al carrito
+          // Actualiza badge y muestra botón de checkout
           try{
             const items = await apiGetCart();
-            cartBadge.classList.toggle('hidden', items.length === 0);
-            cartBadge.textContent = items.length;
+            const hasItems = Array.isArray(items) && items.length > 0;
+            cartBadge.classList.toggle('hidden', !hasItems);
+            cartBadge.textContent = hasItems ? items.length : 0;
+            checkoutBtn.classList.toggle('hidden', !hasItems);
           }catch(_){}
           location.href = '/carrito/';
         }catch(err){ setDispMessage(false, err.message || 'No se pudo agregar'); }

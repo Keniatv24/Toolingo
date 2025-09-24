@@ -69,7 +69,6 @@
               <span>Productos (<span id="selCount">0</span>)</span>
               <span id="subtotal" class="font-medium">$0</span>
             </div>
-            <!-- Si agregas descuentos/impuestos, mételos aquí -->
             <div class="pt-2 mt-2 border-t flex items-center justify-between font-semibold text-slate-900">
               <span>Total</span>
               <span id="total">$0</span>
@@ -120,12 +119,6 @@
     // ===== API carrito
     async function apiGetCart(){ const r=await authFetch('/api/carrito/'); if(!r.ok) throw new Error('No se pudo cargar'); return r.json(); }
     async function apiDeleteCartItem(id){ const r=await authFetch(`/api/carrito/${id}/`,{method:'DELETE'}); if(!r.ok) throw new Error('Error al quitar'); }
-    async function apiCheckout(selectedIds){
-      // Si tu endpoint /checkout/ genera todas, puedes ignorar selectedIds; si no, podrías enviar {ids:[...]}
-      const r=await authFetch('/api/carrito/checkout/', {method:'POST'}); 
-      if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.detail||'No se pudo confirmar'); }
-      return r.json();
-    }
 
     // ===== UI
     const cartList = document.getElementById('cartList');
@@ -207,19 +200,29 @@
       }
     }
 
-    // eventos
+    // Seleccionar todos
     checkAll.onchange = ()=>{
       if(checkAll.checked) SELECTED = new Set(ITEMS.map(i=>i.id));
       else SELECTED.clear();
       render();
     };
-    document.getElementById('btnCheckout').onclick = async ()=>{
+
+    // ======= REDIRECCIÓN A CHECKOUT =======
+    function goToCheckout(){
+      if(SELECTED.size === 0) return;
+      // Guardamos los IDs seleccionados para usarlos en el template de pago
       try{
-        await apiCheckout([...SELECTED]); // si tu backend soporta lista, úsala
-        await load();
-        alert('¡Listo! Reservas creadas.');
-      }catch(e){ alert(e.message); }
-    };
+        sessionStorage.setItem('checkout_selected', JSON.stringify([...SELECTED]));
+      }catch(_){}
+      if(!getToken()){
+        // si no hay sesión, iniciamos sesión y volvemos al checkout
+        location.href = '/login/?next=/checkout/';
+        return;
+      }
+      // redirige al template de pago (checkout/checkout.html -> URL /checkout/)
+      location.href = '/checkout/';
+    }
+    document.getElementById('btnCheckout').onclick = goToCheckout;
 
     // Botón carrito del header → ya estás en carrito, pero lo mantenemos por consistencia
     document.getElementById('cartBtn')?.addEventListener('click', ()=> location.href='/carrito/');

@@ -80,6 +80,7 @@ urlpatterns = [
     path("perfil/editar/", TemplateView.as_view(template_name="users/perfil_editar.html"), name="perfil_editar"),
     path("articulo/<uuid:id>/", articulo_detalle, name="articulo_detalle"),
     path("carrito/", TemplateView.as_view(template_name="cart/index.html"), name="carrito"),
+    path('checkout/', TemplateView.as_view(template_name='checkout/checkout.html'), name='checkout'),
 ]
 
 

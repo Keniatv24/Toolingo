@@ -1,0 +1,282 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pago – Toolingo</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors:{ brand:{50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'} },
+        boxShadow:{ soft:'0 12px 30px rgba(15,23,42,.07)', lift:'0 18px 48px rgba(15,23,42,.14)'}
+      }}
+    }
+  </script>
+</head>
+<body class="bg-white text-slate-800">
+  <!-- NAV -->
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+      <a href="/" class="flex items-center gap-2">
+        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current">
+          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
+        </svg>
+        <span class="text-lg font-extrabold">Toolingo</span>
+      </a>
+      <nav class="hidden md:flex ml-auto items-center gap-6 text-sm">
+        <a href="/catalogo/" class="hover:text-brand-600">Productos</a>
+        <a href="/carrito/" class="hover:text-brand-600">Carrito</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- CONTENIDO -->
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Pago</h1>
+    <p class="text-slate-600 mt-1">Selecciona un método de pago y completa tus datos.</p>
+
+    <div class="mt-6 grid lg:grid-cols-12 gap-8">
+      <!-- Izquierda: Métodos + formulario -->
+      <section class="lg:col-span-8 space-y-4">
+        <!-- Métodos -->
+        <div class="grid md:grid-cols-2 gap-3">
+          <button data-method="credit" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50 focus:ring-2 focus:ring-brand-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold">Tarjeta de crédito</div>
+                <div class="text-sm text-slate-500">Visa, MasterCard, Amex</div>
+              </div>
+            </div>
+          </button>
+          <button data-method="debit" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50">
+            <div class="font-semibold">Tarjeta de débito</div>
+            <div class="text-sm text-slate-500">Visa Débito, MasterCard Débito</div>
+          </button>
+          <button data-method="pse" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50">
+            <div class="font-semibold">PSE</div>
+            <div class="text-sm text-slate-500">Débito bancario</div>
+          </button>
+          <button data-method="addi" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50">
+            <div class="font-semibold">ADDI</div>
+            <div class="text-sm text-slate-500">Compra ahora, paga después</div>
+          </button>
+          <button data-method="siste" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50 md:col-span-2">
+            <div class="font-semibold">SisteCredito</div>
+            <div class="text-sm text-slate-500">Crédito fácil y rápido</div>
+          </button>
+        </div>
+
+        <!-- Formulario (variable por método) -->
+        <section id="payForm" class="rounded-2xl border bg-white shadow-soft p-5">
+          <!-- Logos -->
+          <div id="brandRow" class="flex items-center gap-4 mb-4">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-6">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-6">
+            
+
+
+            <span class="text-xs text-slate-500">Aceptamos tarjetas principales.</span>
+          </div>
+
+          <!-- CREDIT/DEBIT -->
+          <form id="cardForm" class="grid md:grid-cols-2 gap-4">
+            <label class="grid gap-1 md:col-span-2">
+              <span class="text-sm text-slate-600">Número</span>
+              <input id="cardNumber" type="text" inputmode="numeric" maxlength="19"
+                     class="border rounded-xl px-3 py-2" placeholder="•••• •••• •••• ••••">
+            </label>
+
+            <label class="grid gap-1">
+              <span class="text-sm text-slate-600">Cuotas</span>
+              <select id="installments" class="border rounded-xl px-3 py-2">
+                <option value="">¿En cuántas cuotas?</option>
+                <option>1</option><option>3</option><option>6</option><option>12</option>
+              </select>
+            </label>
+            <label class="grid gap-1">
+              <span class="text-sm text-slate-600">Nombre y Apellido (como figura en la tarjeta)</span>
+              <input id="cardName" type="text" class="border rounded-xl px-3 py-2" placeholder="Nombre Apellido">
+            </label>
+
+            <div class="grid grid-cols-3 gap-3 md:col-span-2">
+              <label class="grid gap-1">
+                <span class="text-sm text-slate-600">Vencimiento</span>
+                <input id="expMM" type="text" maxlength="2" class="border rounded-xl px-3 py-2" placeholder="MM">
+              </label>
+              <label class="grid gap-1">
+                <span class="text-sm text-slate-600">&nbsp;</span>
+                <input id="expYY" type="text" maxlength="2" class="border rounded-xl px-3 py-2" placeholder="AA">
+              </label>
+              <label class="grid gap-1">
+                <span class="text-sm text-slate-600">CVV</span>
+                <input id="cvv" type="password" maxlength="4" class="border rounded-xl px-3 py-2" placeholder="•••">
+              </label>
+            </div>
+
+            <label class="flex items-center gap-2 md:col-span-2 text-sm">
+              <input id="billAddr" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
+              <span>La dirección de la factura coincide con la de mi cuenta.</span>
+            </label>
+
+            <div class="md:col-span-2">
+              <button id="payBtn" type="button"
+                      class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700">
+                Pagar ahora
+              </button>
+            </div>
+          </form>
+
+          <!-- PSE / ADDI / SISTECREDITO placeholders -->
+          <div id="altMethod" class="hidden">
+            <div class="text-slate-700">
+              <p id="altText" class="mb-3">Serás redirigido para completar tu pago.</p>
+              <button id="goAlt" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700">
+                Continuar con el método seleccionado
+              </button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- Derecha: Resumen -->
+      <aside class="lg:col-span-4">
+        <div class="rounded-2xl border bg-white p-5 shadow-soft sticky top-24">
+          <h3 class="font-semibold text-lg">Resumen de la orden</h3>
+          <div id="itemsBox" class="mt-4 space-y-3"></div>
+          <div class="mt-4 space-y-2 text-sm">
+            <div class="flex items-center justify-between">
+              <span>Productos (<span id="count">0</span>)</span>
+              <span id="subtotal" class="font-medium">$0</span>
+            </div>
+            <div class="pt-2 mt-2 border-t flex items-center justify-between font-semibold text-slate-900">
+              <span>Total</span><span id="total">$0</span>
+            </div>
+          </div>
+          <p class="mt-3 text-[12px] text-slate-500">Las reservas se confirman por cada artículo y rango de fechas.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
+  <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
+
+  <script>
+    // ===== Helpers
+    const fmt = n => Number(n||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+
+    // ===== JWT + authFetch
+    const TOKEN_KEY='access', REFRESH_KEY='refresh';
+    const getToken = ()=> localStorage.getItem(TOKEN_KEY);
+    const getRefresh = ()=> localStorage.getItem(REFRESH_KEY);
+    const setTokens = ({access, refresh}) => { if(access) localStorage.setItem(TOKEN_KEY, access); if(refresh) localStorage.setItem(REFRESH_KEY, refresh); };
+
+    async function refreshAccessToken(){
+      const refresh = getRefresh(); if(!refresh) return null;
+      const r = await fetch('/api/token/refresh/', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh})});
+      if(!r.ok) return null; const d=await r.json(); if(d.access){ setTokens({access:d.access}); return d.access; } return null;
+    }
+    async function authFetch(url, opts={}){
+      const tk = getToken(); if(!tk){ location.replace('/login/?next=/checkout/'); throw new Error('No autenticado'); }
+      const h = new Headers(opts.headers||{}); h.set('Authorization',`Bearer ${tk}`); if(opts.body && !h.has('Content-Type')) h.set('Content-Type','application/json');
+      let resp = await fetch(url,{...opts,headers:h});
+      if(resp.status===401){ const na = await refreshAccessToken(); if(na){ h.set('Authorization',`Bearer ${na}`); resp=await fetch(url,{...opts,headers:h}); } }
+      return resp;
+    }
+
+    // ===== Cargar carrito en resumen
+    const itemsBox = document.getElementById('itemsBox');
+    const countEl = document.getElementById('count');
+    const subtotalEl = document.getElementById('subtotal');
+    const totalEl = document.getElementById('total');
+
+    async function loadSummary(){
+      try{
+        const r = await authFetch('/api/carrito/'); const items = await r.json();
+        countEl.textContent = items.length;
+        let sum = 0;
+        itemsBox.innerHTML = items.map(it=>{
+          sum += Number(it.total_estimado||0);
+          const img = it.articulo_portada
+            ? `<img src="${it.articulo_portada}" class="h-14 w-20 rounded object-cover border" alt="">`
+            : `<div class="h-14 w-20 rounded bg-slate-100 border"></div>`;
+          return `
+            <div class="flex gap-3 items-center">
+              ${img}
+              <div class="min-w-0 grow">
+                <div class="text-sm font-medium truncate">${it.articulo_titulo || 'Artículo'}</div>
+                <div class="text-xs text-slate-500">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
+              </div>
+              <div class="text-sm font-semibold">${fmt(it.total_estimado)}</div>
+            </div>`;
+        }).join('') || `<div class="text-sm text-slate-500">Tu carrito está vacío.</div>`;
+        subtotalEl.textContent = fmt(sum);
+        totalEl.textContent = fmt(sum);
+      }catch(e){
+        itemsBox.innerHTML = `<div class="text-red-600 text-sm">${e.message}</div>`;
+      }
+    }
+
+    // ===== UI métodos
+    const methods = document.querySelectorAll('.method');
+    const cardForm = document.getElementById('cardForm');
+    const altMethod = document.getElementById('altMethod');
+    const brandRow = document.getElementById('brandRow');
+    const altText = document.getElementById('altText');
+
+    function selectMethod(kind){
+      methods.forEach(m=>{
+        m.classList.remove('ring-2','ring-brand-100','bg-brand-50/40');
+        if(m.dataset.method===kind) m.classList.add('ring-2','ring-brand-100','bg-brand-50/40');
+      });
+      if(kind==='credit' || kind==='debit'){
+        cardForm.classList.remove('hidden');
+        altMethod.classList.add('hidden');
+        brandRow.classList.remove('hidden');
+      }else{
+        cardForm.classList.add('hidden');
+        altMethod.classList.remove('hidden');
+        brandRow.classList.add('hidden');
+        altText.textContent = (kind==='pse')
+          ? 'Te llevaremos al banco para completar el pago por PSE.'
+          : (kind==='addi')
+            ? 'Te redirigiremos a ADDI para solicitar el crédito y finalizar el pago.'
+            : 'Te redirigiremos a SisteCredito para continuar con tu financiación.';
+      }
+      selectedMethod = kind;
+    }
+
+    methods.forEach(btn=> btn.addEventListener('click', ()=> selectMethod(btn.dataset.method)));
+    let selectedMethod = 'credit'; // por defecto
+    selectMethod(selectedMethod);
+
+    // ===== Acciones de pago
+    document.getElementById('payBtn').addEventListener('click', ()=>{
+      // Validaciones mínimas de ejemplo
+      const num = document.getElementById('cardNumber').value.replace(/\s+/g,'');
+      const name = document.getElementById('cardName').value.trim();
+      const mm = document.getElementById('expMM').value.trim();
+      const yy = document.getElementById('expYY').value.trim();
+      const cvv = document.getElementById('cvv').value.trim();
+      if(num.length < 13 || !name || mm.length!==2 || yy.length!==2 || cvv.length<3){
+        alert('Completa los datos de la tarjeta.'); return;
+      }
+      // Aquí conectas tu pasarela / tokenización
+      alert('Simulación: pago con tarjeta listo para integrarse ✅');
+    });
+
+    document.getElementById('goAlt').addEventListener('click', ()=>{
+      // Redirecciones placeholder
+      if(selectedMethod==='pse') alert('Simulación: redirigir a PSE ✅');
+      if(selectedMethod==='addi') alert('Simulación: redirigir a ADDI ✅');
+      if(selectedMethod==='siste') alert('Simulación: redirigir a SisteCredito ✅');
+    });
+
+    // Init
+    loadSummary();
+  </script>
+</body>
+</html>
