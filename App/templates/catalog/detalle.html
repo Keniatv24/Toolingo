@@ -39,7 +39,7 @@
         <a href="/api/docs/" class="hover:text-brand-600">API</a>
         <a href="/publicar/" class="font-semibold hover:text-brand-600">Publicar</a>
 
-        <!-- Carrito -->
+        <!-- Carrito (redirige a /carrito/) -->
         <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
           🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
@@ -141,22 +141,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- ===== Carrito (panel) ===== -->
-  <div id="cartPanel" class="fixed inset-0 z-[70] hidden">
-    <div class="absolute inset-0 bg-black/30" data-close-cart="true"></div>
-    <aside class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-lift border-l flex flex-col">
-      <div class="px-5 py-4 border-b flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Mi carrito</h3>
-        <button class="p-2 rounded hover:bg-slate-100" data-close-cart="true">✕</button>
-      </div>
-      <div id="cartList" class="p-4 grow overflow-y-auto space-y-3 text-sm"></div>
-      <div class="p-4 border-t flex items-center justify-between">
-        <div class="text-slate-600">Total: <span id="cartTotal" class="font-bold text-slate-900">$0</span></div>
-        <button id="cartCheckout" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Confirmar pedido</button>
-      </div>
-    </aside>
   </div>
 
   <script>
@@ -307,7 +291,7 @@
       }catch(_){}
     });
 
-    // ====== Reserva (helpers) ======
+    // ====== Helpers reserva ======
     function daysBetween(d1, d2){
       const ms = (d2 - d1);
       const days = Math.floor(ms / (1000*60*60*24)) + 1;
@@ -333,12 +317,10 @@
 
     function getToken() { return localStorage.getItem(TOKEN_KEY) || null; }
     function getRefresh() { return localStorage.getItem(REFRESH_KEY) || null; }
-
     function setTokens({ access, refresh }) {
       if (access) localStorage.setItem(TOKEN_KEY, access);
       if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
     }
-
     async function refreshAccessToken() {
       const refresh = getRefresh();
       if (!refresh) return null;
@@ -352,8 +334,6 @@
       if (data.access) { setTokens({ access: data.access }); return data.access; }
       return null;
     }
-
-    /** authFetch: añade Bearer; si 401 por token vencido -> refresca y reintenta 1 vez */
     async function authFetch(url, options = {}) {
       const token = getToken();
       if (!token) {
@@ -362,9 +342,7 @@
       }
       const headers = new Headers(options.headers || {});
       headers.set('Authorization', `Bearer ${token}`);
-      if (options.body && !headers.has('Content-Type')) {
-        headers.set('Content-Type', 'application/json');
-      }
+      if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
       let resp = await fetch(url, { ...options, headers });
       if (resp.status === 401) {
         const newAccess = await refreshAccessToken();
@@ -375,10 +353,10 @@
       return resp;
     }
 
-    // ==== AUTH/Carrito API =====
+    // ==== Carrito API (sin panel) ====
     function requireLoginOrRedirect(){
       const t = getToken();
-      if (!t) { location.href = `/login/?next=${encodeURIComponent(location.pathname)}`; return false; }
+      if (!t) { location.href = `/login/?next=${encodeURIComponent('/carrito/')}`; return false; }
       return true;
     }
     async function apiGetCart(){
@@ -387,85 +365,32 @@
       return r.json();
     }
     async function apiAddToCart(item){
-      const r = await authFetch('/api/carrito/', {
-        method: 'POST',
-        body: JSON.stringify(item)
-      });
+      const r = await authFetch('/api/carrito/', { method:'POST', body: JSON.stringify(item) });
       if (!r.ok){
         const d = await r.json().catch(()=> ({}));
         throw new Error(d.detail || d.non_field_errors?.[0] || 'No se pudo agregar al carrito');
       }
       return r.json();
     }
-    async function apiDeleteCartItem(id){
-      const r = await authFetch(`/api/carrito/${id}/`, { method:'DELETE' });
-      if (!r.ok) throw new Error('No se pudo eliminar');
-    }
-    async function apiCheckout(){
-      const r = await authFetch('/api/carrito/checkout/', { method:'POST' });
-      if (!r.ok){
-        const d = await r.json().catch(()=> ({}));
-        throw new Error(d.detail || 'No se pudo confirmar el pedido');
-      }
-      return r.json();
-    }
 
-    // ==== UI carrito =====
-    const cartPanel = document.getElementById('cartPanel');
-    const cartList = document.getElementById('cartList');
-    const cartTotalEl = document.getElementById('cartTotal');
+    // ==== Navbar carrito: ir a /carrito/ + badge ====
+    const cartBtn = document.getElementById('cartBtn');
     const cartBadge = document.getElementById('cartBadge');
 
-    function openCart(){ cartPanel.classList.remove('hidden'); }
-    function closeCart(){ cartPanel.classList.add('hidden'); }
-
-    document.getElementById('cartBtn')?.addEventListener('click', async ()=>{
-      if (!requireLoginOrRedirect()) return;
-      await renderCart(); openCart();
-    });
-    cartPanel.addEventListener('click', e => {
-      if (e.target.matches('[data-close-cart], [data-close-cart] *')) closeCart();
+    cartBtn?.addEventListener('click', ()=>{
+      if (!getToken()) location.href = '/login/?next=/carrito/';
+      else location.href = '/carrito/';
     });
 
-    async function renderCart(){
+    // Inicializa badge si hay sesión
+    (async ()=>{
+      if (!getToken()) { cartBadge?.classList.add('hidden'); return; }
       try{
         const items = await apiGetCart();
         cartBadge.classList.toggle('hidden', items.length === 0);
         cartBadge.textContent = items.length;
-
-        let total = 0;
-        cartList.innerHTML = items.map(it => {
-          total += Number(it.total_estimado || 0);
-          const img = it.articulo_portada ? `<img src="${it.articulo_portada}" class="h-14 w-20 rounded object-cover border" />` : `<div class="h-14 w-20 rounded bg-slate-100 border"></div>`;
-          return `
-            <div class="flex gap-3 items-center">
-              ${img}
-              <div class="min-w-0 grow">
-                <div class="font-semibold truncate">${it.articulo_titulo || 'Artículo'}</div>
-                <div class="text-slate-500">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
-                <div class="font-medium">$${Number(it.total_estimado).toLocaleString('es-CO')}</div>
-              </div>
-              <button class="px-2 py-1 text-sm rounded border hover:bg-slate-50" data-del="${it.id}">Quitar</button>
-            </div>`;
-        }).join('') || `<div class="text-slate-500">Tu carrito está vacío.</div>`;
-
-        cartTotalEl.textContent = Number(total).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
-
-        cartList.querySelectorAll('[data-del]').forEach(btn=>{
-      btn.onclick = async () => { await apiDeleteCartItem(btn.dataset.del); await renderCart(); };
-        });
-      }catch(e){
-        cartList.innerHTML = `<div class="text-red-600">${e.message}</div>`;
-      }
-    }
-
-    document.getElementById('cartCheckout')?.addEventListener('click', async ()=>{
-      try{
-        const res = await apiCheckout();
-        await renderCart();
-        alert(`Listo 🎉  Reservas creadas: ${res.creados.length}${res.errores.length ? `, con errores en ${res.errores.length}` : ''}`);
-      }catch(e){ alert(e.message); }
-    });
+      }catch(_){}
+    })();
 
     // ====== Disponibilidad + Modal ======
     async function checkDisponibilidad(artId, d1, d2){
@@ -516,16 +441,7 @@
 
       f1.onchange = recalc; f2.onchange = recalc;
 
-      // cerrar modal
-      const closeHandler = (e) => {
-        if (e.target.matches('[data-close], [data-close] * , .bg-black\\/30')) {
-          modal.classList.add('hidden');
-          modal.removeEventListener('click', closeHandler);
-        }
-      };
-      modal.addEventListener('click', closeHandler);
-
-      // confirmar => agregar al carrito (requiere login)
+      // confirmar => agregar al carrito y redirigir a /carrito/
       document.getElementById('btnConfirmar').onclick = async () => {
         const v1 = f1.value, v2 = f2.value;
         if (!v1 || !v2){ setDispMessage(false, 'Selecciona inicio y fin'); return; }
@@ -545,11 +461,24 @@
           const payload = { articulo: art.id || ART_ID_SERVER, fecha_inicio: v1, fecha_fin: v2 };
           await apiAddToCart(payload);
 
-          setDispMessage(true, 'Agregado al carrito 🛒');
-          renderCart().catch(()=>{});
-          setTimeout(()=> modal.classList.add('hidden'), 500);
+          // Actualiza badge y redirige al carrito
+          try{
+            const items = await apiGetCart();
+            cartBadge.classList.toggle('hidden', items.length === 0);
+            cartBadge.textContent = items.length;
+          }catch(_){}
+          location.href = '/carrito/';
         }catch(err){ setDispMessage(false, err.message || 'No se pudo agregar'); }
       };
+
+      // cerrar modal
+      const closeHandler = (e) => {
+        if (e.target.matches('[data-close], [data-close] * , .bg-black\\/30')) {
+          modal.classList.add('hidden');
+          modal.removeEventListener('click', closeHandler);
+        }
+      };
+      modal.addEventListener('click', closeHandler);
     }
 
     loadArticulo();

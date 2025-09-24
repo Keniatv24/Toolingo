@@ -1,0 +1,231 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mi carrito – Toolingo</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { brand:{50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'} },
+        boxShadow:{ soft:'0 10px 30px rgba(15,23,42,.08)', lift:'0 16px 44px rgba(15,23,42,.14)'}
+      }}
+    }
+  </script>
+</head>
+<body class="bg-white text-slate-800">
+  <!-- NAV -->
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+      <a href="/" class="flex items-center gap-2">
+        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current">
+          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
+        </svg>
+        <span class="text-lg font-extrabold">Toolingo</span>
+      </a>
+      <nav class="hidden md:flex ml-auto items-center gap-6 text-sm">
+        <a href="/catalogo/" class="hover:text-brand-600">Productos</a>
+        <a href="/publicar/" class="font-semibold hover:text-brand-600">Publicar</a>
+        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
+          🛒 <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- CONTENIDO -->
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-2xl md:text-3xl font-bold">Carro</h1>
+    <p class="text-slate-600 mt-1"><span id="countProducts">0</span> producto(s)</p>
+
+    <div class="mt-6 grid lg:grid-cols-12 gap-6">
+      <!-- Lista -->
+      <section class="lg:col-span-8">
+        <div class="rounded-2xl border bg-white shadow-soft">
+          <!-- Header de grupo -->
+          <div class="px-4 sm:px-6 py-4 border-b flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <label class="inline-flex items-center gap-2 text-sm">
+                <input id="checkAll" type="checkbox" class="h-4 w-4 rounded border-slate-300">
+                <span>Seleccionar todos</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Items -->
+          <div id="cartList" class="divide-y"></div>
+        </div>
+      </section>
+
+      <!-- Resumen -->
+      <aside class="lg:col-span-4">
+        <div class="rounded-2xl border bg-white p-5 shadow-soft sticky top-24">
+          <h3 class="font-semibold text-lg">Resumen de la orden</h3>
+          <div class="mt-4 space-y-2 text-sm">
+            <div class="flex items-center justify-between">
+              <span>Productos (<span id="selCount">0</span>)</span>
+              <span id="subtotal" class="font-medium">$0</span>
+            </div>
+            <!-- Si agregas descuentos/impuestos, mételos aquí -->
+            <div class="pt-2 mt-2 border-t flex items-center justify-between font-semibold text-slate-900">
+              <span>Total</span>
+              <span id="total">$0</span>
+            </div>
+          </div>
+          <button id="btnCheckout" class="mt-5 w-full px-4 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            Continuar compra
+          </button>
+          <p class="mt-2 text-[12px] text-slate-500">Las reservas se confirman por cada artículo y rango de fechas.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
+  <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
+
+  <script>
+    // ===== Helpers monetarios
+    const fmt = n => Number(n||0).toLocaleString('es-CO', {style:'currency', currency:'COP', maximumFractionDigits:0});
+
+    // ===== JWT + authFetch (auto-refresh)
+    const TOKEN_KEY='access', REFRESH_KEY='refresh';
+    const getToken = ()=> localStorage.getItem(TOKEN_KEY);
+    const getRefresh = ()=> localStorage.getItem(REFRESH_KEY);
+    const setTokens = ({access, refresh}) => { if(access) localStorage.setItem(TOKEN_KEY, access); if(refresh) localStorage.setItem(REFRESH_KEY, refresh); };
+
+    async function refreshAccessToken(){
+      const refresh = getRefresh(); if(!refresh) return null;
+      const r = await fetch('/api/token/refresh/', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ refresh })});
+      if(!r.ok) return null;
+      const data = await r.json(); if(data.access){ setTokens({access:data.access}); return data.access; }
+      return null;
+    }
+    async function authFetch(url, opts={}){
+      const token = getToken();
+      if(!token){ location.replace('/login/?next=/carrito/'); throw new Error('No autenticado'); }
+      const headers = new Headers(opts.headers||{}); headers.set('Authorization', `Bearer ${token}`);
+      if(opts.body && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
+      let resp = await fetch(url, {...opts, headers});
+      if(resp.status === 401){
+        const na = await refreshAccessToken(); if(!na) return resp;
+        headers.set('Authorization', `Bearer ${na}`); resp = await fetch(url, {...opts, headers});
+      }
+      return resp;
+    }
+
+    // ===== API carrito
+    async function apiGetCart(){ const r=await authFetch('/api/carrito/'); if(!r.ok) throw new Error('No se pudo cargar'); return r.json(); }
+    async function apiDeleteCartItem(id){ const r=await authFetch(`/api/carrito/${id}/`,{method:'DELETE'}); if(!r.ok) throw new Error('Error al quitar'); }
+    async function apiCheckout(selectedIds){
+      // Si tu endpoint /checkout/ genera todas, puedes ignorar selectedIds; si no, podrías enviar {ids:[...]}
+      const r=await authFetch('/api/carrito/checkout/', {method:'POST'}); 
+      if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.detail||'No se pudo confirmar'); }
+      return r.json();
+    }
+
+    // ===== UI
+    const cartList = document.getElementById('cartList');
+    const checkAll = document.getElementById('checkAll');
+    const subtotalEl = document.getElementById('subtotal');
+    const totalEl = document.getElementById('total');
+    const selCountEl = document.getElementById('selCount');
+    const countProducts = document.getElementById('countProducts');
+    const cartBadge = document.getElementById('cartBadge');
+
+    let ITEMS = [];    // arreglo del API
+    let SELECTED = new Set(); // ids seleccionados
+
+    function render(){
+      // lista
+      cartList.innerHTML = ITEMS.map(it => {
+        const checked = SELECTED.has(it.id) ? 'checked' : '';
+        const img = it.articulo_portada
+          ? `<img src="${it.articulo_portada}" class="h-16 w-20 rounded object-cover border" alt="">`
+          : `<div class="h-16 w-20 rounded bg-slate-100 border"></div>`;
+        return `
+          <div class="px-4 sm:px-6 py-4 flex items-start gap-4">
+            <input type="checkbox" class="mt-2 h-4 w-4 rounded border-slate-300 item-check" data-id="${it.id}" ${checked}>
+            ${img}
+            <div class="min-w-0 grow">
+              <div class="font-semibold truncate" title="${it.articulo_titulo}">${it.articulo_titulo || 'Artículo'}</div>
+              <div class="text-sm text-slate-500">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
+              <div class="mt-1 font-semibold">${fmt(it.total_estimado)}</div>
+            </div>
+            <button class="px-3 py-1.5 text-sm rounded border hover:bg-slate-50 remove-btn" data-id="${it.id}">Quitar</button>
+          </div>`;
+      }).join('') || `<div class="px-6 py-10 text-slate-500 text-sm">Tu carrito está vacío.</div>`;
+
+      // contadores/badge
+      countProducts.textContent = ITEMS.length;
+      cartBadge?.classList.toggle('hidden', ITEMS.length===0);
+      if (cartBadge) cartBadge.textContent = String(ITEMS.length);
+
+      // totales
+      let sum = 0; SELECTED.forEach(id => {
+        const it = ITEMS.find(x=>x.id===id);
+        if(it) sum += Number(it.total_estimado||0);
+      });
+      const selCount = SELECTED.size;
+      selCountEl.textContent = selCount;
+      subtotalEl.textContent = fmt(sum);
+      totalEl.textContent = fmt(sum);
+
+      // checkAll estado
+      checkAll.checked = (selCount>0 && selCount===ITEMS.length);
+
+      // wire events item
+      cartList.querySelectorAll('.item-check').forEach(ch=>{
+        ch.onchange = ()=>{
+          const id = ch.dataset.id;
+          if(ch.checked) SELECTED.add(id); else SELECTED.delete(id);
+          render();
+        };
+      });
+      cartList.querySelectorAll('.remove-btn').forEach(btn=>{
+        btn.onclick = async ()=>{
+          await apiDeleteCartItem(btn.dataset.id);
+          await load(); // recarga lista
+        };
+      });
+
+      // checkout enable
+      document.getElementById('btnCheckout').disabled = SELECTED.size===0;
+    }
+
+    async function load(){
+      try{
+        ITEMS = await apiGetCart();
+        // por defecto: seleccionar todo
+        SELECTED = new Set(ITEMS.map(i=>i.id));
+        render();
+      }catch(e){
+        cartList.innerHTML = `<div class="px-6 py-10 text-red-600 text-sm">${e.message}</div>`;
+      }
+    }
+
+    // eventos
+    checkAll.onchange = ()=>{
+      if(checkAll.checked) SELECTED = new Set(ITEMS.map(i=>i.id));
+      else SELECTED.clear();
+      render();
+    };
+    document.getElementById('btnCheckout').onclick = async ()=>{
+      try{
+        await apiCheckout([...SELECTED]); // si tu backend soporta lista, úsala
+        await load();
+        alert('¡Listo! Reservas creadas.');
+      }catch(e){ alert(e.message); }
+    };
+
+    // Botón carrito del header → ya estás en carrito, pero lo mantenemos por consistencia
+    document.getElementById('cartBtn')?.addEventListener('click', ()=> location.href='/carrito/');
+
+    // kick-off (si no hay login, authFetch redirige)
+    load();
+  </script>
+</body>
+</html>

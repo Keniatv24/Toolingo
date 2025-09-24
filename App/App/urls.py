@@ -79,7 +79,9 @@ urlpatterns = [
     path("perfil/", TemplateView.as_view(template_name="users/perfil.html"), name="perfil"),
     path("perfil/editar/", TemplateView.as_view(template_name="users/perfil_editar.html"), name="perfil_editar"),
     path("articulo/<uuid:id>/", articulo_detalle, name="articulo_detalle"),
-
+    path("carrito/", TemplateView.as_view(template_name="cart/index.html"), name="carrito"),
 ]
+
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

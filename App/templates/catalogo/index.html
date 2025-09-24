@@ -32,12 +32,11 @@
         <a id="btnPublicar" href="/publicar/" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full font-semibold">
           Publicar
         </a>
-        <!-- Carrito en navbar -->
+        <!-- Carrito en navbar (redirige a /carrito/) -->
         <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
           🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
         </button>
-
       </nav>
 
       <!-- Área auth (derecha) -->
@@ -45,132 +44,66 @@
     </div>
   </header>
 
-  <!-- Panel Carrito -->
-  <div id="cartPanel" class="fixed inset-0 z-[70] hidden">
-    <div class="absolute inset-0 bg-black/30" data-close-cart="true"></div>
-    <aside class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-lift border-l flex flex-col">
-      <div class="px-5 py-4 border-b flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Mi carrito</h3>
-        <button class="p-2 rounded hover:bg-slate-100" data-close-cart="true">✕</button>
-      </div>
-      <div id="cartList" class="p-4 grow overflow-y-auto space-y-3 text-sm"></div>
-      <div class="p-4 border-t flex items-center justify-between">
-        <div class="text-slate-600">Total: <span id="cartTotal" class="font-bold text-slate-900">$0</span></div>
-        <button id="cartCheckout" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Confirmar pedido</button>
-      </div>
-    </aside>
-  </div>
-
   <script>
-    // Redirige "Publicar" a login si no hay token
+    // --- Publicar → login si no hay token ---
     (function(){
       const t = localStorage.getItem('access');
       const a = document.getElementById('btnPublicar');
       if (!t && a) a.href = '/login/?next=/publicar/';
     })();
 
-    // ===== JWT helpers + authFetch con auto-refresh =====
-    const TOKEN_KEY = 'access';
-    const REFRESH_KEY = 'refresh';
-
-    function getToken(){ return localStorage.getItem(TOKEN_KEY) || null; }
-    function getRefresh(){ return localStorage.getItem(REFRESH_KEY) || null; }
-    function setTokens({ access, refresh }){ if(access) localStorage.setItem(TOKEN_KEY, access); if(refresh) localStorage.setItem(REFRESH_KEY, refresh); }
+    // --- Helpers JWT + authFetch (para inicializar badge) ---
+    const TOKEN_KEY='access', REFRESH_KEY='refresh';
+    const getToken = ()=> localStorage.getItem(TOKEN_KEY);
+    const getRefresh = ()=> localStorage.getItem(REFRESH_KEY);
+    const setTokens = ({access, refresh}) => { if(access) localStorage.setItem(TOKEN_KEY, access); if(refresh) localStorage.setItem(REFRESH_KEY, refresh); };
 
     async function refreshAccessToken(){
       const refresh = getRefresh(); if(!refresh) return null;
-      const r = await fetch('/api/token/refresh/', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ refresh }) });
+      const r = await fetch('/api/token/refresh/', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ refresh })});
       if(!r.ok) return null;
-      const data = await r.json();
-      if(data.access){ setTokens({ access: data.access }); return data.access; }
+      const data = await r.json(); if(data.access){ setTokens({access:data.access}); return data.access; }
       return null;
     }
-
-    async function authFetch(url, options = {}){
+    async function authFetch(url, opts={}){
       const token = getToken();
-      if(!token){ location.href = `/login/?next=${encodeURIComponent(location.pathname + location.search)}`; throw new Error('No autenticado'); }
-      const headers = new Headers(options.headers || {});
+      if(!token) throw new Error('No autenticado');
+      const headers = new Headers(opts.headers||{});
       headers.set('Authorization', `Bearer ${token}`);
-      if(options.body && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
-      let resp = await fetch(url, { ...options, headers });
+      if(opts.body && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
+      let resp = await fetch(url, {...opts, headers});
       if(resp.status === 401){
-        const newAccess = await refreshAccessToken();
-        if(!newAccess) return resp;
-        headers.set('Authorization', `Bearer ${newAccess}`);
-        resp = await fetch(url, { ...options, headers });
+        const na = await refreshAccessToken(); if(!na) return resp;
+        headers.set('Authorization', `Bearer ${na}`); resp = await fetch(url, {...opts, headers});
       }
       return resp;
     }
 
-    // --------- Carrito API ---------
-    function requireLoginOrRedirect(){
-      const t = getToken(); if(!t){ location.href = `/login/?next=${encodeURIComponent(location.pathname + location.search)}`; return false; }
-      return true;
-    }
-    async function apiGetCart(){ const r = await authFetch('/api/carrito/'); if(!r.ok) throw new Error('No se pudo cargar el carrito'); return r.json(); }
-    async function apiDeleteCartItem(id){ const r = await authFetch(`/api/carrito/${id}/`, { method:'DELETE' }); if(!r.ok) throw new Error('No se pudo eliminar'); }
-    async function apiCheckout(){ const r = await authFetch('/api/carrito/checkout/', { method:'POST' }); if(!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.detail || 'No se pudo confirmar el pedido'); } return r.json(); }
-
-    // --------- Navbar Cart UI ---------
+    // --- Botón carrito: redirige a /carrito/ con login requerido ---
     const cartBtn = document.getElementById('cartBtn');
     const cartBadge = document.getElementById('cartBadge');
-    const cartPanel = document.getElementById('cartPanel');
-    const cartList = document.getElementById('cartList');
-    const cartTotalEl = document.getElementById('cartTotal');
 
-    function openCart(){ cartPanel.classList.remove('hidden'); }
-    function closeCart(){ cartPanel.classList.add('hidden'); }
-    cartPanel.addEventListener('click', e => { if (e.target.matches('[data-close-cart], [data-close-cart] *')) closeCart(); });
-
-    cartBtn?.addEventListener('click', async ()=>{
-      if(!requireLoginOrRedirect()) return;
-      await renderCart(); openCart();
+    cartBtn?.addEventListener('click', () => {
+      const t = getToken();
+      if (!t) location.href = '/login/?next=/carrito/';
+      else location.href = '/carrito/';
     });
 
-    async function renderCart(){
-      try{
-        const items = await apiGetCart();
-        // badge
+    // Inicializa badge si hay sesión
+    (async () => {
+      if (!getToken()) { cartBadge?.classList.add('hidden'); return; }
+      try {
+        const r = await authFetch('/api/carrito/');
+        if (!r.ok) return;
+        const items = await r.json();
         cartBadge.classList.toggle('hidden', items.length === 0);
         cartBadge.textContent = items.length;
+      } catch(_) {}
+    })();
 
-        let total = 0;
-        cartList.innerHTML = items.map(it=>{
-          total += Number(it.total_estimado || 0);
-          const img = it.articulo_portada ? `<img src="${it.articulo_portada}" class="h-14 w-20 rounded object-cover border" />` : `<div class="h-14 w-20 rounded bg-slate-100 border"></div>`;
-          return `
-            <div class="flex gap-3 items-center">
-              ${img}
-              <div class="min-w-0 grow">
-                <div class="font-semibold truncate">${it.articulo_titulo || 'Artículo'}</div>
-                <div class="text-slate-500">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
-                <div class="font-medium">$${Number(it.total_estimado).toLocaleString('es-CO')}</div>
-              </div>
-              <button class="px-2 py-1 text-sm rounded border hover:bg-slate-50" data-del="${it.id}">Quitar</button>
-            </div>`;
-        }).join('') || `<div class="text-slate-500">Tu carrito está vacío.</div>`;
-
-        cartTotalEl.textContent = Number(total).toLocaleString('es-CO', { style:'currency', currency:'COP', maximumFractionDigits:0 });
-
-        cartList.querySelectorAll('[data-del]').forEach(btn=>{
-          btn.onclick = async ()=>{ await apiDeleteCartItem(btn.dataset.del); await renderCart(); };
-        });
-      }catch(e){
-        cartList.innerHTML = `<div class="text-red-600">${e.message}</div>`;
-      }
-    }
-
-    document.getElementById('cartCheckout')?.addEventListener('click', async ()=>{
-      try{
-        const res = await apiCheckout();
-        await renderCart();
-        alert(`Listo 🎉  Reservas creadas: ${res.creados.length}${res.errores.length ? `, con errores en ${res.errores.length}` : ''}`);
-      }catch(e){ alert(e.message); }
-    });
-
-    // Render de botón/login o menú de usuario (bonito y a la derecha)
+    // --- Render de botón/login o menú de usuario (simple) ---
     (function(){
-      const access = localStorage.getItem('access');
+      const access = getToken();
       const el = document.getElementById('authArea');
       if (!el) return;
 
@@ -180,7 +113,6 @@
         </svg>`;
 
       if (!access) {
-        // Estado: sin sesión → botón "Iniciar sesión"
         el.innerHTML = `
           <a href="/login/"
              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm
@@ -188,12 +120,9 @@
             ${iconUser}
             <span>Iniciar sesión</span>
           </a>`;
-        // Ocultar badge si no hay login
-        document.getElementById('cartBadge')?.classList.add('hidden');
         return;
       }
 
-      // Estado: con sesión → botón con menú
       const chevron = `
         <svg class="w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>`;
       el.innerHTML = `
@@ -221,16 +150,6 @@
       btn.addEventListener('click', toggle);
       document.addEventListener('click', closeOutside);
       out.addEventListener('click', logout);
-
-      // Inicializa badge del carrito cuando hay login
-      (async () => {
-        try{
-          const items = await apiGetCart();
-          const badge = document.getElementById('cartBadge');
-          badge.classList.toggle('hidden', items.length === 0);
-          badge.textContent = items.length;
-        }catch(_){}
-      })();
     })();
   </script>
 
@@ -394,7 +313,7 @@
             ${imgTag}
             <h3 class="font-semibold line-clamp-1">${a.titulo}</h3>
             <p class="text-sm text-slate-500">
-              ${a.ubicacion || ''} • $${fmt(a.precio_por_dia)}/día
+              ${a.ubicacion || ''} • $${Number(a.precio_por_dia||0).toLocaleString('es-CO')}/día
             </p>
           </a>
           <div class="mt-2 flex items-center justify-between text-sm">

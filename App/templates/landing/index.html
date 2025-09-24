@@ -25,20 +25,17 @@
     }
   </script>
 
-  <!-- Estilos extra -->
   <style>
-    /* Magnetic row */
     .rail { transition: transform 250ms cubic-bezier(.22,.61,.36,1), filter 250ms; will-change: transform; }
     .rail.has-hover > .card-pro:not(.is-hover) { opacity: .9; transform: translateY(0) scale(.985); filter: saturate(.95); }
     .card-pro { transition: transform 220ms cubic-bezier(.22,.61,.36,1), box-shadow 220ms, opacity 220ms, filter 220ms; will-change: transform, box-shadow, filter; }
     .card-pro.is-hover { transform: translateY(-6px); box-shadow: 0 14px 40px rgba(15,23,42,.12); filter: saturate(1.02); }
 
-    /* TOC lateral */
     .toc a { display:block; padding:.5rem .75rem; border-radius:.6rem; color:#334155; font-size:.925rem; }
     .toc a:hover { background:#f1f5f9; }
     .toc a.active { color:#ea580c; background:#fff7ed; font-weight:600; }
 
-    html { scroll-behavior: smooth; } /* fallback; clics tienen offset JS */
+    html { scroll-behavior: smooth; }
   </style>
 </head>
 <body class="text-slate-800 bg-white">
@@ -56,7 +53,7 @@
       <nav class="hidden md:flex gap-6 text-sm ml-auto items-center">
         <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600">Productos</a>
 
-        <!-- Carrito en navbar -->
+        <!-- Carrito en navbar (redirige a /carrito/) -->
         <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
           🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
@@ -119,16 +116,12 @@
 
   <!-- Contenido principal con sidebar -->
   <main class="max-w-6xl mx-auto px-4 mt-16 lg:grid lg:grid-cols-[270px_1fr] lg:gap-10">
-
-    <!-- TOC lateral (solo desktop) -->
     <aside class="toc sticky top-24 self-start hidden lg:block">
       <div class="bg-slate-60 border border-slate-200 rounded-xl p-4">
         <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">En esta página</div>
-
         <div class="relative pl-4">
           <div class="absolute left-0 top-0 w-1 rounded-full bg-slate-200 h-full"></div>
           <div id="tocProgress" class="absolute left-0 top-0 w-1 rounded-full bg-brand-600" style="height:0%"></div>
-
           <nav class="space-y-1">
             <a href="#como" data-target="como">¿Cómo funciona?</a>
             <a href="#servicios" data-target="servicios">Servicios principales</a>
@@ -138,15 +131,12 @@
       </div>
     </aside>
 
-    <!-- Columna de contenido -->
     <div class="min-w-0">
       <div class="h-12 lg:h-16"></div>
 
-      <!-- Cómo funciona -->
       <section id="como" class="py-16">
         <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">¿Cómo funciona Toolingo?</h2>
         <p class="mt-1 text-slate-600">Tres pasos sencillos para rentar o publicar:</p>
-
         <div id="gridComo" class="rail grid md:grid-cols-3 gap-6 mt-6">
           <div class="card-pro p-6 rounded-2xl border border-slate-200 bg-white shadow-soft">
             <div class="flex items-center gap-4 mb-3">
@@ -172,7 +162,6 @@
         </div>
       </section>
 
-      <!-- Servicios -->
       <section id="servicios" class="py-16">
         <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Servicios principales</h2>
         <p class="text-slate-600 mt-1">Alquila por día herramientas para construcción, jardinería y más.</p>
@@ -193,7 +182,6 @@
         </div>
       </section>
 
-      <!-- Destacados -->
       <section id="destacados" class="py-16">
         <div class="flex items-end justify-between">
           <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Artículos destacados</h2>
@@ -211,7 +199,6 @@
         </template>
       </section>
 
-      <!-- CTA -->
       <section class="py-16 bg-brand-600 text-white rounded-2xl mb-16">
         <div class="px-6 md:px-10 text-center">
           <h2 class="text-3xl font-bold tracking-tight">¿Listo para publicar o alquilar?</h2>
@@ -227,33 +214,15 @@
     </div>
   </main>
 
-  <!-- Panel Carrito -->
-  <div id="cartPanel" class="fixed inset-0 z-[70] hidden">
-    <div class="absolute inset-0 bg-black/30" data-close-cart="true"></div>
-    <aside class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-lift border-l flex flex-col">
-      <div class="px-5 py-4 border-b flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Mi carrito</h3>
-        <button class="p-2 rounded hover:bg-slate-100" data-close-cart="true">✕</button>
-      </div>
-      <div id="cartList" class="p-4 grow overflow-y-auto space-y-3 text-sm"></div>
-      <div class="p-4 border-t flex items-center justify-between">
-        <div class="text-slate-600">Total: <span id="cartTotal" class="font-bold text-slate-900">$0</span></div>
-        <button id="cartCheckout" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Confirmar pedido</button>
-      </div>
-    </aside>
-  </div>
-
   <!-- JS -->
   <script>
     const fmtCOP = n => Number(n||0).toLocaleString('es-CO');
 
-    // ===== JWT helpers + authFetch con auto-refresh (reutilizable) =====
-    const TOKEN_KEY = 'access';
-    const REFRESH_KEY = 'refresh';
-
-    function getToken(){ return localStorage.getItem(TOKEN_KEY) || null; }
-    function getRefresh(){ return localStorage.getItem(REFRESH_KEY) || null; }
-    function setTokens({ access, refresh }){ if(access) localStorage.setItem(TOKEN_KEY, access); if(refresh) localStorage.setItem(REFRESH_KEY, refresh); }
+    // ===== JWT helpers + authFetch =====
+    const TOKEN_KEY='access', REFRESH_KEY='refresh';
+    const getToken = ()=> localStorage.getItem(TOKEN_KEY) || null;
+    const getRefresh = ()=> localStorage.getItem(REFRESH_KEY) || null;
+    const setTokens = ({access, refresh}) => { if(access) localStorage.setItem(TOKEN_KEY, access); if(refresh) localStorage.setItem(REFRESH_KEY, refresh); };
 
     async function refreshAccessToken(){
       const refresh = getRefresh(); if(!refresh) return null;
@@ -262,108 +231,52 @@
       if(data.access){ setTokens({ access:data.access }); return data.access; }
       return null;
     }
-
     async function authFetch(url, options = {}){
       const token = getToken();
-      if(!token){ location.href = `/login/?next=${encodeURIComponent(location.pathname)}`; throw new Error('No autenticado'); }
+      if(!token){ throw new Error('No autenticado'); }
       const headers = new Headers(options.headers || {});
       headers.set('Authorization', `Bearer ${token}`);
       if(options.body && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
       let resp = await fetch(url, { ...options, headers });
       if(resp.status === 401){
-        const newAccess = await refreshAccessToken();
-        if(!newAccess) return resp;
-        headers.set('Authorization', `Bearer ${newAccess}`);
+        const na = await refreshAccessToken(); if(!na) return resp;
+        headers.set('Authorization', `Bearer ${na}`);
         resp = await fetch(url, { ...options, headers });
       }
       return resp;
     }
 
-    // --------- Carrito API ---------
-    function requireLoginOrRedirect(){
-      const t = getToken(); if(!t){ location.href = `/login/?next=${encodeURIComponent(location.pathname)}`; return false; }
-      return true;
-    }
-    async function apiGetCart(){ const r = await authFetch('/api/carrito/'); if(!r.ok) throw new Error('No se pudo cargar el carrito'); return r.json(); }
-    async function apiDeleteCartItem(id){ const r = await authFetch(`/api/carrito/${id}/`, { method:'DELETE' }); if(!r.ok) throw new Error('No se pudo eliminar'); }
-    async function apiCheckout(){ const r = await authFetch('/api/carrito/checkout/', { method:'POST' }); if(!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.detail || 'No se pudo confirmar el pedido'); } return r.json(); }
-
-    // --------- Navbar Cart UI ---------
+    // ---- Botón carrito: ruta /carrito/ con login requerido + badge ----
     const cartBtn = document.getElementById('cartBtn');
     const cartBadge = document.getElementById('cartBadge');
-    const cartPanel = document.getElementById('cartPanel');
-    const cartList = document.getElementById('cartList');
-    const cartTotalEl = document.getElementById('cartTotal');
 
-    function openCart(){ cartPanel.classList.remove('hidden'); }
-    function closeCart(){ cartPanel.classList.add('hidden'); }
-    cartPanel.addEventListener('click', e => { if (e.target.matches('[data-close-cart], [data-close-cart] *')) closeCart(); });
-
-    cartBtn?.addEventListener('click', async ()=>{
-      if(!requireLoginOrRedirect()) return;
-      await renderCart(); openCart();
+    cartBtn?.addEventListener('click', () => {
+      if (!getToken()) location.href = '/login/?next=/carrito/';
+      else location.href = '/carrito/';
     });
 
-    async function renderCart(){
-      try{
-        const items = await apiGetCart();
+    (async ()=> {
+      if (!getToken()) { cartBadge?.classList.add('hidden'); return; }
+      try {
+        const r = await authFetch('/api/carrito/');
+        if (!r.ok) return;
+        const items = await r.json();
         cartBadge.classList.toggle('hidden', items.length === 0);
         cartBadge.textContent = items.length;
+      } catch(_) {}
+    })();
 
-        let total = 0;
-        cartList.innerHTML = items.map(it=>{
-          total += Number(it.total_estimado || 0);
-          const img = it.articulo_portada ? `<img src="${it.articulo_portada}" class="h-14 w-20 rounded object-cover border" />` : `<div class="h-14 w-20 rounded bg-slate-100 border"></div>`;
-          return `
-            <div class="flex gap-3 items-center">
-              ${img}
-              <div class="min-w-0 grow">
-                <div class="font-semibold truncate">${it.articulo_titulo || 'Artículo'}</div>
-                <div class="text-slate-500">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
-                <div class="font-medium">$${Number(it.total_estimado).toLocaleString('es-CO')}</div>
-              </div>
-              <button class="px-2 py-1 text-sm rounded border hover:bg-slate-50" data-del="${it.id}">Quitar</button>
-            </div>`;
-        }).join('') || `<div class="text-slate-500">Tu carrito está vacío.</div>`;
-
-        cartTotalEl.textContent = Number(total).toLocaleString('es-CO', { style:'currency', currency:'COP', maximumFractionDigits:0 });
-
-        cartList.querySelectorAll('[data-del]').forEach(btn=>{
-          btn.onclick = async ()=>{ await apiDeleteCartItem(btn.dataset.del); await renderCart(); };
-        });
-      }catch(e){
-        cartList.innerHTML = `<div class="text-red-600">${e.message}</div>`;
-      }
-    }
-
-    document.getElementById('cartCheckout')?.addEventListener('click', async ()=>{
-      try{
-        const res = await apiCheckout();
-        await renderCart();
-        alert(`Listo 🎉  Reservas creadas: ${res.creados.length}${res.errores.length ? `, con errores en ${res.errores.length}` : ''}`);
-      }catch(e){ alert(e.message); }
-    });
-
-    // --------- Búsqueda / Destacados / Efectos (igual que tenías) ---------
-    // Tarjeta de destacado -> enlace a /articulo/<id>/
+    // -------- Búsqueda / Destacados / Efectos (igual que tenías) --------
     function cardArticulo(a){
       const imgUrl = a.portada || (a.imagenes && a.imagenes[0]?.url) || null;
       const price  = a.precio_por_dia ? `$${fmtCOP(a.precio_por_dia)}/día` : '';
       const ubic   = a.ubicacion ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100">${a.ubicacion}</span>` : '';
-
       return `
         <article class="card-pro group rounded-2xl border border-slate-200 bg-white shadow-soft overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
           <a href="/articulo/${a.id}/" class="block" aria-label="Ver detalle de ${a.titulo}">
             <div class="relative">
-              ${
-                imgUrl
-                  ? `<img src="${imgUrl}" alt="${a.titulo}" class="w-full aspect-[16/10] object-cover">`
-                  : `<div class="w-full aspect-[16/10] bg-brand-100"></div>`
-              }
-              ${price ? `
-                <span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm shadow text-brand-700">
-                  ${price}
-                </span>` : ``}
+              ${imgUrl ? `<img src="${imgUrl}" alt="${a.titulo}" class="w-full aspect-[16/10] object-cover">` : `<div class="w-full aspect-[16/10] bg-brand-100"></div>`}
+              ${price ? `<span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm shadow text-brand-700">${price}</span>` : ``}
             </div>
             <div class="p-4">
               <h3 class="font-semibold tracking-tight line-clamp-1 group-hover:text-brand-700 transition">${a.titulo}</h3>
@@ -374,11 +287,9 @@
               </div>
             </div>
           </a>
-        </article>
-      `;
+        </article>`;
     }
 
-    // Búsqueda rápida
     const $searchForm = document.getElementById('searchForm');
     const $searchInput = document.getElementById('searchInput');
     const $searchResults = document.getElementById('searchResults');
@@ -386,16 +297,10 @@
     function miniCard(a){
       const price = a.precio_por_dia ? `$${fmtCOP(a.precio_por_dia)}/día` : '';
       return `
-        <a href="/articulo/${a.id}/"
-           class="block rounded-xl border p-3 hover:shadow-md transition group"
-           aria-label="Ver detalle de ${a.titulo}">
+        <a href="/articulo/${a.id}/" class="block rounded-xl border p-3 hover:shadow-md transition group" aria-label="Ver detalle de ${a.titulo}">
           <div class="flex items-start gap-3">
             <div class="h-12 w-12 rounded-lg bg-slate-100 overflow-hidden">
-              ${
-                a.portada || (a.imagenes && a.imagenes[0]?.url)
-                  ? `<img src="${a.portada || a.imagenes[0]?.url}" alt="${a.titulo}" class="h-full w-full object-cover" />`
-                  : ``
-              }
+              ${a.portada || (a.imagenes && a.imagenes[0]?.url) ? `<img src="${a.portada || a.imagenes[0]?.url}" alt="${a.titulo}" class="h-full w-full object-cover" />` : ``}
             </div>
             <div class="min-w-0">
               <div class="text-sm font-semibold line-clamp-1 group-hover:text-brand-700">${a.titulo}</div>
@@ -405,96 +310,59 @@
               </div>
             </div>
           </div>
-        </a>
-      `;
+        </a>`;
     }
 
     async function buscar(q){
-      if(!q || q.trim().length < 2){
-        $searchResults.innerHTML = '';
-        return;
-      }
+      if(!q || q.trim().length < 2){ $searchResults.innerHTML = ''; return; }
       $searchResults.innerHTML = `
         <div class="rounded-xl border p-4">
           <div class="animate-pulse h-4 w-1/2 bg-slate-100 rounded"></div>
           <div class="animate-pulse h-4 w-1/3 bg-slate-100 rounded mt-2"></div>
         </div>`;
-
       try{
         let r = await fetch('/api/articulos/?ordering=-creado&search=' + encodeURIComponent(q));
         let items = await r.json();
-
         if(!Array.isArray(items)){
           const r2 = await fetch('/api/articulos/?ordering=-creado');
           const all = await r2.json();
           items = Array.isArray(all) ? all : [];
         }
-
         const needle = q.toLowerCase();
-        const filtrados = items
-          .filter(a => {
-            const t = (a.titulo || '').toLowerCase();
-            const d = (a.descripcion || '').toLowerCase?.() || '';
-            return t.includes(needle) || d.includes?.(needle);
-          })
-          .slice(0, 5);
-
+        const filtrados = items.filter(a => ((a.titulo||'').toLowerCase().includes(needle)) || ((a.descripcion||'').toLowerCase?.().includes?.(needle))).slice(0,5);
         if(filtrados.length === 0){
-          $searchResults.innerHTML = `
-            <div class="rounded-xl border p-4 text-sm text-slate-500">
-              Sin resultados para <span class="font-semibold">"${q}"</span>.
-            </div>`;
+          $searchResults.innerHTML = `<div class="rounded-xl border p-4 text-sm text-slate-500">Sin resultados para <span class="font-semibold">"${q}"</span>.</div>`;
           return;
         }
-
         $searchResults.innerHTML = filtrados.map(miniCard).join('') +
-          `<div class="text-xs text-slate-500">
-             <a class="text-brand-700 hover:underline" href="/catalogo/?q=${encodeURIComponent(q)}">Ver más resultados</a>
-           </div>`;
-      }catch(e){
-        $searchResults.innerHTML = `
-          <div class="rounded-xl border p-4 text-red-600 text-sm">
-            No se pudieron cargar los resultados.
-          </div>`;
+          `<div class="text-xs text-slate-500"><a class="text-brand-700 hover:underline" href="/catalogo/?q=${encodeURIComponent(q)}">Ver más resultados</a></div>`;
+      }catch(_){
+        $searchResults.innerHTML = `<div class="rounded-xl border p-4 text-red-600 text-sm">No se pudieron cargar los resultados.</div>`;
       }
     }
 
-    $searchForm?.addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      buscar($searchInput.value);
-    });
-    $searchInput?.addEventListener('input', (e) => {
-      const q = e.target.value;
-      clearTimeout($searchInput._t);
-      $searchInput._t = setTimeout(() => buscar(q), 250);
-    });
+    $searchForm?.addEventListener('submit', (ev) => { ev.preventDefault(); buscar($searchInput.value); });
+    $searchInput?.addEventListener('input', (e) => { const q = e.target.value; clearTimeout($searchInput._t); $searchInput._t = setTimeout(() => buscar(q), 250); });
 
-    // Destacados
     async function loadDestacados(){
       const grid = document.getElementById('gridDest');
       grid.innerHTML = '';
-      for(let i=0;i<6;i++){
-        grid.append(document.getElementById('card-skeleton').content.cloneNode(true));
-      }
+      for(let i=0;i<6;i++){ grid.append(document.getElementById('card-skeleton').content.cloneNode(true)); }
       try{
         const r = await fetch('/api/articulos/?ordering=-creado');
         let items = await r.json();
         items = items.slice(0,6);
         if(!Array.isArray(items) || items.length === 0){
-          grid.innerHTML = `
-            <div class="col-span-full text-center text-slate-500 border rounded-2xl py-10">
-              Aún no hay artículos publicados. <a class="text-brand-700 hover:underline" href="/publicar/">¡Publica el primero!</a>
-            </div>`;
+          grid.innerHTML = `<div class="col-span-full text-center text-slate-500 border rounded-2xl py-10">Aún no hay artículos publicados. <a class="text-brand-700 hover:underline" href="/publicar/">¡Publica el primero!</a></div>`;
           return;
         }
         grid.innerHTML = items.map(cardArticulo).join('');
-      }catch(e){
+      }catch(_){
         grid.innerHTML = `<div class="col-span-full text-center text-red-600">No se pudieron cargar los artículos.</div>`;
       }
     }
     loadDestacados();
 
-    // Magnetic Row
     function setupRailMotion(railId) {
       const rail = document.getElementById(railId);
       if (!rail) return;
@@ -522,7 +390,6 @@
     setupRailMotion('gridServicios');
     setupRailMotion('gridDest');
 
-    // Scroll-Spy + Progreso en TOC
     (function(){
       const headerOffset = 80;
       const links = Array.from(document.querySelectorAll('.toc a'));
@@ -569,91 +436,73 @@
       window.addEventListener('resize', updateProgress);
     })();
 
-    // -------- User Menu (autenticación) --------
+    // -------- User Menu --------
     (async function renderUserMenu(){
       const mount = document.getElementById('userMenuMount');
       if (!mount) return;
 
-      const access = localStorage.getItem('access');
-
+      const access = getToken();
       const html = String.raw;
-      const logout = () => {
-        localStorage.removeItem('access');
-        localStorage.removeItem('refresh');
-        location.replace('/');
-      };
+      const logout = () => { localStorage.removeItem('access'); localStorage.removeItem('refresh'); location.replace('/'); };
 
       if (!access) {
         mount.innerHTML = html`
           <div class="flex items-center gap-3">
             <a href="/login/" class="px-3 py-1.5 rounded-lg border transition hover:bg-slate-50">Iniciar sesión</a>
             <a href="/registro/" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white transition hover:bg-brand-700">Registrarse</a>
-          </div>
-        `;
-        // oculta badge si no hay login
+          </div>`;
         document.getElementById('cartBadge')?.classList.add('hidden');
         return;
       }
 
-      // Con sesión → obtener nombre visible
       let displayName = '';
       try {
         const r1 = await authFetch('/api/perfiles/me/');
-        if (r1.ok) {
-          const p = await r1.json();
-          displayName = (p.nombre_completo || '').trim();
-        }
+        if (r1.ok) { const p = await r1.json(); displayName = (p.nombre_completo || '').trim(); }
       } catch (_) {}
-
       if (!displayName) {
         try {
           const r2 = await authFetch('/api/users/me/');
-          if (r2.ok) {
-            const u = await r2.json();
-            displayName = (u.nombre || u.email || '').trim();
-          }
+          if (r2.ok) { const u = await r2.json(); displayName = (u.nombre || u.email || '').trim(); }
         } catch (_) {}
       }
-
       if (!displayName) displayName = 'Mi cuenta';
 
       mount.innerHTML = html`
-        <button id="btnUser"
-                class="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition hover:bg-slate-50">
+        <button id="btnUser" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition hover:bg-slate-50">
           <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-semibold">👤</span>
           <span class="text-sm font-medium">${displayName}</span>
           <svg class="w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
         </button>
-
         <div id="menuUser" class="absolute right-0 mt-2 w-56 rounded-2xl border bg-white shadow-lg p-2 hidden">
           <a href="/perfil/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Mi perfil</a>
           <a href="/perfil/editar/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Editar perfil</a>
           <a href="/publicar/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Publicar artículo</a>
           <button id="logoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-slate-50 text-red-600">Cerrar sesión</button>
-        </div>
-      `;
+        </div>`;
 
       const btn = document.getElementById('btnUser');
       const menu = document.getElementById('menuUser');
       const out  = document.getElementById('logoutBtn');
-
       const toggle = () => menu.classList.toggle('hidden');
-      const closeOnClickOutside = (e) => {
-        if (!menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
-      };
+      const closeOnClickOutside = (e) => { if (!menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden'); };
 
       btn.addEventListener('click', toggle);
       document.addEventListener('click', closeOnClickOutside);
       out.addEventListener('click', logout);
 
-      // Cargar contador del carrito si hay sesión
+      // Badge carrito al iniciar sesión
       try{
-        const items = await apiGetCart();
-        const badge = document.getElementById('cartBadge');
-        badge.classList.toggle('hidden', items.length === 0);
-        badge.textContent = items.length;
+        const r = await authFetch('/api/carrito/');
+        if (r.ok) {
+          const items = await r.json();
+          const badge = document.getElementById('cartBadge');
+          badge.classList.toggle('hidden', items.length === 0);
+          badge.textContent = items.length;
+        }
       }catch(_){}
     })();
   </script>
 </body>
 </html>
+
