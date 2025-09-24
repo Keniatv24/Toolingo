@@ -53,8 +53,14 @@
         <span class="text-xl font-extrabold">Toolingo</span>
       </a>
 
-      <nav class="hidden md:flex gap-6 text-sm ml-auto">
+      <nav class="hidden md:flex gap-6 text-sm ml-auto items-center">
         <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600">Productos</a>
+
+        <!-- Carrito en navbar -->
+        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
+          🛒
+          <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
+        </button>
       </nav>
 
       <!-- User menu mount point -->
@@ -221,10 +227,124 @@
     </div>
   </main>
 
+  <!-- Panel Carrito -->
+  <div id="cartPanel" class="fixed inset-0 z-[70] hidden">
+    <div class="absolute inset-0 bg-black/30" data-close-cart="true"></div>
+    <aside class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-lift border-l flex flex-col">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Mi carrito</h3>
+        <button class="p-2 rounded hover:bg-slate-100" data-close-cart="true">✕</button>
+      </div>
+      <div id="cartList" class="p-4 grow overflow-y-auto space-y-3 text-sm"></div>
+      <div class="p-4 border-t flex items-center justify-between">
+        <div class="text-slate-600">Total: <span id="cartTotal" class="font-bold text-slate-900">$0</span></div>
+        <button id="cartCheckout" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Confirmar pedido</button>
+      </div>
+    </aside>
+  </div>
+
   <!-- JS -->
   <script>
     const fmtCOP = n => Number(n||0).toLocaleString('es-CO');
 
+    // ===== JWT helpers + authFetch con auto-refresh (reutilizable) =====
+    const TOKEN_KEY = 'access';
+    const REFRESH_KEY = 'refresh';
+
+    function getToken(){ return localStorage.getItem(TOKEN_KEY) || null; }
+    function getRefresh(){ return localStorage.getItem(REFRESH_KEY) || null; }
+    function setTokens({ access, refresh }){ if(access) localStorage.setItem(TOKEN_KEY, access); if(refresh) localStorage.setItem(REFRESH_KEY, refresh); }
+
+    async function refreshAccessToken(){
+      const refresh = getRefresh(); if(!refresh) return null;
+      const r = await fetch('/api/token/refresh/', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ refresh }) });
+      if(!r.ok) return null; const data = await r.json();
+      if(data.access){ setTokens({ access:data.access }); return data.access; }
+      return null;
+    }
+
+    async function authFetch(url, options = {}){
+      const token = getToken();
+      if(!token){ location.href = `/login/?next=${encodeURIComponent(location.pathname)}`; throw new Error('No autenticado'); }
+      const headers = new Headers(options.headers || {});
+      headers.set('Authorization', `Bearer ${token}`);
+      if(options.body && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
+      let resp = await fetch(url, { ...options, headers });
+      if(resp.status === 401){
+        const newAccess = await refreshAccessToken();
+        if(!newAccess) return resp;
+        headers.set('Authorization', `Bearer ${newAccess}`);
+        resp = await fetch(url, { ...options, headers });
+      }
+      return resp;
+    }
+
+    // --------- Carrito API ---------
+    function requireLoginOrRedirect(){
+      const t = getToken(); if(!t){ location.href = `/login/?next=${encodeURIComponent(location.pathname)}`; return false; }
+      return true;
+    }
+    async function apiGetCart(){ const r = await authFetch('/api/carrito/'); if(!r.ok) throw new Error('No se pudo cargar el carrito'); return r.json(); }
+    async function apiDeleteCartItem(id){ const r = await authFetch(`/api/carrito/${id}/`, { method:'DELETE' }); if(!r.ok) throw new Error('No se pudo eliminar'); }
+    async function apiCheckout(){ const r = await authFetch('/api/carrito/checkout/', { method:'POST' }); if(!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.detail || 'No se pudo confirmar el pedido'); } return r.json(); }
+
+    // --------- Navbar Cart UI ---------
+    const cartBtn = document.getElementById('cartBtn');
+    const cartBadge = document.getElementById('cartBadge');
+    const cartPanel = document.getElementById('cartPanel');
+    const cartList = document.getElementById('cartList');
+    const cartTotalEl = document.getElementById('cartTotal');
+
+    function openCart(){ cartPanel.classList.remove('hidden'); }
+    function closeCart(){ cartPanel.classList.add('hidden'); }
+    cartPanel.addEventListener('click', e => { if (e.target.matches('[data-close-cart], [data-close-cart] *')) closeCart(); });
+
+    cartBtn?.addEventListener('click', async ()=>{
+      if(!requireLoginOrRedirect()) return;
+      await renderCart(); openCart();
+    });
+
+    async function renderCart(){
+      try{
+        const items = await apiGetCart();
+        cartBadge.classList.toggle('hidden', items.length === 0);
+        cartBadge.textContent = items.length;
+
+        let total = 0;
+        cartList.innerHTML = items.map(it=>{
+          total += Number(it.total_estimado || 0);
+          const img = it.articulo_portada ? `<img src="${it.articulo_portada}" class="h-14 w-20 rounded object-cover border" />` : `<div class="h-14 w-20 rounded bg-slate-100 border"></div>`;
+          return `
+            <div class="flex gap-3 items-center">
+              ${img}
+              <div class="min-w-0 grow">
+                <div class="font-semibold truncate">${it.articulo_titulo || 'Artículo'}</div>
+                <div class="text-slate-500">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
+                <div class="font-medium">$${Number(it.total_estimado).toLocaleString('es-CO')}</div>
+              </div>
+              <button class="px-2 py-1 text-sm rounded border hover:bg-slate-50" data-del="${it.id}">Quitar</button>
+            </div>`;
+        }).join('') || `<div class="text-slate-500">Tu carrito está vacío.</div>`;
+
+        cartTotalEl.textContent = Number(total).toLocaleString('es-CO', { style:'currency', currency:'COP', maximumFractionDigits:0 });
+
+        cartList.querySelectorAll('[data-del]').forEach(btn=>{
+          btn.onclick = async ()=>{ await apiDeleteCartItem(btn.dataset.del); await renderCart(); };
+        });
+      }catch(e){
+        cartList.innerHTML = `<div class="text-red-600">${e.message}</div>`;
+      }
+    }
+
+    document.getElementById('cartCheckout')?.addEventListener('click', async ()=>{
+      try{
+        const res = await apiCheckout();
+        await renderCart();
+        alert(`Listo 🎉  Reservas creadas: ${res.creados.length}${res.errores.length ? `, con errores en ${res.errores.length}` : ''}`);
+      }catch(e){ alert(e.message); }
+    });
+
+    // --------- Búsqueda / Destacados / Efectos (igual que tenías) ---------
     // Tarjeta de destacado -> enlace a /articulo/<id>/
     function cardArticulo(a){
       const imgUrl = a.portada || (a.imagenes && a.imagenes[0]?.url) || null;
@@ -263,7 +383,6 @@
     const $searchInput = document.getElementById('searchInput');
     const $searchResults = document.getElementById('searchResults');
 
-    // Resultados del buscador -> enlace al detalle
     function miniCard(a){
       const price = a.precio_por_dia ? `$${fmtCOP(a.precio_por_dia)}/día` : '';
       return `
@@ -471,25 +590,30 @@
             <a href="/registro/" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white transition hover:bg-brand-700">Registrarse</a>
           </div>
         `;
+        // oculta badge si no hay login
+        document.getElementById('cartBadge')?.classList.add('hidden');
         return;
       }
 
       // Con sesión → obtener nombre visible
       let displayName = '';
       try {
-        const r1 = await fetch('/api/perfiles/me/', { headers: { Authorization: `Bearer ${access}` }});
+        const r1 = await authFetch('/api/perfiles/me/');
         if (r1.ok) {
           const p = await r1.json();
           displayName = (p.nombre_completo || '').trim();
         }
-        if (!displayName) {
-          const r2 = await fetch('/api/users/me/', { headers: { Authorization: `Bearer ${access}` }});
+      } catch (_) {}
+
+      if (!displayName) {
+        try {
+          const r2 = await authFetch('/api/users/me/');
           if (r2.ok) {
             const u = await r2.json();
             displayName = (u.nombre || u.email || '').trim();
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
 
       if (!displayName) displayName = 'Mi cuenta';
 
@@ -521,6 +645,14 @@
       btn.addEventListener('click', toggle);
       document.addEventListener('click', closeOnClickOutside);
       out.addEventListener('click', logout);
+
+      // Cargar contador del carrito si hay sesión
+      try{
+        const items = await apiGetCart();
+        const badge = document.getElementById('cartBadge');
+        badge.classList.toggle('hidden', items.length === 0);
+        badge.textContent = items.length;
+      }catch(_){}
     })();
   </script>
 </body>
