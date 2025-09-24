@@ -34,7 +34,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 # ViewSets del proyecto
 from users.views import UserViewSet
 from catalog.views import CategoriaViewSet, ArticuloViewSet
-from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet
+from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet, CartItemViewSet
 
 
 
@@ -51,6 +51,7 @@ router.register(r"alquileres", AlquilerViewSet, basename="alquileres")
 router.register(r"pagos", PagoViewSet, basename="pagos")
 router.register(r"calificaciones", CalificacionViewSet, basename="calificaciones")
 router.register("perfiles", ProfileViewSet, basename="perfiles")
+router.register(r"carrito", CartItemViewSet, basename="carrito") 
 
 
 

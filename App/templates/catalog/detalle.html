@@ -38,6 +38,12 @@
         <a href="/catalogo/" class="font-semibold text-brand-700">Productos</a>
         <a href="/api/docs/" class="hover:text-brand-600">API</a>
         <a href="/publicar/" class="font-semibold hover:text-brand-600">Publicar</a>
+
+        <!-- Carrito -->
+        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
+          🛒
+          <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
+        </button>
       </nav>
     </div>
   </header>
@@ -131,26 +137,41 @@
 
         <div class="px-5 py-4 border-t flex gap-3 justify-end">
           <button type="button" class="px-4 py-2 rounded-lg border hover:bg-slate-50" data-close="true">Cancelar</button>
-          <button id="btnConfirmar" type="button" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Confirmar</button>
+          <button id="btnConfirmar" type="button" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Agregar al carrito</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- ===== Carrito (panel) ===== -->
+  <div id="cartPanel" class="fixed inset-0 z-[70] hidden">
+    <div class="absolute inset-0 bg-black/30" data-close-cart="true"></div>
+    <aside class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-lift border-l flex flex-col">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Mi carrito</h3>
+        <button class="p-2 rounded hover:bg-slate-100" data-close-cart="true">✕</button>
+      </div>
+      <div id="cartList" class="p-4 grow overflow-y-auto space-y-3 text-sm"></div>
+      <div class="p-4 border-t flex items-center justify-between">
+        <div class="text-slate-600">Total: <span id="cartTotal" class="font-bold text-slate-900">$0</span></div>
+        <button id="cartCheckout" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Confirmar pedido</button>
+      </div>
+    </aside>
+  </div>
+
   <script>
     // ========= DETALLE =========
-    const ART_ID_SERVER = "{{ articulo_id }}"; // string (uuid o int)
+    const ART_ID_SERVER = "{{ articulo_id }}";
     const fmt = n => Number(n||0).toLocaleString('es-CO');
-
     const ownerBox = document.getElementById('owner');
     let ARTICULO_CACHE = null;
 
     function getIdFromPath(){
-      const parts = location.pathname.split('/').filter(Boolean); // ["articulo","<id>"]
+      const parts = location.pathname.split('/').filter(Boolean);
       return parts[1] || "";
     }
 
-    // Busca por id directo, luego por slug, luego por search
+    // ----- Obtener artículo por id/slug -----
     async function fetchByIdOrSlug(idOrSlug){
       const direct = await fetch(`/api/articulos/${encodeURIComponent(idOrSlug)}/`);
       if (direct.ok) return direct.json();
@@ -169,6 +190,7 @@
       throw new Error('Articulo no encontrado');
     }
 
+    // ----- UI propietario -----
     function avatarHtml(nameLike){
       const txt = (nameLike || '').trim();
       const ini = txt ? txt[0].toUpperCase() : '👤';
@@ -179,10 +201,7 @@
       const info = a.propietario_info || {};
       const pObj = typeof a.propietario === 'object' ? a.propietario : {};
       const nombre =
-        info.nombre ||
-        a.propietario_nombre ||
-        pObj.nombre || pObj.full_name || pObj.username ||
-        a.dueno_nombre || '';
+        info.nombre || a.propietario_nombre || pObj.nombre || pObj.full_name || pObj.username || a.dueno_nombre || '';
       const email  = info.email || pObj.email || a.propietario_email || '';
       const tel    = info.telefono || pObj.telefono || pObj.phone || a.propietario_telefono || '';
       const ubi    = info.ubicacion || a.ubicacion_prop || '';
@@ -203,8 +222,8 @@
         </div>`;
     }
 
+    // ----- Render detalle -----
     function renderArticulo(a){
-      // Título / ubicación / precio
       document.getElementById('title').textContent = a.titulo || 'Artículo';
       const ubi = a.ubicacion || '';
       const price = a.precio_por_dia ? `$${fmt(a.precio_por_dia)}/día` : '';
@@ -213,10 +232,7 @@
       const pricePill = document.getElementById('pricePill');
       if (price){ pricePill.textContent = price; pricePill.classList.remove('hidden'); }
 
-      // Descripción
       document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.';
-
-      // Propietario
       renderOwner(a);
 
       // Galería
@@ -237,7 +253,6 @@
             <img src="${u}" class="w-full h-full object-cover" alt="Miniatura ${i+1}">
           </button>
         `).join('');
-
         thumbs.addEventListener('click', e=>{
           const b = e.target.closest('button.thumb'); if (!b) return;
           const idx = +b.dataset.i;
@@ -250,7 +265,6 @@
         thumbs.innerHTML = '';
       }
 
-      // Botones
       const reservarBtn = document.getElementById('reservarBtn');
       const artRef = a.id || ART_ID_SERVER;
       document.getElementById('contactarBtn').href = `/chat/?art=${encodeURIComponent(artRef)}`;
@@ -258,7 +272,7 @@
       reservarBtn.removeAttribute('href');
       reservarBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        openReservaModal(a); // ← abre el modal
+        openReservaModal(a);
       });
     }
 
@@ -293,7 +307,7 @@
       }catch(_){}
     });
 
-    // ====== Reserva (modal) ======
+    // ====== Reserva (helpers) ======
     function daysBetween(d1, d2){
       const ms = (d2 - d1);
       const days = Math.floor(ms / (1000*60*60*24)) + 1;
@@ -312,9 +326,148 @@
       el.textContent = text || '';
       el.className = "text-sm " + (ok ? "text-emerald-600" : "text-red-600");
     }
-    function getToken() {
-      return localStorage.getItem('access') || null; // adapta si usas otro storage
+
+    // ===== JWT helpers + authFetch con auto-refresh =====
+    const TOKEN_KEY = 'access';
+    const REFRESH_KEY = 'refresh';
+
+    function getToken() { return localStorage.getItem(TOKEN_KEY) || null; }
+    function getRefresh() { return localStorage.getItem(REFRESH_KEY) || null; }
+
+    function setTokens({ access, refresh }) {
+      if (access) localStorage.setItem(TOKEN_KEY, access);
+      if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
     }
+
+    async function refreshAccessToken() {
+      const refresh = getRefresh();
+      if (!refresh) return null;
+      const r = await fetch('/api/token/refresh/', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ refresh })
+      });
+      if (!r.ok) return null;
+      const data = await r.json();
+      if (data.access) { setTokens({ access: data.access }); return data.access; }
+      return null;
+    }
+
+    /** authFetch: añade Bearer; si 401 por token vencido -> refresca y reintenta 1 vez */
+    async function authFetch(url, options = {}) {
+      const token = getToken();
+      if (!token) {
+        location.href = `/login/?next=${encodeURIComponent(location.pathname)}`;
+        throw new Error('No autenticado');
+      }
+      const headers = new Headers(options.headers || {});
+      headers.set('Authorization', `Bearer ${token}`);
+      if (options.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
+      let resp = await fetch(url, { ...options, headers });
+      if (resp.status === 401) {
+        const newAccess = await refreshAccessToken();
+        if (!newAccess) return resp;
+        headers.set('Authorization', `Bearer ${newAccess}`);
+        resp = await fetch(url, { ...options, headers });
+      }
+      return resp;
+    }
+
+    // ==== AUTH/Carrito API =====
+    function requireLoginOrRedirect(){
+      const t = getToken();
+      if (!t) { location.href = `/login/?next=${encodeURIComponent(location.pathname)}`; return false; }
+      return true;
+    }
+    async function apiGetCart(){
+      const r = await authFetch('/api/carrito/');
+      if (!r.ok) throw new Error('No se pudo cargar el carrito');
+      return r.json();
+    }
+    async function apiAddToCart(item){
+      const r = await authFetch('/api/carrito/', {
+        method: 'POST',
+        body: JSON.stringify(item)
+      });
+      if (!r.ok){
+        const d = await r.json().catch(()=> ({}));
+        throw new Error(d.detail || d.non_field_errors?.[0] || 'No se pudo agregar al carrito');
+      }
+      return r.json();
+    }
+    async function apiDeleteCartItem(id){
+      const r = await authFetch(`/api/carrito/${id}/`, { method:'DELETE' });
+      if (!r.ok) throw new Error('No se pudo eliminar');
+    }
+    async function apiCheckout(){
+      const r = await authFetch('/api/carrito/checkout/', { method:'POST' });
+      if (!r.ok){
+        const d = await r.json().catch(()=> ({}));
+        throw new Error(d.detail || 'No se pudo confirmar el pedido');
+      }
+      return r.json();
+    }
+
+    // ==== UI carrito =====
+    const cartPanel = document.getElementById('cartPanel');
+    const cartList = document.getElementById('cartList');
+    const cartTotalEl = document.getElementById('cartTotal');
+    const cartBadge = document.getElementById('cartBadge');
+
+    function openCart(){ cartPanel.classList.remove('hidden'); }
+    function closeCart(){ cartPanel.classList.add('hidden'); }
+
+    document.getElementById('cartBtn')?.addEventListener('click', async ()=>{
+      if (!requireLoginOrRedirect()) return;
+      await renderCart(); openCart();
+    });
+    cartPanel.addEventListener('click', e => {
+      if (e.target.matches('[data-close-cart], [data-close-cart] *')) closeCart();
+    });
+
+    async function renderCart(){
+      try{
+        const items = await apiGetCart();
+        cartBadge.classList.toggle('hidden', items.length === 0);
+        cartBadge.textContent = items.length;
+
+        let total = 0;
+        cartList.innerHTML = items.map(it => {
+          total += Number(it.total_estimado || 0);
+          const img = it.articulo_portada ? `<img src="${it.articulo_portada}" class="h-14 w-20 rounded object-cover border" />` : `<div class="h-14 w-20 rounded bg-slate-100 border"></div>`;
+          return `
+            <div class="flex gap-3 items-center">
+              ${img}
+              <div class="min-w-0 grow">
+                <div class="font-semibold truncate">${it.articulo_titulo || 'Artículo'}</div>
+                <div class="text-slate-500">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
+                <div class="font-medium">$${Number(it.total_estimado).toLocaleString('es-CO')}</div>
+              </div>
+              <button class="px-2 py-1 text-sm rounded border hover:bg-slate-50" data-del="${it.id}">Quitar</button>
+            </div>`;
+        }).join('') || `<div class="text-slate-500">Tu carrito está vacío.</div>`;
+
+        cartTotalEl.textContent = Number(total).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+        cartList.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = async () => { await apiDeleteCartItem(btn.dataset.del); await renderCart(); };
+        });
+      }catch(e){
+        cartList.innerHTML = `<div class="text-red-600">${e.message}</div>`;
+      }
+    }
+
+    document.getElementById('cartCheckout')?.addEventListener('click', async ()=>{
+      try{
+        const res = await apiCheckout();
+        await renderCart();
+        alert(`Listo 🎉  Reservas creadas: ${res.creados.length}${res.errores.length ? `, con errores en ${res.errores.length}` : ''}`);
+      }catch(e){ alert(e.message); }
+    });
+
+    // ====== Disponibilidad + Modal ======
     async function checkDisponibilidad(artId, d1, d2){
       const from = d1.toISOString().slice(0,10);
       const to   = d2.toISOString().slice(0,10);
@@ -323,27 +476,7 @@
       if (!r.ok) throw new Error('No se pudo consultar disponibilidad');
       return r.json();
     }
-    async function postReserva(body){
-      const token = getToken();
-      if (!token){
-        location.href = `/login/?next=${encodeURIComponent(location.pathname)}`;
-        return;
-      }
-      const r = await fetch('/api/alquileres/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      });
-      if (!r.ok){
-        const data = await r.json().catch(()=> ({}));
-        const msg = data?.detail || data?.non_field_errors?.[0] || 'No se pudo crear la reserva';
-        throw new Error(msg);
-      }
-      return r.json();
-    }
+
     function openReservaModal(art){
       const modal = document.getElementById('reservaModal');
       modal.classList.remove('hidden');
@@ -365,10 +498,7 @@
         const v1 = f1.value, v2 = f2.value;
         if (!v1 || !v2) { return; }
         const d1 = toISODate(v1), d2 = toISODate(v2);
-        if (!d1 || !d2 || d2 < d1) {
-          setDispMessage(false, 'Rango inválido');
-          return;
-        }
+        if (!d1 || !d2 || d2 < d1) { setDispMessage(false, 'Rango inválido'); return; }
         try{
           const info = await checkDisponibilidad(art.id || ART_ID_SERVER, d1, d2);
           const ocupados = new Set(info.dias_ocupados || []);
@@ -377,22 +507,14 @@
             const iso = dt.toISOString().slice(0,10);
             if (ocupados.has(iso)) { hayOcupado = true; break; }
           }
-          if (hayOcupado){
-            setDispMessage(false, 'Fechas no disponibles');
-          } else {
-            setDispMessage(true, 'Fechas disponibles');
-          }
+          setDispMessage(!hayOcupado, hayOcupado ? 'Fechas no disponibles' : 'Fechas disponibles');
           const dias = daysBetween(d1, d2);
           document.getElementById('sumDias').textContent = dias;
           document.getElementById('sumTotal').textContent = formatCOP(dias * (art.precio_por_dia || 0));
-        }catch(e){
-          setDispMessage(false, 'No se pudo validar disponibilidad');
-          console.error(e);
-        }
+        }catch(e){ setDispMessage(false, 'No se pudo validar disponibilidad'); }
       };
 
-      f1.onchange = recalc;
-      f2.onchange = recalc;
+      f1.onchange = recalc; f2.onchange = recalc;
 
       // cerrar modal
       const closeHandler = (e) => {
@@ -403,38 +525,30 @@
       };
       modal.addEventListener('click', closeHandler);
 
-      // confirmar
+      // confirmar => agregar al carrito (requiere login)
       document.getElementById('btnConfirmar').onclick = async () => {
         const v1 = f1.value, v2 = f2.value;
         if (!v1 || !v2){ setDispMessage(false, 'Selecciona inicio y fin'); return; }
         const d1 = toISODate(v1), d2 = toISODate(v2);
         if (!d1 || !d2 || d2 < d1){ setDispMessage(false, 'Rango inválido'); return; }
+        if (!requireLoginOrRedirect()) return;
 
         try{
-          // revalidar justo antes de enviar
+          // revalidar disponibilidad antes de agregar
           const info = await checkDisponibilidad(art.id || ART_ID_SERVER, d1, d2);
           const ocupados = new Set(info.dias_ocupados || []);
           for (let dt = new Date(d1); dt <= d2; dt.setDate(dt.getDate()+1)){
             const iso = dt.toISOString().slice(0,10);
-            if (ocupados.has(iso)) { throw new Error('Fechas no disponibles'); }
+            if (ocupados.has(iso)) throw new Error('Fechas no disponibles');
           }
 
-          const payload = {
-            articulo: art.id || ART_ID_SERVER,
-            fecha_inicio: v1,
-            fecha_fin: v2
-          };
-          await postReserva(payload);
+          const payload = { articulo: art.id || ART_ID_SERVER, fecha_inicio: v1, fecha_fin: v2 };
+          await apiAddToCart(payload);
 
-          setDispMessage(true, 'Solicitud enviada 🎉');
-          document.getElementById('btnConfirmar').disabled = true;
-          setTimeout(()=>{
-            modal.classList.add('hidden');
-            // location.href = '/mis-alquileres/'; // opcional
-          }, 800);
-        }catch(err){
-          setDispMessage(false, err.message || 'Error al reservar');
-        }
+          setDispMessage(true, 'Agregado al carrito 🛒');
+          renderCart().catch(()=>{});
+          setTimeout(()=> modal.classList.add('hidden'), 500);
+        }catch(err){ setDispMessage(false, err.message || 'No se pudo agregar'); }
       };
     }
 

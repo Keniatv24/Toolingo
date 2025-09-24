@@ -1,13 +1,19 @@
 from datetime import timedelta
 from django.db import models
 from django.utils.dateparse import parse_date
-from rest_framework import viewsets, permissions
+
+from rest_framework import viewsets, permissions, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Alquiler, Pago, Calificacion
-from .serializers import AlquilerSerializer, PagoSerializer, CalificacionSerializer
+from .models import Alquiler, Pago, Calificacion, CartItem
+from .serializers import (
+    AlquilerSerializer,
+    PagoSerializer,
+    CalificacionSerializer,
+    CartItemSerializer,
+)
 
 
 def daterange(d1, d2):
@@ -18,15 +24,8 @@ def daterange(d1, d2):
 
 
 class AlquilerViewSet(ModelViewSet):
-    """
-    CRUD de alquileres.
-    - Acciones:
-        * GET disponibilidad/?articulo=<id>&from=YYYY-MM-DD&to=YYYY-MM-DD  (pública)
-        * GET mios/   (autenticado)  -> alquileres donde soy arrendatario
-    """
     serializer_class = AlquilerSerializer
 
-    # Por privacidad: solo staff ve todos; usuarios ven solo los suyos.
     def get_queryset(self):
         qs = Alquiler.objects.select_related("articulo", "arrendatario", "propietario")
         u = getattr(self.request, "user", None)
@@ -34,21 +33,16 @@ class AlquilerViewSet(ModelViewSet):
             if u.is_staff:
                 return qs
             return qs.filter(models.Q(arrendatario=u) | models.Q(propietario=u))
-        # No autenticado: no listamos nada (para /list), la disponibilidad es otra acción pública
         return qs.none()
 
     def get_permissions(self):
-        # La acción 'disponibilidad' es pública.
         if getattr(self, "action", None) == "disponibilidad":
             return [permissions.AllowAny()]
-        # Crear/editar/borrar requieren login
         if self.request.method in ("POST", "PUT", "PATCH", "DELETE"):
             return [permissions.IsAuthenticated()]
-        # Lecturas normales: autenticado (para no exponer datos privados)
         return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
-        # arrendatario = request.user; propietario = dueño del artículo (lo completa el serializer)
         serializer.save(arrendatario=self.request.user)
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
@@ -62,10 +56,6 @@ class AlquilerViewSet(ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="disponibilidad", permission_classes=[permissions.AllowAny])
     def disponibilidad(self, request):
-        """
-        GET /api/alquileres/disponibilidad/?articulo=<uuid>&from=YYYY-MM-DD&to=YYYY-MM-DD
-        Devuelve rangos y días ocupados para el artículo en el intervalo consultado.
-        """
         art = request.query_params.get("articulo")
         s = parse_date(request.query_params.get("from") or "")
         e = parse_date(request.query_params.get("to") or "")
@@ -77,7 +67,6 @@ class AlquilerViewSet(ModelViewSet):
         qs = Alquiler.objects.filter(
             articulo_id=art,
             estado__in=bloqueantes,
-            # solape: start <= e and end >= s
             fecha_inicio__lte=e,
             fecha_fin__gte=s,
         ).order_by("fecha_inicio")
@@ -102,13 +91,54 @@ class AlquilerViewSet(ModelViewSet):
         })
 
 
+class CartItemViewSet(ModelViewSet):
+    """
+    /api/carrito/  (lista, crea, elimina)
+    /api/carrito/checkout/  (POST) -> crea Alquileres a partir del carrito y lo vacía
+    """
+    serializer_class = CartItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return CartItem.objects.select_related("articulo").filter(user=self.request.user)
+
+    @action(detail=False, methods=["post"])
+    def checkout(self, request):
+        items = list(self.get_queryset())
+        if not items:
+            return Response({"detail": "El carrito está vacío."}, status=400)
+
+        creados = []
+        errores = []
+        for it in items:
+            data = {
+                "articulo": it.articulo_id,
+                "fecha_inicio": it.fecha_inicio,
+                "fecha_fin": it.fecha_fin,
+            }
+            ser = AlquilerSerializer(data=data, context={"request": request})
+            if ser.is_valid():
+                try:
+                    obj = ser.save()
+                    creados.append(obj.id)
+                except Exception as e:
+                    errores.append(str(e))
+            else:
+                errores.append(ser.errors)
+
+        # si al menos 1 se creó, vaciamos los correspondientes
+        if creados:
+            CartItem.objects.filter(id__in=[i.id for i in items]).delete()
+
+        return Response({"creados": creados, "errores": errores}, status=201 if creados else 400)
+
+
 class PagoViewSet(viewsets.ModelViewSet):
     serializer_class = PagoSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         u = self.request.user
-        # puede ver pagos donde es arrendatario o propietario del alquiler
         return Pago.objects.select_related("alquiler").filter(
             models.Q(alquiler__arrendatario=u) | models.Q(alquiler__propietario=u)
         )

@@ -62,3 +62,19 @@ class Calificacion(models.Model):
     def clean(self):
         if not (1 <= self.puntaje <= 5):
             raise ValidationError("El puntaje debe estar entre 1 y 5.")
+        
+class CartItem(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cart_items")
+    articulo = models.ForeignKey("catalog.Articulo", on_delete=models.PROTECT, related_name="cart_items")
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
+    dias = models.PositiveIntegerField()
+    precio_por_dia = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_estimado = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado"]
+
+    def __str__(self):
+        return f"CartItem({self.user_id}, {self.articulo_id}, {self.fecha_inicio}→{self.fecha_fin})"

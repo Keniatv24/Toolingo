@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Q
-
-from .models import Alquiler, Pago, Calificacion
+from .models import Alquiler, Pago, Calificacion, CartItem
 
 
 class AlquilerSerializer(serializers.ModelSerializer):
@@ -31,11 +30,9 @@ class AlquilerSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = getattr(request, "user", None)
 
-        # No permitir reservar el propio artículo
         if articulo and user and articulo.propietario_id == getattr(user, "id", None):
             raise serializers.ValidationError("No puedes reservar tu propio artículo.")
 
-        # Chequeo de solape con estados que bloquean
         bloqueantes = ["SOLICITADO", "APROBADO", "EN_CURSO"]
         solapes = Alquiler.objects.filter(
             articulo=articulo,
@@ -51,10 +48,6 @@ class AlquilerSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        """
-        Completa arrendatario (ya viene de perform_create),
-        propietario desde el artículo y calcula precio_total simple: días * precio_por_dia.
-        """
         request = self.context["request"]
         user = request.user
 
@@ -73,6 +66,58 @@ class AlquilerSerializer(serializers.ModelSerializer):
         obj.full_clean()
         obj.save()
         return obj
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    articulo_titulo = serializers.CharField(source="articulo.titulo", read_only=True)
+    articulo_portada = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CartItem
+        fields = (
+            "id",
+            "articulo",
+            "articulo_titulo",
+            "articulo_portada",
+            "fecha_inicio",
+            "fecha_fin",
+            "dias",
+            "precio_por_dia",
+            "total_estimado",
+            "creado",
+        )
+        read_only_fields = ("dias", "precio_por_dia", "total_estimado", "creado")
+
+    def get_articulo_portada(self, obj):
+        # usa serializer context para request y construir URL absoluta si quieres
+        try:
+            return obj.articulo.imagenes.first().imagen.url if obj.articulo.imagenes.exists() else obj.articulo.portada
+        except Exception:
+            return None
+
+    def validate(self, data):
+        inicio = data.get("fecha_inicio")
+        fin = data.get("fecha_fin")
+        art = data.get("articulo")
+        if not inicio or not fin or inicio > fin:
+            raise serializers.ValidationError("Rango de fechas inválido.")
+
+        user = self.context["request"].user
+        if art and art.propietario_id == user.id:
+            raise serializers.ValidationError("No puedes agregar tu propio artículo al carrito.")
+
+        # calcular días y totales para guardar “congelado” en carrito
+        dias = (fin - inicio).days + 1
+        if dias < 1:
+            dias = 1
+        data["dias"] = dias
+        data["precio_por_dia"] = art.precio_por_dia or 0
+        data["total_estimado"] = dias * (art.precio_por_dia or 0)
+        return data
+
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        return super().create(validated_data)
 
 
 class PagoSerializer(serializers.ModelSerializer):
