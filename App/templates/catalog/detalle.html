@@ -18,9 +18,31 @@
     }
   </script>
 
+  <!-- Flatpickr (datepicker) -->
+  <link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/rangePlugin.js"></script>
+
   <style>
     .thumb:is(button)[data-active="true"]{ outline: 2px solid #f97316; outline-offset: 0; }
     .smooth { transition: all .25s cubic-bezier(.22,.61,.36,1); }
+
+    /* Días no disponibles (rojo) */
+    .flatpickr-day.tl-unavailable,
+    .flatpickr-day.tl-unavailable:focus {
+      background:#fee2e2 !important; /* rojo 100 */
+      border-color:#fecaca !important; /* rojo 200 */
+      color:#b91c1c !important;       /* rojo 700 */
+      cursor:not-allowed !important;
+    }
+    .flatpickr-day.tl-unavailable:hover {
+      background:#fecaca !important;
+    }
+
+    /* Leyenda pequeña bajo el calendario */
+    .tl-legend { font-size:12px; color:#475569; }
+    .tl-dot { display:inline-block; width:.6rem; height:.6rem; border-radius:9999px; background:#ef4444; vertical-align:middle; margin-right:.4rem; }
   </style>
 </head>
 <body class="text-slate-800 bg-white">
@@ -122,14 +144,15 @@
           <div class="grid sm:grid-cols-2 gap-4">
             <label class="grid gap-1">
               <span class="text-sm text-slate-600">Fecha inicio</span>
-              <input id="fInicio" type="date" class="border rounded-lg px-3 py-2">
+              <input id="fInicio" type="text" class="border rounded-lg px-3 py-2" placeholder="dd/mm/aaaa">
             </label>
             <label class="grid gap-1">
               <span class="text-sm text-slate-600">Fecha fin</span>
-              <input id="fFin" type="date" class="border rounded-lg px-3 py-2">
+              <input id="fFin" type="text" class="border rounded-lg px-3 py-2" placeholder="dd/mm/aaaa">
             </label>
           </div>
 
+          <div class="tl-legend"><span class="tl-dot"></span>No disponible</div>
           <div id="dispMsg" class="text-sm"></div>
 
           <div class="rounded-xl bg-slate-50 p-4 grid grid-cols-2 gap-3 text-sm">
@@ -143,7 +166,7 @@
 
         <div class="px-5 py-4 border-t flex gap-3 justify-end">
           <button type="button" class="px-4 py-2 rounded-lg border hover:bg-slate-50" data-close="true">Cancelar</button>
-          <button id="btnConfirmar" type="button" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Agregar al carrito</button>
+          <button id="btnConfirmar" type="button" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700" disabled>Agregar al carrito</button>
         </div>
       </div>
     </div>
@@ -297,16 +320,22 @@
       }catch(_){}
     });
 
-    // ====== Helpers reserva ======
+    // ===== Helpers reserva / dinero =====
     function daysBetween(d1, d2){
       const ms = (d2 - d1);
       const days = Math.floor(ms / (1000*60*60*24)) + 1;
       return Math.max(days, 1);
     }
-    function toISODate(input){
-      const d = new Date(input + "T00:00:00");
-      if (isNaN(d)) return null;
-      return d;
+    function toISODateStr(date){ // Date -> 'YYYY-MM-DD'
+      const y = date.getFullYear();
+      const m = String(date.getMonth()+1).padStart(2,'0');
+      const d = String(date.getDate()).padStart(2,'0');
+      return `${y}-${m}-${d}`;
+    }
+    function parseDMY(s){ // 'dd/mm/aaaa' -> Date
+      const [d,m,y] = s.split('/').map(Number);
+      const dt = new Date(Date.UTC(y,(m-1),d));
+      return isNaN(dt) ? null : dt;
     }
     function formatCOP(n){
       return Number(n||0).toLocaleString('es-CO', {style:'currency', currency:'COP', maximumFractionDigits:0});
@@ -317,7 +346,7 @@
       el.className = "text-sm " + (ok ? "text-emerald-600" : "text-red-600");
     }
 
-    // ===== JWT helpers + authFetch con auto-refresh =====
+    // ===== JWT helpers + authFetch =====
     const TOKEN_KEY = 'access';
     const REFRESH_KEY = 'refresh';
 
@@ -379,7 +408,7 @@
       return r.json();
     }
 
-    // ==== Navbar carrito: ir a /carrito/ + badge ====
+    // ==== Navbar carrito & checkout ====
     const cartBtn = document.getElementById('cartBtn');
     const cartBadge = document.getElementById('cartBadge');
     const checkoutBtn = document.getElementById('checkoutBtn');
@@ -388,14 +417,11 @@
       if (!getToken()) location.href = '/login/?next=/carrito/';
       else location.href = '/carrito/';
     });
-
-    // Botón Continuar compra → /checkout/
     checkoutBtn?.addEventListener('click', ()=>{
       if (!getToken()) location.href = '/login/?next=/checkout/';
       else location.href = '/checkout/';
     });
 
-    // Inicializa badge y visibilidad del botón de checkout si hay sesión
     (async ()=>{
       if (!getToken()) { cartBadge?.classList.add('hidden'); checkoutBtn?.classList.add('hidden'); return; }
       try{
@@ -409,10 +435,114 @@
       }
     })();
 
-    // ====== Disponibilidad + Modal ======
+    // ====== Disponibilidad + Datepicker PRO (Flatpickr) ======
+    // Cache { 'YYYY-MM' : Set(['YYYY-MM-DD', ...]) }
+    const MONTH_CACHE = new Map();
+
+    async function fetchDisponibilidadMes(artId, year, month01){
+      const key = `${year}-${String(month01).padStart(2,'0')}`;
+      if (MONTH_CACHE.has(key)) return MONTH_CACHE.get(key);
+
+      // rango del mes
+      const from = `${key}-01`;
+      const lastDay = new Date(year, month01, 0).getDate(); // month01 es 1..12
+      const to = `${key}-${String(lastDay).padStart(2,'0')}`;
+
+      const url = `/api/alquileres/disponibilidad/?articulo=${encodeURIComponent(artId)}&from=${from}&to=${to}`;
+      const r = await fetch(url);
+      if (!r.ok) { MONTH_CACHE.set(key, new Set()); return MONTH_CACHE.get(key); }
+      const data = await r.json();
+      const set = new Set(Array.isArray(data.dias_ocupados) ? data.dias_ocupados : []);
+      MONTH_CACHE.set(key, set);
+      return set;
+    }
+
+    // Devuelve true si la fecha está ocupada según caché
+    function isUnavailable(date){
+      const y = date.getFullYear();
+      const m = String(date.getMonth()+1).padStart(2,'0');
+      const key = `${y}-${m}`;
+      const set = MONTH_CACHE.get(key);
+      if (!set) return false;
+      return set.has(toISODateStr(date));
+    }
+
+    function setupDatepicker(art){
+      const inputStart = document.getElementById('fInicio');
+      const inputEnd   = document.getElementById('fFin');
+      const btnConfirm = document.getElementById('btnConfirmar');
+
+      // Resetea valores
+      inputStart.value = '';
+      inputEnd.value = '';
+      btnConfirm.disabled = true;
+
+      // función disable dinámica
+      const disableFn = (date)=> isUnavailable(date);
+
+      // Carga mes visible (actual) y siguiente para UX fluida
+      async function primeMonths(instance){
+        const y = instance.currentYear;
+        const m = instance.currentMonth + 1; // 1..12
+        await Promise.all([
+          fetchDisponibilidadMes(art.id || ART_ID_SERVER, y, m),
+          fetchDisponibilidadMes(art.id || ART_ID_SERVER, m===12?y+1:y, m===12?1:m+1),
+        ]);
+        instance.redraw(); // repinta para aplicar clases
+      }
+
+      // Marca los días rojos en el render
+      function onDayCreate(dObj, dStr, fp, dayElem){
+        const dt = dayElem.dateObj;
+        if (isUnavailable(dt)) dayElem.classList.add('tl-unavailable');
+      }
+
+      // Validación del rango seleccionado
+      function validateRange(fp){
+        const s = inputStart.value, e = inputEnd.value;
+        if (!s || !e){ setDispMessage(true, 'Selecciona un rango de fechas'); btnConfirm.disabled = true; return; }
+        const d1 = parseDMY(s), d2 = parseDMY(e);
+        if (!d1 || !d2 || d2 < d1){ setDispMessage(false, 'Rango inválido'); btnConfirm.disabled = true; return; }
+
+        // si algún día del rango está ocupado → error
+        let clash = false;
+        for (let dt = new Date(d1); dt <= d2; dt.setUTCDate(dt.getUTCDate()+1)){
+          if (isUnavailable(new Date(dt))) { clash = true; break; }
+        }
+        if (clash){ setDispMessage(false, 'El rango contiene días no disponibles'); btnConfirm.disabled = true; return; }
+
+        // OK: calcula totales
+        setDispMessage(true, 'Fechas disponibles');
+        const dias = daysBetween(new Date(d1), new Date(d2));
+        document.getElementById('sumDias').textContent = dias;
+        document.getElementById('sumPPD').textContent = formatCOP(art.precio_por_dia);
+        document.getElementById('sumTotal').textContent = formatCOP(dias * (art.precio_por_dia || 0));
+        btnConfirm.disabled = false;
+      }
+
+      // Inicializa flatpickr en español con 2 inputs (rangePlugin)
+      const fp = flatpickr(inputStart, {
+        altInput: false,
+        dateFormat: "d/m/Y",
+        locale: flatpickr.l10ns.es,
+        minDate: "today",
+        plugins: [new rangePlugin({ input: inputEnd })],
+        disable: [disableFn],               // bloquea selección en días ocupados
+        onOpen: [primeMonths],
+        onMonthChange: [primeMonths],
+        onYearChange: [primeMonths],
+        onDayCreate: [onDayCreate],
+        onChange: function(){ validateRange(this); }
+      });
+
+      // Primera precarga (mes actual)
+      primeMonths(fp);
+    }
+
+    // ====== Modal: abrir, wire & confirmar ======
     async function checkDisponibilidad(artId, d1, d2){
-      const from = d1.toISOString().slice(0,10);
-      const to   = d2.toISOString().slice(0,10);
+      const from = toISODateStr(d1);
+      const to   = toISODateStr(d2);
       const url = `/api/alquileres/disponibilidad/?articulo=${encodeURIComponent(artId)}&from=${from}&to=${to}`;
       const r = await fetch(url);
       if (!r.ok) throw new Error('No se pudo consultar disponibilidad');
@@ -429,53 +559,31 @@
       document.getElementById('sumTotal').textContent = '—';
       setDispMessage(true, 'Selecciona un rango de fechas');
 
-      const f1 = document.getElementById('fInicio');
-      const f2 = document.getElementById('fFin');
-      const today = new Date(); today.setHours(0,0,0,0);
-      f1.min = today.toISOString().slice(0,10);
-      f2.min = today.toISOString().slice(0,10);
-      f1.value = ''; f2.value = '';
-
-      const recalc = async () => {
-        const v1 = f1.value, v2 = f2.value;
-        if (!v1 || !v2) { return; }
-        const d1 = toISODate(v1), d2 = toISODate(v2);
-        if (!d1 || !d2 || d2 < d1) { setDispMessage(false, 'Rango inválido'); return; }
-        try{
-          const info = await checkDisponibilidad(art.id || ART_ID_SERVER, d1, d2);
-          const ocupados = new Set(info.dias_ocupados || []);
-          let hayOcupado = false;
-          for (let dt = new Date(d1); dt <= d2; dt.setDate(dt.getDate()+1)){
-            const iso = dt.toISOString().slice(0,10);
-            if (ocupados.has(iso)) { hayOcupado = true; break; }
-          }
-          setDispMessage(!hayOcupado, hayOcupado ? 'Fechas no disponibles' : 'Fechas disponibles');
-          const dias = daysBetween(d1, d2);
-          document.getElementById('sumDias').textContent = dias;
-          document.getElementById('sumTotal').textContent = formatCOP(dias * (art.precio_por_dia || 0));
-        }catch(e){ setDispMessage(false, 'No se pudo validar disponibilidad'); }
-      };
-
-      f1.onchange = recalc; f2.onchange = recalc;
+      // Monta el datepicker PRO
+      setupDatepicker(art);
 
       // confirmar => agregar al carrito y redirigir a /carrito/
       document.getElementById('btnConfirmar').onclick = async () => {
-        const v1 = f1.value, v2 = f2.value;
-        if (!v1 || !v2){ setDispMessage(false, 'Selecciona inicio y fin'); return; }
-        const d1 = toISODate(v1), d2 = toISODate(v2);
-        if (!d1 || !d2 || d2 < d1){ setDispMessage(false, 'Rango inválido'); return; }
+        const s = document.getElementById('fInicio').value;
+        const e = document.getElementById('fFin').value;
+        const d1 = parseDMY(s), d2 = parseDMY(e);
+        if (!d1 || !d2) { setDispMessage(false, 'Selecciona inicio y fin'); return; }
         if (!requireLoginOrRedirect()) return;
 
         try{
-          // revalidar disponibilidad antes de agregar
+          // Revalida contra API el rango final
           const info = await checkDisponibilidad(art.id || ART_ID_SERVER, d1, d2);
           const ocupados = new Set(info.dias_ocupados || []);
-          for (let dt = new Date(d1); dt <= d2; dt.setDate(dt.getDate()+1)){
-            const iso = dt.toISOString().slice(0,10);
-            if (ocupados.has(iso)) throw new Error('Fechas no disponibles');
+          for (let dt = new Date(d1); dt <= d2; dt.setUTCDate(dt.getUTCDate()+1)){
+            if (ocupados.has(toISODateStr(new Date(dt)))) throw new Error('Fechas no disponibles');
           }
 
-          const payload = { articulo: art.id || ART_ID_SERVER, fecha_inicio: v1, fecha_fin: v2 };
+          const payload = {
+            articulo: art.id || ART_ID_SERVER,
+            // backend espera YYYY-MM-DD
+            fecha_inicio: toISODateStr(d1),
+            fecha_fin: toISODateStr(d2)
+          };
           await apiAddToCart(payload);
 
           // Actualiza badge y muestra botón de checkout
@@ -486,6 +594,7 @@
             cartBadge.textContent = hasItems ? items.length : 0;
             checkoutBtn.classList.toggle('hidden', !hasItems);
           }catch(_){}
+
           location.href = '/carrito/';
         }catch(err){ setDispMessage(false, err.message || 'No se pudo agregar'); }
       };
