@@ -174,7 +174,7 @@
           throw new Error(err.detail || 'Error al publicar');
         }
         await r.json();
-        msg.textContent = '✅ ¡Artículo publicado!';
+        msg.textContent = ' ¡Artículo publicado!';
         msg.className = 'text-sm text-green-700';
         setTimeout(()=> location.replace('/catalogo/'), 900);
       } catch (e2) {

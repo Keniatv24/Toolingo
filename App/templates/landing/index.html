@@ -266,7 +266,7 @@
       } catch(_) {}
     })();
 
-    // -------- Búsqueda / Destacados / Efectos (igual que tenías) --------
+    // -------- Búsqueda / Destacados / Efectos  --------
     function cardArticulo(a){
       const imgUrl = a.portada || (a.imagenes && a.imagenes[0]?.url) || null;
       const price  = a.precio_por_dia ? `$${fmtCOP(a.precio_por_dia)}/día` : '';
@@ -283,7 +283,7 @@
               <div class="mt-1 text-xs text-slate-500 flex items-center gap-2">${ubic}</div>
               <div class="mt-3">
                 <span class="text-sm text-brand-700 hover:underline">Ver detalle</span>
-                <a class="ml-2 text-xs text-slate-400 hover:underline" href="/api/articulos/${a.id}/" target="_blank" rel="noopener">API</a>
+                
               </div>
             </div>
           </a>
