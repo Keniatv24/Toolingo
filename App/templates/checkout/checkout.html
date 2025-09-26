@@ -15,12 +15,16 @@
       }}
     }
   </script>
+  <style>
+    /* por si algún user-agent no trae border-box */
+    *,*::before,*::after{ box-sizing:border-box; }
+  </style>
 </head>
 <body class="bg-white text-slate-800">
   <!-- NAV -->
   <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-200">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
-      <a href="/" class="flex items-center gap-2">
+      <a href="/" class="flex items-center gap-2 shrink-0">
         <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current">
           <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
         </svg>
@@ -38,47 +42,42 @@
     <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Pago</h1>
     <p class="text-slate-600 mt-1">Selecciona un método de pago y completa tus datos.</p>
 
-    <div class="mt-6 grid lg:grid-cols-12 gap-8">
-      <!-- Izquierda: Métodos + formulario -->
-      <section class="lg:col-span-8 space-y-4">
+    <!-- Resumen grande a la derecha, pero sin overflow -->
+    <div class="mt-6 grid xl:grid-cols-12 gap-8">
+      <!-- Izquierda -->
+      <section class="xl:col-span-6 space-y-4 min-w-0">
         <!-- Métodos -->
         <div class="grid md:grid-cols-2 gap-3">
-          <button data-method="credit" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50 focus:ring-2 focus:ring-brand-100">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="font-semibold">Tarjeta de crédito</div>
-                <div class="text-sm text-slate-500">Visa, MasterCard, Amex</div>
-              </div>
-            </div>
+          <button data-method="credit" class="method border rounded-2xl p-4 text-left hover:bg-slate-50 focus:ring-2 focus:ring-brand-100">
+            <div class="font-semibold">Tarjeta de crédito</div>
+            <div class="text-sm text-slate-500">Visa, MasterCard, Amex</div>
           </button>
-          <button data-method="debit" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50">
+          <button data-method="debit" class="method border rounded-2xl p-4 text-left hover:bg-slate-50">
             <div class="font-semibold">Tarjeta de débito</div>
             <div class="text-sm text-slate-500">Visa Débito, MasterCard Débito</div>
           </button>
-          <button data-method="pse" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50">
+          <button data-method="pse" class="method border rounded-2xl p-4 text-left hover:bg-slate-50">
             <div class="font-semibold">PSE</div>
             <div class="text-sm text-slate-500">Débito bancario</div>
           </button>
-          <button data-method="addi" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50">
+          <button data-method="addi" class="method border rounded-2xl p-4 text-left hover:bg-slate-50">
             <div class="font-semibold">ADDI</div>
             <div class="text-sm text-slate-500">Compra ahora, paga después</div>
           </button>
-          <button data-method="siste" class="method btn-ghost border rounded-2xl p-4 text-left hover:bg-slate-50 md:col-span-2">
+          <button data-method="siste" class="method border rounded-2xl p-4 text-left hover:bg-slate-50 md:col-span-2">
             <div class="font-semibold">SisteCredito</div>
             <div class="text-sm text-slate-500">Crédito fácil y rápido</div>
           </button>
         </div>
 
-        <!-- Formulario (variable por método) -->
-        <section id="payForm" class="rounded-2xl border bg-white shadow-soft p-5">
+        <!-- Formulario -->
+        <section id="payForm" class="rounded-2xl border bg-white shadow-soft p-5 overflow-hidden">
           <!-- Logos -->
-          <div id="brandRow" class="flex items-center gap-4 mb-4">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-6">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-6">
-            
-
-
-            <span class="text-xs text-slate-500">Aceptamos tarjetas principales.</span>
+          <div id="brandRow" class="flex items-center gap-4 mb-4 min-w-0">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-6 shrink-0">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-6 shrink-0">
+            <img src="{% static 'img/amex.png' %}" alt="Amex" class="h-6 shrink-0" onerror="this.style.display='none'">
+            <span class="text-xs text-slate-500 truncate">Aceptamos tarjetas principales.</span>
           </div>
 
           <!-- CREDIT/DEBIT -->
@@ -86,33 +85,35 @@
             <label class="grid gap-1 md:col-span-2">
               <span class="text-sm text-slate-600">Número</span>
               <input id="cardNumber" type="text" inputmode="numeric" maxlength="19"
-                     class="border rounded-xl px-3 py-2" placeholder="•••• •••• •••• ••••">
+                     class="border rounded-xl px-3 py-2 w-full"
+                     placeholder="•••• •••• •••• ••••">
             </label>
 
             <label class="grid gap-1">
               <span class="text-sm text-slate-600">Cuotas</span>
-              <select id="installments" class="border rounded-xl px-3 py-2">
+              <select id="installments" class="border rounded-xl px-3 py-2 w-full">
                 <option value="">¿En cuántas cuotas?</option>
                 <option>1</option><option>3</option><option>6</option><option>12</option>
               </select>
             </label>
             <label class="grid gap-1">
               <span class="text-sm text-slate-600">Nombre y Apellido (como figura en la tarjeta)</span>
-              <input id="cardName" type="text" class="border rounded-xl px-3 py-2" placeholder="Nombre Apellido">
+              <input id="cardName" type="text" class="border rounded-xl px-3 py-2 w-full" placeholder="Nombre Apellido">
             </label>
 
-            <div class="grid grid-cols-3 gap-3 md:col-span-2">
+            <!-- Aquí estaba el overflow: ahora es sm:grid-cols-3 y todo w-full -->
+            <div class="grid sm:grid-cols-3 gap-3 md:col-span-2">
               <label class="grid gap-1">
                 <span class="text-sm text-slate-600">Vencimiento</span>
-                <input id="expMM" type="text" maxlength="2" class="border rounded-xl px-3 py-2" placeholder="MM">
+                <input id="expMM" type="text" maxlength="2" class="border rounded-xl px-3 py-2 w-full" placeholder="MM">
               </label>
               <label class="grid gap-1">
                 <span class="text-sm text-slate-600">&nbsp;</span>
-                <input id="expYY" type="text" maxlength="2" class="border rounded-xl px-3 py-2" placeholder="AA">
+                <input id="expYY" type="text" maxlength="2" class="border rounded-xl px-3 py-2 w-full" placeholder="AA">
               </label>
               <label class="grid gap-1">
                 <span class="text-sm text-slate-600">CVV</span>
-                <input id="cvv" type="password" maxlength="4" class="border rounded-xl px-3 py-2" placeholder="•••">
+                <input id="cvv" type="password" maxlength="4" class="border rounded-xl px-3 py-2 w-full" placeholder="•••">
               </label>
             </div>
 
@@ -123,13 +124,13 @@
 
             <div class="md:col-span-2">
               <button id="payBtn" type="button"
-                      class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700">
+                      class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 w-full sm:w-auto">
                 Pagar ahora
               </button>
             </div>
           </form>
 
-          <!-- PSE / ADDI / SISTECREDITO placeholders -->
+          <!-- PSE / ADDI / SISTECREDITO -->
           <div id="altMethod" class="hidden">
             <div class="text-slate-700">
               <p id="altText" class="mb-3">Serás redirigido para completar tu pago.</p>
@@ -141,24 +142,54 @@
         </section>
       </section>
 
-      <!-- Derecha: Resumen -->
-      <aside class="lg:col-span-4">
-        <div class="rounded-2xl border bg-white p-5 shadow-soft sticky top-24">
-          <h3 class="font-semibold text-lg">Resumen de la orden</h3>
-          <div id="itemsBox" class="mt-4 space-y-3"></div>
-          <div class="mt-4 space-y-2 text-sm">
+      <!-- Derecha: Resumen grande -->
+      <aside class="xl:col-span-6 min-w-0">
+        <div class="rounded-2xl border bg-white p-6 shadow-soft sticky top-24 ring-2 ring-brand-100 overflow-hidden">
+          <div class="flex items-center justify-between gap-4">
+            <h3 class="font-semibold text-xl">Resumen de la orden</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100 shrink-0">verificación segura</span>
+          </div>
+
+          <div id="itemsBox" class="mt-5 space-y-4"></div>
+
+          <div class="mt-5 space-y-3 text-sm">
             <div class="flex items-center justify-between">
-              <span>Productos (<span id="count">0</span>)</span>
+              <span class="text-slate-600">Productos (<span id="count">0</span>)</span>
               <span id="subtotal" class="font-medium">$0</span>
             </div>
-            <div class="pt-2 mt-2 border-t flex items-center justify-between font-semibold text-slate-900">
+            <div class="pt-3 mt-1 border-t flex items-center justify-between text-base font-bold text-slate-900">
               <span>Total</span><span id="total">$0</span>
             </div>
           </div>
-          <p class="mt-3 text-[12px] text-slate-500">Las reservas se confirman por cada artículo y rango de fechas.</p>
+
+          <p class="mt-3 text-[12px] text-slate-500">
+            Las reservas se confirman por cada artículo y rango de fechas.
+          </p>
         </div>
       </aside>
     </div>
+
+    <!-- Franja de beneficios -->
+    <section class="mt-12 rounded-2xl bg-brand-600 text-white p-6">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+        <div class="flex items-center gap-3">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3H3V6Zm0 5h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Zm3 5h4v2H6v-2Z"/></svg>
+          <div><div class="font-semibold">Múltiples medios de pago</div><div class="text-brand-100">Tarjeta, PSE y más</div></div>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 3v6c0 5-3.5 9-7 11-3.5-2-7-6-7-11V5l7-3Zm0 5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
+          <div><div class="font-semibold">Seguro y confiable</div><div class="text-brand-100">Protección de datos y pagos</div></div>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z"/></svg>
+          <div><div class="font-semibold">Calidad garantizada</div><div class="text-brand-100">Publicaciones verificadas</div></div>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h11v7h2l3 3v2h-2a2 2 0 1 1-4 0H9a2 2 0 1 1-4 0H3V6Zm15 8h1.59L18 12.41V14Z"/></svg>
+          <div><div class="font-semibold">Entrega rápida</div><div class="text-brand-100">Coordina con el propietario</div></div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
@@ -250,12 +281,11 @@
     }
 
     methods.forEach(btn=> btn.addEventListener('click', ()=> selectMethod(btn.dataset.method)));
-    let selectedMethod = 'credit'; // por defecto
+    let selectedMethod = 'credit';
     selectMethod(selectedMethod);
 
-    // ===== Acciones de pago
+    // ===== Acciones de pago (demo)
     document.getElementById('payBtn').addEventListener('click', ()=>{
-      // Validaciones mínimas de ejemplo
       const num = document.getElementById('cardNumber').value.replace(/\s+/g,'');
       const name = document.getElementById('cardName').value.trim();
       const mm = document.getElementById('expMM').value.trim();
@@ -264,18 +294,15 @@
       if(num.length < 13 || !name || mm.length!==2 || yy.length!==2 || cvv.length<3){
         alert('Completa los datos de la tarjeta.'); return;
       }
-      // Aquí conectas tu pasarela / tokenización
       alert('Simulación: pago con tarjeta listo para integrarse ✅');
     });
 
     document.getElementById('goAlt').addEventListener('click', ()=>{
-      // Redirecciones placeholder
       if(selectedMethod==='pse') alert('Simulación: redirigir a PSE ✅');
       if(selectedMethod==='addi') alert('Simulación: redirigir a ADDI ✅');
       if(selectedMethod==='siste') alert('Simulación: redirigir a SisteCredito ✅');
     });
 
-    // Init
     loadSummary();
   </script>
 </body>
