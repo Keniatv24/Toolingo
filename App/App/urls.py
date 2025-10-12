@@ -23,6 +23,9 @@ from django.views.generic import TemplateView, RedirectView
 from users.views import ProfileViewSet
 from catalog import views as catalog_views
 from django.shortcuts import render
+from chat.views import ConversationViewSet
+from django.utils.decorators import method_decorator
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 
 
@@ -35,6 +38,12 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from users.views import UserViewSet
 from catalog.views import CategoriaViewSet, ArticuloViewSet
 from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet, CartItemViewSet
+
+
+@method_decorator(xframe_options_sameorigin, name="dispatch")
+class ChatWidgetView(TemplateView):
+    template_name = "chat/index.html"
+
 
 
 
@@ -52,6 +61,7 @@ router.register(r"pagos", PagoViewSet, basename="pagos")
 router.register(r"calificaciones", CalificacionViewSet, basename="calificaciones")
 router.register("perfiles", ProfileViewSet, basename="perfiles")
 router.register(r"carrito", CartItemViewSet, basename="carrito") 
+router.register(r'chats', ConversationViewSet, basename='chat')
 
 
 
@@ -81,6 +91,7 @@ urlpatterns = [
     path("articulo/<uuid:id>/", articulo_detalle, name="articulo_detalle"),
     path("carrito/", TemplateView.as_view(template_name="cart/index.html"), name="carrito"),
     path('checkout/', TemplateView.as_view(template_name='checkout/checkout.html'), name='checkout'),
+    path("chat/", ChatWidgetView.as_view(), name="chat_ui"),
 ]
 
 

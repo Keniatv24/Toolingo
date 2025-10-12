@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Chat – Toolingo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:'#FFF4E6', 100:'#FFE6C7', 200:'#FFD1A3', 300:'#FFB46B', 400:'#FF9840', 500:'#FF7F1A', 600:'#F97316', 700:'#C2410C', 800:'#9A3412' }
+          },
+          boxShadow: { soft: '0 4px 20px rgba(0,0,0,.08)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    .scrollbar-thin::-webkit-scrollbar{height:8px;width:8px}
+    .scrollbar-thin::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:9999px}
+    html, body { height: 100%; background:#fff; }
+  </style>
+</head>
+
+<body class="text-slate-800">
+  <!-- Contenedor principal en 3 filas: header / mensajes / composer -->
+  <div id="shell" class="mx-auto w-full max-w-5xl bg-white rounded-2xl shadow-soft overflow-hidden grid grid-rows-[auto,1fr,auto] h-[100vh]">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white px-5 py-3">
+      <div class="flex items-center gap-3">
+        <div id="peerAvatar" class="size-9 rounded-full bg-brand-600 grid place-items-center font-semibold"></div>
+        <div class="min-w-0">
+          <div class="text-sm font-semibold leading-tight" id="peerName">Chat</div>
+          <div class="text-xs opacity-80 truncate" id="peerEmail"></div>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <button id="btnMarkRead" class="px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/15 text-sm">Marcar leído</button>
+          <button id="btnRefresh"  class="px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/15 text-sm">Refrescar</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mensajes -->
+    <main id="msgs" class="bg-slate-50 px-3 sm:px-6 py-4 overflow-auto scrollbar-thin"></main>
+
+    <!-- Composer -->
+    <footer class="bg-white border-t px-3 sm:px-4 py-3">
+      <div class="flex items-end gap-3">
+        <div id="myAvatar" class="size-9 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-semibold shrink-0"></div>
+        <textarea id="msgInput" rows="1" placeholder="Escribe un mensaje…" class="flex-1 resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-400 shadow-sm"></textarea>
+        <button id="btnSend" class="px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-soft">Enviar</button>
+      </div>
+      <div class="text-[11px] text-slate-500 mt-2 select-none">Enter para enviar • Shift+Enter para salto de línea</div>
+    </footer>
+  </div>
+
+<script>
+/* ================== Helpers base ================== */
+const API = "/api";
+const $ = (s, r=document) => r.querySelector(s);
+const qs = new URLSearchParams(location.search);
+const PAGE_PARAMS = Object.fromEntries(qs.entries());
+
+let token = localStorage.getItem("access") || localStorage.getItem("jwt") || "";
+let me = null;
+let currentConv = null;
+let poller = null;
+let conversations = [];
+
+/* UI refs */
+const msgsEl = $("#msgs");
+const inputEl = $("#msgInput");
+
+function clearTokens(){
+  localStorage.removeItem("access"); localStorage.removeItem("jwt"); localStorage.removeItem("refresh"); token = "";
+}
+function redirectToLogin(){
+  const next = location.pathname + location.search;
+  location.href = `/login/?next=${encodeURIComponent(next)}`;
+}
+function headers(json=true){
+  const h = {}; if (json) h["Content-Type"] = "application/json"; if (token) h["Authorization"] = "Bearer " + token; return h;
+}
+function initials(name="", email=""){
+  const base = (name || email || "?").trim();
+  const parts = base.split(/\s+/).slice(0,2);
+  return parts.map(p=>p[0]).join("").toUpperCase();
+}
+function avatarHTML(url, txt, extra=""){
+  if (url) return `<img src="${url}" class="size-9 rounded-full object-cover ${extra}" alt="avatar">`;
+  return `<div class="size-9 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-semibold ${extra}">${txt||"?"}</div>`;
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]))}
+function autogrowTA(el){ el.style.height = "0px"; el.style.height = Math.min(el.scrollHeight, 160) + "px"; }
+
+/* ================== Auth + perfil ================== */
+async function auth(){
+  if (!token){ redirectToLogin(); return false; }
+  const r = await fetch(`${API}/perfiles/me/`, { headers: headers(false) });
+  if (r.status === 401){ clearTokens(); redirectToLogin(); return false; }
+  if (!r.ok) return false;
+  const data = await r.json();
+  me = data.user || data || null;
+
+  // pinta mi avatar
+  $("#myAvatar").innerHTML = avatarHTML(me?.foto || me?.avatar_url, initials(me?.nombre || "", me?.email || me?.username));
+  return true;
+}
+
+/* ================== Listado/recuperación ================== */
+async function loadConversations(){
+  const r = await fetch(`${API}/chats/`, { headers: headers(false) });
+  if (r.status === 401){ clearTokens(); redirectToLogin(); return; }
+  if (!r.ok) return;
+  conversations = await r.json();
+}
+
+function pickPeer(conv){
+  // el otro participante (no yo)
+  const parts = conv?.participantes || [];
+  return parts.find(p => p.id !== me?.id) || parts[0] || null;
+}
+
+function paintHeader(conv){
+  const peer = pickPeer(conv);
+  const name = peer?.nombre || peer?.username || peer?.email || "Conversación";
+  const email = peer?.email || "";
+  $("#peerName").textContent = name;
+  $("#peerEmail").textContent = email;
+  $("#peerAvatar").innerHTML = avatarHTML(peer?.foto || peer?.avatar_url, initials(name, email));
+}
+
+async function openConversation(conv){
+  currentConv = conv;
+  paintHeader(conv);
+  await loadMessages();
+  startPolling();
+}
+
+/* ================== Mensajes ================== */
+function messageBubble(m){
+  const mine = me && (m.autor?.id === me.id);
+  const when = new Date(m.creado || m.created_at || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  const name = m.autor?.nombre || m.autor?.username || m.autor?.email || "usuario";
+  const email = m.autor?.email || "";
+  const avatar = avatarHTML(m.autor?.foto || m.autor?.avatar_url, initials(name, email), "shrink-0");
+
+  // estilos
+  const row = mine ? "justify-end" : "justify-start";
+  const bubble = mine
+    ? "bg-brand-600 text-white"
+    : "bg-white text-slate-800 border border-slate-200";
+  const meta = mine ? "text-brand-50/80" : "text-slate-500/80";
+
+  return `
+    <div class="flex ${row} gap-2 items-end">
+      ${!mine ? avatar : ""}
+      <div class="max-w-[72%] sm:max-w-[66%]">
+        <div class="rounded-2xl px-4 py-3 ${bubble} shadow-soft">
+          <div class="text-[11px] ${meta} mb-1">${escapeHtml(name)} • ${when}</div>
+          <div class="text-[15px] leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(m.contenido || m.texto || "")}</div>
+        </div>
+      </div>
+      ${mine ? avatar : ""}
+    </div>
+  `;
+}
+
+function renderMessages(list){
+  msgsEl.innerHTML = list.map(messageBubble).join("");
+  // scroll al final
+  msgsEl.scrollTop = msgsEl.scrollHeight + 1000;
+}
+
+async function loadMessages(){
+  if (!currentConv) return;
+  const r = await fetch(`${API}/chats/${currentConv.id}/messages/`, { headers: headers(false) });
+  if (r.status === 401){ clearTokens(); redirectToLogin(); return; }
+  if (!r.ok) return;
+  const data = await r.json();
+  renderMessages(data);
+}
+
+/* ================== Crear / asegurar conversación por artículo ================== */
+async function ensureConversationForArticle(){
+  if (currentConv && currentConv.id) return true;
+  if (PAGE_PARAMS.article){
+    const r = await fetch(`${API}/chats/by-article/`, {
+      method:"POST", headers: headers(), body: JSON.stringify({ articulo_id: PAGE_PARAMS.article })
+    });
+    if (r.status === 401){ clearTokens(); redirectToLogin(); return false; }
+    if (!r.ok){ paintHeader({}); $("#peerName").textContent = "No se pudo iniciar la conversación"; return false; }
+    const conv = await r.json();
+    await loadConversations();
+    await openConversation(conv);
+    return true;
+  }
+  paintHeader({});
+  $("#peerName").textContent = "Selecciona una conversación";
+  return false;
+}
+
+/* ================== Acciones ================== */
+async function sendMessage(){
+  if (!currentConv){
+    const ok = await ensureConversationForArticle();
+    if (!ok) return;
+  }
+  const txt = inputEl.value.trim();
+  if (!txt) return;
+
+  const r = await fetch(`${API}/chats/${currentConv.id}/messages/`, {
+    method: "POST", headers: headers(), body: JSON.stringify({ contenido: txt })
+  });
+  if (r.status === 401){ clearTokens(); redirectToLogin(); return; }
+  if (!r.ok) return;
+
+  inputEl.value = "";
+  autogrowTA(inputEl);
+  await loadMessages();
+}
+
+async function markRead(){
+  if (!currentConv){
+    const ok = await ensureConversationForArticle();
+    if (!ok) return;
+  }
+  await fetch(`${API}/chats/${currentConv.id}/read/`, { method:"POST", headers: headers(false) });
+}
+
+function startPolling(){
+  if (poller) clearInterval(poller);
+  poller = setInterval(loadMessages, 4000);
+}
+
+/* ================== Listeners ================== */
+$("#btnSend").onclick = sendMessage;
+$("#btnMarkRead").onclick = markRead;
+$("#btnRefresh").onclick = loadMessages;
+
+inputEl.addEventListener("input", ()=>autogrowTA(inputEl));
+inputEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+});
+
+/* ================== Bootstrap ================== */
+(async ()=>{
+  // Modo embebido: ocupar mejor la ventana
+  const embed = PAGE_PARAMS.embed === "1" || !!PAGE_PARAMS.article;
+  if (embed){
+    $("#shell").classList.add("rounded-none","shadow-none","h-[100vh]");
+  }
+
+  if (!token){ redirectToLogin(); return; }
+  const ok = await auth(); if (!ok) return;
+
+  await loadConversations();
+  await ensureConversationForArticle();
+})();
+</script>
+</body>
+</html>

@@ -31,18 +31,30 @@
     /* Días no disponibles (rojo) */
     .flatpickr-day.tl-unavailable,
     .flatpickr-day.tl-unavailable:focus {
-      background:#fee2e2 !important; /* rojo 100 */
-      border-color:#fecaca !important; /* rojo 200 */
-      color:#b91c1c !important;       /* rojo 700 */
+      background:#fee2e2 !important;
+      border-color:#fecaca !important;
+      color:#b91c1c !important;
       cursor:not-allowed !important;
     }
-    .flatpickr-day.tl-unavailable:hover {
-      background:#fecaca !important;
-    }
-
-    /* Leyenda pequeña bajo el calendario */
+    .flatpickr-day.tl-unavailable:hover { background:#fecaca !important; }
     .tl-legend { font-size:12px; color:#475569; }
     .tl-dot { display:inline-block; width:.6rem; height:.6rem; border-radius:9999px; background:#ef4444; vertical-align:middle; margin-right:.4rem; }
+
+    /* ===== Chat overlay ===== */
+    .chat-overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display:none; z-index: 9998; }
+    .chat-overlay {
+      position: fixed; right: 32px; bottom: 32px;
+      width: min(900px, 92vw); height: min(720px, 90vh);
+      background: #fff; border-radius: 16px; box-shadow: 0 24px 72px rgba(0,0,0,.28);
+      overflow: hidden; display:none; z-index: 9999;
+    }
+    .chat-overlay header { height: 48px; display:flex; align-items:center; justify-content:space-between; padding: 0 12px; background:#0f172a; color:#fff; font-weight:600; }
+    .chat-overlay header button { background: transparent; border:0; color:#fff; font-size:20px; cursor:pointer; }
+    .chat-overlay iframe { width:100%; height: calc(100% - 48px); border:0; }
+    @media (max-width: 640px){
+      .chat-overlay { left: 0; right: 0; top: 0; bottom: 0; width: 100vw; height: 100vh; border-radius: 0; }
+      .chat-overlay iframe { height: calc(100% - 48px); }
+    }
   </style>
 </head>
 <body class="text-slate-800 bg-white">
@@ -59,10 +71,7 @@
         <a href="/" class="hover:text-brand-600">Inicio</a>
         <a href="/catalogo/" class="font-semibold text-brand-700">Productos</a>
         <a href="/publicar/" class="font-semibold hover:text-brand-600">Publicar</a>
-
-        <!-- Carrito (redirige a /carrito/) -->
-        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
-          🛒
+        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
         </button>
       </nav>
@@ -113,14 +122,9 @@
         <!-- Acciones -->
         <div class="mt-6 flex flex-wrap gap-3 items-center">
           <a id="reservarBtn" href="#" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 smooth shadow-soft hover:shadow-lift">Reservar</a>
-          <a id="contactarBtn" href="#" class="px-5 py-3 rounded-xl border hover:bg-slate-50 smooth">Contactar</a>
+          <button id="btnContactar" type="button" class="px-4 py-3 rounded-xl border hover:bg-slate-50 smooth">Contactar</button>
           <button id="shareBtn" type="button" class="px-4 py-3 rounded-xl border hover:bg-slate-50 smooth">Compartir</button>
-
-          <!-- NUEVO: Continuar compra -->
-          <button id="checkoutBtn" type="button"
-                  class="px-5 py-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 smooth ml-auto hidden">
-            Continuar compra
-          </button>
+          <button id="checkoutBtn" type="button" class="px-5 py-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 smooth ml-auto hidden">Continuar compra</button>
         </div>
       </section>
     </div>
@@ -129,7 +133,7 @@
   <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
-  <!-- ===== Modal Reserva ===== -->
+  <!-- ===== Modal Reserva ===== (igual que antes) -->
   <div id="reservaModal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-black/30" data-close="true"></div>
     <div class="absolute inset-0 grid place-items-center p-4">
@@ -171,54 +175,43 @@
     </div>
   </div>
 
+  <!-- ===== Chat Overlay ===== -->
+  <div id="chatBackdrop" class="chat-overlay-backdrop"></div>
+  <div id="chatOverlay" class="chat-overlay" role="dialog" aria-modal="true" aria-label="Chat">
+    <header>
+      <span>Chat</span>
+      <button id="chatClose" title="Cerrar">✕</button>
+    </header>
+    <iframe id="chatFrame" src="" loading="lazy"></iframe>
+  </div>
+
   <script>
-    // ========= DETALLE =========
+    /* ===== Utils ===== */
     const ART_ID_SERVER = "{{ articulo_id }}";
-    const fmt = n => Number(n||0).toLocaleString('es-CO');
     const ownerBox = document.getElementById('owner');
-    let ARTICULO_CACHE = null;
+    const fmt = n => Number(n||0).toLocaleString('es-CO');
 
-    function getIdFromPath(){
-      const parts = location.pathname.split('/').filter(Boolean);
-      return parts[1] || "";
-    }
+    const TOKEN_KEY='access', REFRESH_KEY='refresh';
+    function getToken(){ return localStorage.getItem(TOKEN_KEY) || null; }
+    function getRefresh(){ return localStorage.getItem(REFRESH_KEY) || null; }
+    function setTokens({access,refresh}){ if(access) localStorage.setItem(TOKEN_KEY,access); if(refresh) localStorage.setItem(REFRESH_KEY,refresh); }
+    async function refreshAccessToken(){ const refresh=getRefresh(); if(!refresh) return null; const r=await fetch('/api/token/refresh/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh})}); if(!r.ok) return null; const d=await r.json(); if(d.access){ setTokens({access:d.access}); return d.access; } return null; }
+    async function authFetch(url,opt={}){ const t=getToken(); if(!t){ location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; throw new Error('No autenticado'); } const h=new Headers(opt.headers||{}); h.set('Authorization',`Bearer ${t}`); if(opt.body && !h.has('Content-Type')) h.set('Content-Type','application/json'); let resp=await fetch(url,{...opt,headers:h}); if(resp.status===401){ const na=await refreshAccessToken(); if(!na) return resp; h.set('Authorization',`Bearer ${na}`); resp=await fetch(url,{...opt,headers:h}); } return resp; }
 
-    // ----- Obtener artículo por id/slug -----
+    function avatarHtml(nameLike){ const txt=(nameLike||'').trim(); const ini=txt?txt[0].toUpperCase():'👤'; return `<div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">${ini}</div>`; }
+
     async function fetchByIdOrSlug(idOrSlug){
-      const direct = await fetch(`/api/articulos/${encodeURIComponent(idOrSlug)}/`);
-      if (direct.ok) return direct.json();
-
-      const q = await fetch(`/api/articulos/?slug=${encodeURIComponent(idOrSlug)}`);
-      if (q.ok){
-        const arr = await q.json();
-        if (Array.isArray(arr) && arr.length) return arr[0];
-      }
-
-      const s = await fetch(`/api/articulos/?search=${encodeURIComponent(idOrSlug)}&ordering=-creado`);
-      if (s.ok){
-        const arr = await s.json();
-        if (Array.isArray(arr) && arr.length) return arr[0];
-      }
+      const direct = await fetch(`/api/articulos/${encodeURIComponent(idOrSlug)}/`); if (direct.ok) return direct.json();
+      const q = await fetch(`/api/articulos/?slug=${encodeURIComponent(idOrSlug)}`); if (q.ok){ const arr = await q.json(); if (Array.isArray(arr) && arr.length) return arr[0]; }
+      const s = await fetch(`/api/articulos/?search=${encodeURIComponent(idOrSlug)}&ordering=-creado`); if (s.ok){ const arr = await s.json(); if (Array.isArray(arr) && arr.length) return arr[0]; }
       throw new Error('Articulo no encontrado');
     }
 
-    // ----- UI propietario -----
-    function avatarHtml(nameLike){
-      const txt = (nameLike || '').trim();
-      const ini = txt ? txt[0].toUpperCase() : '👤';
-      return `<div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">${ini}</div>`;
-    }
-
     function renderOwner(a){
-      const info = a.propietario_info || {};
-      const pObj = typeof a.propietario === 'object' ? a.propietario : {};
-      const nombre =
-        info.nombre || a.propietario_nombre || pObj.nombre || pObj.full_name || pObj.username || a.dueno_nombre || '';
-      const email  = info.email || pObj.email || a.propietario_email || '';
-      const tel    = info.telefono || pObj.telefono || pObj.phone || a.propietario_telefono || '';
-      const ubi    = info.ubicacion || a.ubicacion_prop || '';
-
-      ownerBox.innerHTML = `
+      const info=a.propietario_info||{}; const pObj=typeof a.propietario==='object'?a.propietario:{};
+      const nombre=info.nombre || a.propietario_nombre || pObj.nombre || pObj.full_name || pObj.username || a.dueno_nombre || '';
+      const email=info.email || pObj.email || a.propietario_email || ''; const tel=info.telefono || pObj.telefono || pObj.phone || a.propietario_telefono || ''; const ubi=info.ubicacion || a.ubicacion_prop || '';
+      ownerBox.innerHTML=`
         <div class="flex items-center gap-4 w-full">
           ${avatarHtml(nombre || email || a.propietario)}
           <div class="min-w-0">
@@ -234,380 +227,53 @@
         </div>`;
     }
 
-    // ----- Render detalle -----
     function renderArticulo(a){
       document.getElementById('title').textContent = a.titulo || 'Artículo';
-      const ubi = a.ubicacion || '';
-      const price = a.precio_por_dia ? `$${fmt(a.precio_por_dia)}/día` : '';
+      const ubi=a.ubicacion || ''; const price=a.precio_por_dia ? `$${fmt(a.precio_por_dia)}/día` : '';
       document.getElementById('ubiprice').textContent = [ubi, price].filter(Boolean).join(' • ') || '—';
-
-      const pricePill = document.getElementById('pricePill');
-      if (price){ pricePill.textContent = price; pricePill.classList.remove('hidden'); }
-
-      document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.';
-      renderOwner(a);
+      const pricePill=document.getElementById('pricePill'); if(price){ pricePill.textContent=price; pricePill.classList.remove('hidden'); }
+      document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.'; renderOwner(a);
 
       // Galería
-      const main = document.getElementById('galleryMain');
-      const thumbs = document.getElementById('thumbs');
-      const imagenes = [];
-      if (a.portada) imagenes.push(a.portada);
-      if (Array.isArray(a.imagenes)){
-        a.imagenes.forEach(img => {
-          const url = (img && (img.url || img.imagen || img.file)) || img;
-          if (url) imagenes.push(url);
-        });
-      }
-      if (imagenes.length){
-        main.innerHTML = `<img src="${imagenes[0]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`;
-        thumbs.innerHTML = imagenes.map((u,i)=>`
-          <button type="button" class="thumb h-16 w-24 rounded-lg overflow-hidden border smooth" data-i="${i}" ${i===0?'data-active="true"':''}>
-            <img src="${u}" class="w-full h-full object-cover" alt="Miniatura ${i+1}">
-          </button>
-        `).join('');
-        thumbs.addEventListener('click', e=>{
-          const b = e.target.closest('button.thumb'); if (!b) return;
-          const idx = +b.dataset.i;
-          main.innerHTML = `<img src="${imagenes[idx]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`;
-          thumbs.querySelectorAll('button.thumb').forEach(x=>x.removeAttribute('data-active'));
-          b.setAttribute('data-active','true');
-        });
-      } else {
-        main.innerHTML = `<div class="w-full h-full rounded-xl bg-slate-100"></div>`;
-        thumbs.innerHTML = '';
-      }
+      const main=document.getElementById('galleryMain'); const thumbs=document.getElementById('thumbs'); const imgs=[];
+      if (a.portada) imgs.push(a.portada);
+      if (Array.isArray(a.imagenes)) a.imagenes.forEach(img=>{ const u=(img&&(img.url||img.imagen||img.file))||img; if(u) imgs.push(u); });
+      if (imgs.length){
+        main.innerHTML=`<img src="${imgs[0]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`;
+        thumbs.innerHTML=imgs.map((u,i)=>`<button type="button" class="thumb h-16 w-24 rounded-lg overflow-hidden border smooth" data-i="${i}" ${i===0?'data-active="true"':''}><img src="${u}" class="w-full h-full object-cover" alt="Miniatura ${i+1}"></button>`).join('');
+        thumbs.addEventListener('click',e=>{ const b=e.target.closest('button.thumb'); if(!b) return; const idx=+b.dataset.i; main.innerHTML=`<img src="${imgs[idx]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`; thumbs.querySelectorAll('button.thumb').forEach(x=>x.removeAttribute('data-active')); b.setAttribute('data-active','true'); });
+      } else { main.innerHTML=`<div class="w-full h-full rounded-xl bg-slate-100"></div>`; thumbs.innerHTML=''; }
 
-      const reservarBtn = document.getElementById('reservarBtn');
-      const artRef = a.id || ART_ID_SERVER;
-      document.getElementById('contactarBtn').href = `/chat/?art=${encodeURIComponent(artRef)}`;
-
-      reservarBtn.removeAttribute('href');
-      reservarBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        openReservaModal(a);
-      });
+      // Botones
+      document.getElementById('reservarBtn').addEventListener('click',(e)=>{ e.preventDefault(); openReservaModal(a); });
+      document.getElementById('btnContactar').addEventListener('click', ()=> openChatOverlay(a.id || ART_ID_SERVER));
     }
 
     async function loadArticulo(){
-      const fromContext = ART_ID_SERVER && ART_ID_SERVER !== "None" ? ART_ID_SERVER : "";
-      const candidate = fromContext || getIdFromPath();
-      try{
-        const articulo = await fetchByIdOrSlug(candidate);
-        window.__ARTICULO__ = articulo;
-        ARTICULO_CACHE = articulo;
-        renderArticulo(articulo);
-      }catch(err){
-        document.getElementById('title').textContent = 'Artículo no encontrado';
-        document.getElementById('desc').textContent = 'No pudimos cargar la información del artículo.';
-        console.error(err);
-      }
+      const candidate = (ART_ID_SERVER && ART_ID_SERVER !== "None") ? ART_ID_SERVER : location.pathname.split('/').filter(Boolean)[1] || "";
+      try{ const articulo = await fetchByIdOrSlug(candidate); window.__ARTICULO__=articulo; renderArticulo(articulo); }
+      catch(err){ document.getElementById('title').textContent='Artículo no encontrado'; document.getElementById('desc').textContent='No pudimos cargar la información del artículo.'; console.error(err); }
     }
 
-    // Compartir
-    document.getElementById('shareBtn')?.addEventListener('click', async ()=>{
-      const url = location.href;
-      try{
-        if (navigator.share){
-          await navigator.share({ title: document.title, url });
-        } else {
-          await navigator.clipboard.writeText(url);
-          const btn = document.getElementById('shareBtn');
-          const old = btn.textContent;
-          btn.textContent = 'Enlace copiado';
-          setTimeout(()=>btn.textContent = old, 1400);
-        }
-      }catch(_){}
-    });
-
-    // ===== Helpers reserva / dinero =====
-    function daysBetween(d1, d2){
-      const ms = (d2 - d1);
-      const days = Math.floor(ms / (1000*60*60*24)) + 1;
-      return Math.max(days, 1);
+    // ====== Chat Overlay ======
+    function openChatOverlay(articleId){
+      if (!localStorage.getItem('access') && !localStorage.getItem('jwt')) { window.location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; return; }
+      const frame=document.getElementById('chatFrame'); frame.src=`/chat/?embed=1&article=${encodeURIComponent(articleId)}`;
+      document.getElementById('chatBackdrop').style.display='block';
+      document.getElementById('chatOverlay').style.display='block';
     }
-    function toISODateStr(date){ // Date -> 'YYYY-MM-DD'
-      const y = date.getFullYear();
-      const m = String(date.getMonth()+1).padStart(2,'0');
-      const d = String(date.getDate()).padStart(2,'0');
-      return `${y}-${m}-${d}`;
-    }
-    function parseDMY(s){ // 'dd/mm/aaaa' -> Date
-      const [d,m,y] = s.split('/').map(Number);
-      const dt = new Date(Date.UTC(y,(m-1),d));
-      return isNaN(dt) ? null : dt;
-    }
-    function formatCOP(n){
-      return Number(n||0).toLocaleString('es-CO', {style:'currency', currency:'COP', maximumFractionDigits:0});
-    }
-    function setDispMessage(ok, text){
-      const el = document.getElementById('dispMsg');
-      el.textContent = text || '';
-      el.className = "text-sm " + (ok ? "text-emerald-600" : "text-red-600");
-    }
+    document.getElementById('chatClose').onclick = () => {
+      document.getElementById('chatOverlay').style.display='none';
+      document.getElementById('chatBackdrop').style.display='none';
+      document.getElementById('chatFrame').src='about:blank';
+    };
+    document.getElementById('chatBackdrop').onclick = () => {
+      document.getElementById('chatOverlay').style.display='none';
+      document.getElementById('chatBackdrop').style.display='none';
+      document.getElementById('chatFrame').src='about:blank';
+    };
 
-    // ===== JWT helpers + authFetch =====
-    const TOKEN_KEY = 'access';
-    const REFRESH_KEY = 'refresh';
-
-    function getToken() { return localStorage.getItem(TOKEN_KEY) || null; }
-    function getRefresh() { return localStorage.getItem(REFRESH_KEY) || null; }
-    function setTokens({ access, refresh }) {
-      if (access) localStorage.setItem(TOKEN_KEY, access);
-      if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
-    }
-    async function refreshAccessToken() {
-      const refresh = getRefresh();
-      if (!refresh) return null;
-      const r = await fetch('/api/token/refresh/', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ refresh })
-      });
-      if (!r.ok) return null;
-      const data = await r.json();
-      if (data.access) { setTokens({ access: data.access }); return data.access; }
-      return null;
-    }
-    async function authFetch(url, options = {}) {
-      const token = getToken();
-      if (!token) {
-        location.href = `/login/?next=${encodeURIComponent(location.pathname)}`;
-        throw new Error('No autenticado');
-      }
-      const headers = new Headers(options.headers || {});
-      headers.set('Authorization', `Bearer ${token}`);
-      if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-      let resp = await fetch(url, { ...options, headers });
-      if (resp.status === 401) {
-        const newAccess = await refreshAccessToken();
-        if (!newAccess) return resp;
-        headers.set('Authorization', `Bearer ${newAccess}`);
-        resp = await fetch(url, { ...options, headers });
-      }
-      return resp;
-    }
-
-    // ==== Carrito API (sin panel) ====
-    function requireLoginOrRedirect(){
-      const t = getToken();
-      if (!t) { location.href = `/login/?next=${encodeURIComponent('/carrito/')}`; return false; }
-      return true;
-    }
-    async function apiGetCart(){
-      const r = await authFetch('/api/carrito/');
-      if (!r.ok) throw new Error('No se pudo cargar el carrito');
-      return r.json();
-    }
-    async function apiAddToCart(item){
-      const r = await authFetch('/api/carrito/', { method:'POST', body: JSON.stringify(item) });
-      if (!r.ok){
-        const d = await r.json().catch(()=> ({}));
-        throw new Error(d.detail || d.non_field_errors?.[0] || 'No se pudo agregar al carrito');
-      }
-      return r.json();
-    }
-
-    // ==== Navbar carrito & checkout ====
-    const cartBtn = document.getElementById('cartBtn');
-    const cartBadge = document.getElementById('cartBadge');
-    const checkoutBtn = document.getElementById('checkoutBtn');
-
-    cartBtn?.addEventListener('click', ()=>{
-      if (!getToken()) location.href = '/login/?next=/carrito/';
-      else location.href = '/carrito/';
-    });
-    checkoutBtn?.addEventListener('click', ()=>{
-      if (!getToken()) location.href = '/login/?next=/checkout/';
-      else location.href = '/checkout/';
-    });
-
-    (async ()=>{
-      if (!getToken()) { cartBadge?.classList.add('hidden'); checkoutBtn?.classList.add('hidden'); return; }
-      try{
-        const items = await apiGetCart();
-        const hasItems = Array.isArray(items) && items.length > 0;
-        cartBadge.classList.toggle('hidden', !hasItems);
-        cartBadge.textContent = hasItems ? items.length : 0;
-        checkoutBtn.classList.toggle('hidden', !hasItems);
-      }catch(_){
-        checkoutBtn?.classList.add('hidden');
-      }
-    })();
-
-    // ====== Disponibilidad + Datepicker PRO (Flatpickr) ======
-    // Cache { 'YYYY-MM' : Set(['YYYY-MM-DD', ...]) }
-    const MONTH_CACHE = new Map();
-
-    async function fetchDisponibilidadMes(artId, year, month01){
-      const key = `${year}-${String(month01).padStart(2,'0')}`;
-      if (MONTH_CACHE.has(key)) return MONTH_CACHE.get(key);
-
-      // rango del mes
-      const from = `${key}-01`;
-      const lastDay = new Date(year, month01, 0).getDate(); // month01 es 1..12
-      const to = `${key}-${String(lastDay).padStart(2,'0')}`;
-
-      const url = `/api/alquileres/disponibilidad/?articulo=${encodeURIComponent(artId)}&from=${from}&to=${to}`;
-      const r = await fetch(url);
-      if (!r.ok) { MONTH_CACHE.set(key, new Set()); return MONTH_CACHE.get(key); }
-      const data = await r.json();
-      const set = new Set(Array.isArray(data.dias_ocupados) ? data.dias_ocupados : []);
-      MONTH_CACHE.set(key, set);
-      return set;
-    }
-
-    // Devuelve true si la fecha está ocupada según caché
-    function isUnavailable(date){
-      const y = date.getFullYear();
-      const m = String(date.getMonth()+1).padStart(2,'0');
-      const key = `${y}-${m}`;
-      const set = MONTH_CACHE.get(key);
-      if (!set) return false;
-      return set.has(toISODateStr(date));
-    }
-
-    function setupDatepicker(art){
-      const inputStart = document.getElementById('fInicio');
-      const inputEnd   = document.getElementById('fFin');
-      const btnConfirm = document.getElementById('btnConfirmar');
-
-      // Resetea valores
-      inputStart.value = '';
-      inputEnd.value = '';
-      btnConfirm.disabled = true;
-
-      // función disable dinámica
-      const disableFn = (date)=> isUnavailable(date);
-
-      // Carga mes visible (actual) y siguiente para UX fluida
-      async function primeMonths(instance){
-        const y = instance.currentYear;
-        const m = instance.currentMonth + 1; // 1..12
-        await Promise.all([
-          fetchDisponibilidadMes(art.id || ART_ID_SERVER, y, m),
-          fetchDisponibilidadMes(art.id || ART_ID_SERVER, m===12?y+1:y, m===12?1:m+1),
-        ]);
-        instance.redraw(); // repinta para aplicar clases
-      }
-
-      // Marca los días rojos en el render
-      function onDayCreate(dObj, dStr, fp, dayElem){
-        const dt = dayElem.dateObj;
-        if (isUnavailable(dt)) dayElem.classList.add('tl-unavailable');
-      }
-
-      // Validación del rango seleccionado
-      function validateRange(fp){
-        const s = inputStart.value, e = inputEnd.value;
-        if (!s || !e){ setDispMessage(true, 'Selecciona un rango de fechas'); btnConfirm.disabled = true; return; }
-        const d1 = parseDMY(s), d2 = parseDMY(e);
-        if (!d1 || !d2 || d2 < d1){ setDispMessage(false, 'Rango inválido'); btnConfirm.disabled = true; return; }
-
-        // si algún día del rango está ocupado → error
-        let clash = false;
-        for (let dt = new Date(d1); dt <= d2; dt.setUTCDate(dt.getUTCDate()+1)){
-          if (isUnavailable(new Date(dt))) { clash = true; break; }
-        }
-        if (clash){ setDispMessage(false, 'El rango contiene días no disponibles'); btnConfirm.disabled = true; return; }
-
-        // OK: calcula totales
-        setDispMessage(true, 'Fechas disponibles');
-        const dias = daysBetween(new Date(d1), new Date(d2));
-        document.getElementById('sumDias').textContent = dias;
-        document.getElementById('sumPPD').textContent = formatCOP(art.precio_por_dia);
-        document.getElementById('sumTotal').textContent = formatCOP(dias * (art.precio_por_dia || 0));
-        btnConfirm.disabled = false;
-      }
-
-      // Inicializa flatpickr en español con 2 inputs (rangePlugin)
-      const fp = flatpickr(inputStart, {
-        altInput: false,
-        dateFormat: "d/m/Y",
-        locale: flatpickr.l10ns.es,
-        minDate: "today",
-        plugins: [new rangePlugin({ input: inputEnd })],
-        disable: [disableFn],               // bloquea selección en días ocupados
-        onOpen: [primeMonths],
-        onMonthChange: [primeMonths],
-        onYearChange: [primeMonths],
-        onDayCreate: [onDayCreate],
-        onChange: function(){ validateRange(this); }
-      });
-
-      // Primera precarga (mes actual)
-      primeMonths(fp);
-    }
-
-    // ====== Modal: abrir, wire & confirmar ======
-    async function checkDisponibilidad(artId, d1, d2){
-      const from = toISODateStr(d1);
-      const to   = toISODateStr(d2);
-      const url = `/api/alquileres/disponibilidad/?articulo=${encodeURIComponent(artId)}&from=${from}&to=${to}`;
-      const r = await fetch(url);
-      if (!r.ok) throw new Error('No se pudo consultar disponibilidad');
-      return r.json();
-    }
-
-    function openReservaModal(art){
-      const modal = document.getElementById('reservaModal');
-      modal.classList.remove('hidden');
-
-      document.getElementById('mArtTitle').textContent = art.titulo || 'Artículo';
-      document.getElementById('sumPPD').textContent = formatCOP(art.precio_por_dia);
-      document.getElementById('sumDias').textContent = '—';
-      document.getElementById('sumTotal').textContent = '—';
-      setDispMessage(true, 'Selecciona un rango de fechas');
-
-      // Monta el datepicker PRO
-      setupDatepicker(art);
-
-      // confirmar => agregar al carrito y redirigir a /carrito/
-      document.getElementById('btnConfirmar').onclick = async () => {
-        const s = document.getElementById('fInicio').value;
-        const e = document.getElementById('fFin').value;
-        const d1 = parseDMY(s), d2 = parseDMY(e);
-        if (!d1 || !d2) { setDispMessage(false, 'Selecciona inicio y fin'); return; }
-        if (!requireLoginOrRedirect()) return;
-
-        try{
-          // Revalida contra API el rango final
-          const info = await checkDisponibilidad(art.id || ART_ID_SERVER, d1, d2);
-          const ocupados = new Set(info.dias_ocupados || []);
-          for (let dt = new Date(d1); dt <= d2; dt.setUTCDate(dt.getUTCDate()+1)){
-            if (ocupados.has(toISODateStr(new Date(dt)))) throw new Error('Fechas no disponibles');
-          }
-
-          const payload = {
-            articulo: art.id || ART_ID_SERVER,
-            // backend espera YYYY-MM-DD
-            fecha_inicio: toISODateStr(d1),
-            fecha_fin: toISODateStr(d2)
-          };
-          await apiAddToCart(payload);
-
-          // Actualiza badge y muestra botón de checkout
-          try{
-            const items = await apiGetCart();
-            const hasItems = Array.isArray(items) && items.length > 0;
-            cartBadge.classList.toggle('hidden', !hasItems);
-            cartBadge.textContent = hasItems ? items.length : 0;
-            checkoutBtn.classList.toggle('hidden', !hasItems);
-          }catch(_){}
-
-          location.href = '/carrito/';
-        }catch(err){ setDispMessage(false, err.message || 'No se pudo agregar'); }
-      };
-
-      // cerrar modal
-      const closeHandler = (e) => {
-        if (e.target.matches('[data-close], [data-close] * , .bg-black\\/30')) {
-          modal.classList.add('hidden');
-          modal.removeEventListener('click', closeHandler);
-        }
-      };
-      modal.addEventListener('click', closeHandler);
-    }
-
+    /* ===== Arranque ===== */
     loadArticulo();
   </script>
 </body>
