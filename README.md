@@ -5,7 +5,7 @@ Permite a propietarios publicar sus artículos y a arrendatarios explorar, reser
 
 ## Autores
 -  Kenia Margarita Toscano Vasquez
--  Leidy carolina Obando Figueroa
+
 
 ##  Características principales
 
