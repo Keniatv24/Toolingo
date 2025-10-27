@@ -1,21 +1,19 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
+from django.db.models import Count
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models import Conversation
 try:
-    # Si existe el modelo Message lo importamos (nombre típico)
     from .models import Message  # type: ignore
-except Exception:  # pragma: no cover
-    Message = None  # para que no truene si aún no existe
+except Exception:
+    Message = None
 
-# Serializers
 from .serializers import ConversationListSerializer as ConversationSerializer
 try:
     from .serializers import MessageSerializer  # type: ignore
-except Exception:  # pragma: no cover
+except Exception:
     MessageSerializer = None
 
 from catalog.models import Articulo
@@ -26,7 +24,6 @@ User = get_user_model()
 class ConversationViewSet(viewsets.ModelViewSet):
     """
     API de conversaciones.
-    Incluye acciones auxiliares:
       - POST /api/chats/by-article/
       - GET/POST /api/chats/{id}/messages/
       - POST /api/chats/{id}/read/
@@ -36,25 +33,20 @@ class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """
-        Por defecto listamos solo las conversaciones donde participa el usuario.
-        """
         user = self.request.user
-        return (Conversation.objects
-                .filter(participantes=user)
-                .distinct()
-                .order_by("-creado") if hasattr(Conversation, "creado") else
-                Conversation.objects.filter(participantes=user).distinct())
+        base = Conversation.objects.filter(participantes=user).distinct()
+        return base.order_by("-creado") if hasattr(Conversation, "creado") else base
 
-    
-    # Crear / obtener conversación a partir de un artículo
-    
-    @action(detail=False, methods=['post'], url_path='by-article')
-    def by_article(self, request):
+    # ======================================================
+    # === Conversación por artículo ========================
+    # ======================================================
+    @action(detail=False, methods=["post"], url_path="by-article")
+    def by_article(self, request, *args, **kwargs):
         """
-        Crea o retorna la conversación entre el usuario autenticado y
-        el propietario del artículo recibido.
-        Body esperado: {"articulo_id": "<uuid|id>"}  (también acepta ?article= o ?articulo=)
+        Devuelve o crea la conversación ligada a un artículo entre el usuario actual
+        y el propietario. Si el usuario ES el propietario, retorna la última conversación
+        existente para ese artículo (si la hay).
+        Acepta: body {"articulo_id": "..."} o query ?articulo= / ?article=
         """
         art_id = (
             request.data.get("articulo_id")
@@ -64,13 +56,13 @@ class ConversationViewSet(viewsets.ModelViewSet):
         if not art_id:
             return Response({"detail": "articulo_id requerido"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1) Buscar artículo
+        # 1) Artículo
         try:
             articulo = Articulo.objects.get(pk=art_id)
         except Articulo.DoesNotExist:
             return Response({"detail": "Artículo no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
-        # 2) Hallar propietario (tolerante a diferentes nombres de campo)
+        # 2) Dueño (ajusta si tu campo se llama distinto)
         owner = (
             getattr(articulo, "propietario", None)
             or getattr(articulo, "usuario", None)
@@ -82,59 +74,76 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
         me = request.user
 
-        # 3) Reusar conversación existente con ese par de usuarios
+        # 👉 Si el que llama es el dueño, devolver la conversación más reciente del artículo
         if owner == me:
-            # conversación de 1 participante (consigo mismo)
             conv = (
-                Conversation.objects.filter(participantes=me)
-                .annotate(num=Count("participantes"))
-                .filter(num=1)
+                Conversation.objects
+                .filter(articulo=articulo, participantes=me)
+                .order_by("-ultimo_mensaje_en", "-creado")
                 .first()
             )
             if not conv:
-                conv = Conversation.objects.create()
-                conv.participantes.add(me)
-        else:
+                return Response({"detail": "Aún no hay conversaciones para este artículo"}, status=status.HTTP_404_NOT_FOUND)
+            data = self.get_serializer(conv, context={"request": request}).data
+            data["created"] = False
+            return Response(data, status=status.HTTP_200_OK)
+
+        # 3) Reusar conversación exacta (mismo artículo y ambos usuarios)
+        conv = (
+            Conversation.objects
+            .filter(articulo=articulo)
+            .filter(participantes=me)
+            .filter(participantes=owner)
+            .first()
+        )
+        created = False
+        if not conv:
+            # Migrar una conversación vieja sin artículo (si existe)
             conv = (
-                Conversation.objects.filter(participantes=me)
+                Conversation.objects
+                .filter(articulo__isnull=True)
+                .filter(participantes=me)
                 .filter(participantes=owner)
                 .first()
             )
-            if not conv:
-                conv = Conversation.objects.create()
+            if conv:
+                conv.articulo = articulo
+                conv.save(update_fields=["articulo"])
+            else:
+                conv = Conversation.objects.create(articulo=articulo)
                 conv.participantes.add(me, owner)
+                created = True
 
-        data = ConversationSerializer(conv, context={"request": request}).data
-        return Response(data, status=status.HTTP_200_OK)
+        data = self.get_serializer(conv, context={"request": request}).data
+        data["created"] = created
+        return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
-   
-    # Listar / crear mensajes de una conversación
-    
-    @action(detail=True, methods=['get', 'post'], url_path='messages')
+    # ======================================================
+    # === Mensajes =========================================
+    # ======================================================
+    @action(detail=True, methods=["get", "post"], url_path="messages")
     def messages(self, request, pk=None):
         """
-        GET  -> lista mensajes de la conversación
+        GET  -> lista mensajes de la conversación (si el usuario pertenece)
         POST -> crea un mensaje en la conversación
         """
         if Message is None or MessageSerializer is None:
             return Response({"detail": "Modelo/serializer de mensajes no disponible"}, status=501)
 
-        # Recuperar la conversación a la que el usuario pertenece
         try:
             conv = Conversation.objects.filter(participantes=request.user).get(pk=pk)
         except Conversation.DoesNotExist:
             return Response({"detail": "Conversación no encontrada"}, status=404)
 
-        # Detección robusta del nombre del FK en Message (conversation vs conversacion)
         fk_name = "conversacion" if hasattr(Message, "conversacion_id") else "conversation"
 
         if request.method.lower() == "get":
-            q = Q(**{f"{fk_name}": conv})
-            qs = Message.objects.filter(q).order_by("creado") if hasattr(Message, "creado") else Message.objects.filter(q).order_by("id")
+            qs = Message.objects.filter(**{fk_name: conv}).order_by("creado") if hasattr(Message, "creado") \
+                 else Message.objects.filter(**{fk_name: conv}).order_by("id")
             return Response(MessageSerializer(qs, many=True, context={"request": request}).data)
 
         # POST
-        contenido = request.data.get("contenido", "").strip()
+        contenido = (request.data.get("contenido") or "").strip()
         if not contenido:
             return Response({"detail": "contenido requerido"}, status=400)
 
@@ -143,14 +152,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
         data = MessageSerializer(msg, context={"request": request}).data
         return Response(data, status=201)
 
-   
-    # Marcar como leído (simplificado)
- 
-    @action(detail=True, methods=['post'], url_path='read')
+    
+    @action(detail=True, methods=["post"], url_path="read")
     def mark_read(self, request, pk=None):
-        """
-        Marca los mensajes como leídos para el usuario (no-op si no hay tracking).
-        Se deja simple para no acoplarse a implementaciones específicas.
-        """
-        # Aquí podrías guardar un timestamp por usuario/conversación, etc.
+        """Marca mensajes como leídos (placeholder)."""
         return Response(status=204)

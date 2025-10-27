@@ -133,7 +133,7 @@
   <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
-  <!-- ===== Modal Reserva ===== (igual que antes) -->
+  <!-- ===== Modal Reserva ===== (estructura base, puedes conectar tus endpoints) -->
   <div id="reservaModal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-black/30" data-close="true"></div>
     <div class="absolute inset-0 grid place-items-center p-4">
@@ -187,7 +187,7 @@
 
   <script>
     /* ===== Utils ===== */
-    const ART_ID_SERVER = "{{ articulo_id }}";
+    const ART_ID_SERVER = "{{ articulo_id }}";  /* si tu vista pasa articulo_id */
     const ownerBox = document.getElementById('owner');
     const fmt = n => Number(n||0).toLocaleString('es-CO');
 
@@ -208,9 +208,11 @@
     }
 
     function renderOwner(a){
-      const info=a.propietario_info||{}; const pObj=typeof a.propietario==='object'?a.propietario:{};
+      const info=a.propietario_info||{}; const pObj=typeof a.propietario==='object'?a.propietario:{}; 
       const nombre=info.nombre || a.propietario_nombre || pObj.nombre || pObj.full_name || pObj.username || a.dueno_nombre || '';
-      const email=info.email || pObj.email || a.propietario_email || ''; const tel=info.telefono || pObj.telefono || pObj.phone || a.propietario_telefono || ''; const ubi=info.ubicacion || a.ubicacion_prop || '';
+      const email=info.email || pObj.email || a.propietario_email || '';
+      const tel=info.telefono || pObj.telefono || pObj.phone || a.propietario_telefono || '';
+      const ubi=info.ubicacion || a.ubicacion_prop || '';
       ownerBox.innerHTML=`
         <div class="flex items-center gap-4 w-full">
           ${avatarHtml(nombre || email || a.propietario)}
@@ -255,10 +257,25 @@
       catch(err){ document.getElementById('title').textContent='Artículo no encontrado'; document.getElementById('desc').textContent='No pudimos cargar la información del artículo.'; console.error(err); }
     }
 
+    // ====== Reserva (placeholder; conecta tu lógica real) ======
+    function openReservaModal(a){
+      document.getElementById('mArtTitle').textContent = a.titulo || 'Artículo';
+      document.getElementById('reservaModal').classList.remove('hidden');
+      // Aquí puedes inicializar flatpickr, disponibilidad, etc.
+    }
+    document.querySelectorAll('#reservaModal [data-close="true"]').forEach(el=>{
+      el.addEventListener('click', ()=> document.getElementById('reservaModal').classList.add('hidden'));
+    });
+
     // ====== Chat Overlay ======
     function openChatOverlay(articleId){
-      if (!localStorage.getItem('access') && !localStorage.getItem('jwt')) { window.location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; return; }
-      const frame=document.getElementById('chatFrame'); frame.src=`/chat/?embed=1&article=${encodeURIComponent(articleId)}`;
+      if (!localStorage.getItem('access') && !localStorage.getItem('jwt')) {
+        window.location.href=`/login/?next=${encodeURIComponent(location.pathname)}`;
+        return;
+      }
+      const frame=document.getElementById('chatFrame');
+      // Si luego quieres saludo automático, añade &intent=contact
+      frame.src=`/chat/?embed=1&article=${encodeURIComponent(articleId)}`;
       document.getElementById('chatBackdrop').style.display='block';
       document.getElementById('chatOverlay').style.display='block';
     }
