@@ -2,46 +2,83 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chat – Toolingo</title>
+  <script>console.log("CHAT TEMPLATE v4 (con campanita)");</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'}
-          }
-        }
-      }
+      theme: { extend: { colors: { brand: {50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'} } } }
     }
   </script>
-</head>
-<body class="bg-slate-50 flex flex-col h-screen">
+  <style>
+    html, body { height: 100%; background: #f1f5f9; }
+    #messages { display:flex; flex-direction:column; gap:8px; padding:16px; }
 
-  <!-- ======= HEADER ======= -->
-  <header class="bg-slate-900 text-white flex items-center justify-between px-4 py-3">
+    .bubble-wrap{ display:flex; align-items:flex-end; width:100%; }
+    .bubble-wrap.them{ justify-content:flex-start; }
+    .bubble-wrap.me{ justify-content:flex-end; }
+
+    .avatar{
+      width:34px;height:34px;border-radius:9999px;background:#e2e8f0;color:#475569;
+      display:grid;place-items:center;font-size:.8rem;font-weight:700;margin-right:8px;flex-shrink:0;
+    }
+
+    .msg{
+      max-width:70%; padding:10px 14px; border-radius:18px; box-shadow:0 1px 2px rgba(0,0,0,.08);
+      font-size:15px; line-height:1.4; word-break:break-word; position:relative;
+    }
+    .msg--me{ background:#f97316; color:#fff; border-bottom-right-radius:6px; margin-right:8px; }
+    .msg--them{ background:#fff; color:#0f172a; border-bottom-left-radius:6px; margin-left:8px; }
+
+    .msg-meta{ font-size:11px; opacity:.7; margin-top:4px; text-align:right; }
+    @media (max-width:640px){ .msg{ max-width:85%; } }
+
+    /* Panel notificaciones */
+    .notif-panel{ position:absolute; right:0; top:48px; width:20rem; max-height:24rem; overflow:auto; background:#fff;
+      border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 12px 32px rgba(15,23,42,.18); z-index: 1000; }
+  </style>
+</head>
+<body class="flex flex-col h-screen">
+
+  <!-- HEADER -->
+  <header class="relative bg-slate-900 text-white flex items-center justify-between px-4 py-3">
     <div class="flex items-center gap-3">
       <span class="text-xl font-bold">Chat</span>
       <div id="chatArticle" class="hidden sm:flex items-center gap-3">
         <img id="chatArtImg" src="" alt="Artículo" class="h-9 w-9 rounded-lg object-cover border border-white/20">
-        <div class="text-sm">
+        <div class="text-sm leading-tight">
           <div id="chatArtTitle" class="font-medium"></div>
           <div id="chatArtOwner" class="text-xs text-slate-300"></div>
         </div>
       </div>
     </div>
+
     <div class="flex items-center gap-2">
+      <!-- 🔔 Campanita -->
+      <button id="notifBell" class="relative p-2 rounded-lg hover:bg-white/10" title="Notificaciones">🔔
+        <span id="notifBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-red-500 text-white hidden">0</span>
+      </button>
+      <div id="notifPanel" class="hidden notif-panel">
+        <div class="px-4 py-2 border-b text-slate-800 font-semibold">Notificaciones</div>
+        <div id="notifList" class="p-2 text-sm text-slate-700">
+          <div class="p-3 text-slate-400 empty">Sin notificaciones</div>
+        </div>
+        <div class="px-3 py-2 border-t text-right">
+          <button id="notifMarkAll" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">Marcar todo como leído</button>
+        </div>
+      </div>
+
       <button id="markReadBtn" class="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded">Marcar leído</button>
       <button id="refreshBtn" class="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded">Refrescar</button>
     </div>
   </header>
 
-  <!-- ======= MENSAJES ======= -->
-  <main id="messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-100"></main>
+  <!-- MENSAJES -->
+  <main id="messages" class="flex-1 overflow-y-auto bg-slate-100"></main>
 
-  <!-- ======= INPUT MENSAJE ======= -->
+  <!-- INPUT -->
   <footer class="bg-white border-t p-3">
     <form id="sendForm" class="flex items-end gap-3">
       <div class="flex-1 relative">
@@ -53,145 +90,276 @@
   </footer>
 
   <script>
-    // ========== UTILIDADES ==========
+    // ====== Utils / Auth ======
     const qs = new URLSearchParams(location.search);
-    const embed = qs.get("embed") === "1";
     const articleId = qs.get("article");
+    const intent = qs.get("intent");
     let conversationId = null;
     let me = null;
 
-    function fmtTime(ts) {
-      const d = new Date(ts);
-      return d.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+    function getToken(){ return localStorage.getItem("access") || localStorage.getItem("jwt"); }
+    async function authFetch(url,opt={}){
+      const t=getToken();
+      if(!t){ location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; throw new Error("No auth"); }
+      const h=new Headers(opt.headers||{});
+      h.set("Authorization",`Bearer ${t}`);
+      if(opt.body && !h.has("Content-Type")) h.set("Content-Type","application/json");
+      return await fetch(url,{...opt,headers:h});
     }
+    async function getJSON(url,opt={}){ const r=await authFetch(url,opt); let d={}; try{d=await r.json()}catch{} return {ok:r.ok,data:d}; }
+    const messagesEl=document.getElementById("messages");
 
-    function getToken() {
-      return localStorage.getItem("access") || localStorage.getItem("jwt");
+    // ====== Identity helpers ======
+    function normalizeId(v){ try{return String(v??"").trim()}catch{return""} }
+    function isMineMessage(msg, me){
+      const a=msg?.autor||{};
+      const meId=normalizeId(me?.id||me?.user?.id);
+      const auId=normalizeId(a?.id);
+      const meEmail=(me?.email||me?.user?.email||"").toLowerCase();
+      const auEmail=(a?.email||"").toLowerCase();
+      const meUser=(me?.username||me?.user?.username||"").toLowerCase();
+      const auUser=(a?.username||"").toLowerCase();
+      return (meId && auId && meId===auId) || (meEmail && auEmail && meEmail===auEmail) || (meUser && auUser && meUser===auUser);
     }
+    function initials(nameOrEmail){
+      const s=(nameOrEmail||"").trim();
+      if(!s) return "•";
+      const parts=s.split(/[ .@_-]+/).filter(Boolean);
+      return (parts[0][0]||"•").toUpperCase();
+    }
+    function fmtTime(ts){ try { return new Date(ts).toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"}) } catch { return "" } }
 
-    async function authFetch(url, opt = {}) {
-      const t = getToken();
-      if (!t) {
-        if (!embed) location.href = `/login/?next=${encodeURIComponent(location.pathname)}`;
-        throw new Error("No autenticado");
+    // ====== Render ======
+    function appendMessage(msg){
+      const mine = isMineMessage(msg, me);
+      const who = msg?.autor?.username || msg?.autor?.email || "";
+      const wrap = document.createElement("div");
+      wrap.className = "bubble-wrap " + (mine ? "me" : "them");
+
+      if (!mine) {
+        const av = document.createElement("div");
+        av.className = "avatar";
+        av.textContent = initials(who);
+        wrap.appendChild(av);
       }
-      const headers = new Headers(opt.headers || {});
-      headers.set("Authorization", `Bearer ${t}`);
-      if (opt.body && !headers.has("Content-Type"))
-        headers.set("Content-Type", "application/json");
-      const resp = await fetch(url, { ...opt, headers });
-      return resp;
-    }
 
-    async function getJSON(url, opt = {}) {
-      const resp = await authFetch(url, opt);
-      let data = {};
-      try { data = await resp.json(); } catch {}
-      return { ok: resp.ok, data };
-    }
+      const bubble = document.createElement("div");
+      bubble.className = "msg " + (mine ? "msg--me" : "msg--them");
+      bubble.innerHTML = `
+        <div>${msg.contenido}</div>
+        <div class="msg-meta">${who ? who + " • " : ""}${fmtTime(msg.creado)}</div>
+      `;
+      wrap.appendChild(bubble);
 
-    // ========== RENDER MENSAJES ==========
-    const messagesEl = document.getElementById("messages");
-
-    function renderMessages(msgs) {
-      messagesEl.innerHTML = "";
-      msgs.forEach(m => {
-        const mine = m.autor?.id === me?.id;
-        const bubble = document.createElement("div");
-        bubble.className = `max-w-[80%] p-3 rounded-2xl shadow-sm ${mine ? "bg-brand-600 text-white ml-auto" : "bg-white text-slate-800"} `;
-        bubble.innerHTML = `
-          <div class="text-sm">${m.contenido}</div>
-          <div class="text-[11px] mt-1 opacity-70 text-right">${m.autor?.username || m.autor?.email || ""} • ${fmtTime(m.creado)}</div>
-        `;
-        const wrap = document.createElement("div");
-        wrap.className = `flex ${mine ? "justify-end" : "justify-start"}`;
-        wrap.appendChild(bubble);
-        messagesEl.appendChild(wrap);
-      });
+      messagesEl.appendChild(wrap);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    async function loadMessages() {
-      if (!conversationId) return;
-      const { ok, data } = await getJSON(`/api/chats/${conversationId}/messages/`);
-      if (ok) renderMessages(data);
-    }
+    async function loadMessages(shouldBeep=false){
+      if(!conversationId) return;
+      const {ok,data}=await getJSON(`/api/chats/${conversationId}/messages/`);
+      if(!ok || !Array.isArray(data)) return;
 
-    async function sendMessage(content) {
-      if (!conversationId) return;
-      const { ok, data } = await getJSON(`/api/chats/${conversationId}/messages/`, {
-        method: "POST",
-        body: JSON.stringify({ contenido: content })
-      });
-      if (ok) {
-        await loadMessages();
+      // Detectar último mensaje previo para sonar sólo si es entrante nuevo
+      const lastRenderedId = messagesEl.getAttribute('data-last-id') || null;
+      const last = data[data.length-1] || null;
+
+      messagesEl.innerHTML="";
+      data.forEach(appendMessage);
+
+      if(last){ messagesEl.setAttribute('data-last-id', last.id); }
+
+      if(shouldBeep && last && !isMineMessage(last, me)){
+        beep(); flashTitle();
       }
     }
 
-    // ========== EVENTOS ==========
-    const form = document.getElementById("sendForm");
-    const input = document.getElementById("messageInput");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (!text) return;
-      input.value = "";
-      await sendMessage(text);
-    });
-
-    document.getElementById("refreshBtn").addEventListener("click", loadMessages);
-    document.getElementById("markReadBtn").addEventListener("click", async () => {
-      if (conversationId) await authFetch(`/api/chats/${conversationId}/read/`, { method: "POST" });
-    });
-
-    // ========== CONVERSACIÓN POR ARTÍCULO ==========
-    async function ensureConversationByArticle() {
-      if (!articleId) return;
-
-      const { ok, data } = await getJSON(`/api/chats/by-article/?articulo=${encodeURIComponent(articleId)}`, {
-        method: "POST",
-        body: JSON.stringify({ articulo_id: articleId })
+    async function sendMessage(text){
+      if(!conversationId || !text.trim()) return;
+      const {ok,data}=await getJSON(`/api/chats/${conversationId}/messages/`,{
+        method:"POST",
+        body:JSON.stringify({contenido:text})
       });
+      if(ok) appendMessage(data);
+    }
 
-      if (!ok) {
-        messagesEl.innerHTML = `<div class="text-center text-red-600 font-medium mt-8">⚠️ No se pudo iniciar la conversación</div>`;
-        console.error("Error al crear chat:", data);
+    // ====== Form ======
+    const form=document.getElementById("sendForm");
+    const input=document.getElementById("messageInput");
+    input.addEventListener("keydown",(e)=>{
+      if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); }
+    });
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const t=input.value.trim();
+      if(!t) return;
+      input.value="";
+      await sendMessage(t);
+    });
+    document.getElementById("refreshBtn").addEventListener("click", ()=>loadMessages(false));
+    document.getElementById("markReadBtn").addEventListener("click", async ()=>{
+      if(conversationId) await authFetch(`/api/chats/${conversationId}/read/`,{method:"POST"});
+    });
+
+    // ====== Ensure conversation by article ======
+    async function ensureConversationByArticle(){
+      if(!articleId) return;
+      const {ok,data}=await getJSON(`/api/chats/by-article/?articulo=${encodeURIComponent(articleId)}`,{
+        method:"POST",
+        body:JSON.stringify({articulo_id:articleId})
+      });
+      if(!ok){
+        const msg=(data && data.detail) || "No se pudo iniciar la conversación";
+        messagesEl.innerHTML=`<div class="text-center text-red-600 font-medium mt-8">⚠️ ${msg}</div>`;
+        console.error("by-article error:",data);
         return;
       }
+      conversationId=data.id;
 
-      conversationId = data.id;
-      // Mostrar datos del artículo si el backend lo envía o está en cache
-      if (window.parent && window.parent.__ARTICULO__) {
-        const a = window.parent.__ARTICULO__;
-        const box = document.getElementById("chatArticle");
+      if(window.parent && window.parent.__ARTICULO__){
+        const a=window.parent.__ARTICULO__;
+        const box=document.getElementById("chatArticle");
         document.getElementById("chatArtImg").src = a.portada || "";
         document.getElementById("chatArtTitle").textContent = a.titulo || "Artículo";
-        document.getElementById("chatArtOwner").textContent = a.propietario_nombre || "";
+        const owner = a?.propietario_info?.nombre || a?.propietario_nombre || a?.propietario || "";
+        document.getElementById("chatArtOwner").textContent = owner;
         box.classList.remove("hidden");
       }
 
-      if (data.created) {
+      if(intent==="contact" && data.created){
         await sendMessage("¡Hola! Estoy interesad@ en tu artículo.");
       }
-      await loadMessages();
+      await loadMessages(false);
     }
 
-    // ========== PERFIL Y ARRANQUE ==========
-    async function init() {
-      const meResp = await getJSON("/api/perfiles/me/");
-      if (!meResp.ok) {
-        messagesEl.innerHTML = `<div class="text-center text-red-600 font-medium mt-8">Debes iniciar sesión para usar el chat.</div>`;
+    // ====== Notificaciones (campanita) ======
+    const bell   = document.getElementById('notifBell');
+    const badge  = document.getElementById('notifBadge');
+    const panel  = document.getElementById('notifPanel');
+    const listEl = document.getElementById('notifList');
+    const markAllBtn = document.getElementById('notifMarkAll');
+
+    function setBadge(n){ if(n>0){ badge.textContent=String(n); badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); } }
+    function addCard({convId,who,text,when}){
+      if(listEl.querySelector('.empty')) listEl.innerHTML='';
+      const item=document.createElement('button');
+      item.type='button';
+      item.className='w-full text-left p-3 rounded-lg hover:bg-slate-50 flex gap-2';
+      item.innerHTML=`
+        <div class="h-8 w-8 rounded-full bg-slate-200 text-slate-600 grid place-items-center font-bold">${(who||'?')[0]?.toUpperCase()||'?'}</div>
+        <div class="min-w-0">
+          <div class="font-medium truncate">${who||'Nuevo mensaje'}</div>
+          <div class="text-slate-500 text-sm line-clamp-2">${text||''}</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">${fmtTime(when)}</div>
+        </div>
+      `;
+      item.addEventListener('click', async ()=>{
+        localStorage.setItem(`chat_last_read_${convId}`, new Date().toISOString());
+        await authFetch(`/api/chats/${convId}/read/`,{method:'POST'});
+        if (String(convId) !== String(conversationId)) {
+          // Si abren otra conversación, redirige a la bandeja o página general del chat
+          window.location.href = `/chat/?embed=1&article=${encodeURIComponent(articleId||'')}`;
+        } else {
+          // Si es la misma, sólo cerramos panel
+          panel.classList.add('hidden');
+        }
+      });
+      listEl.prepend(item);
+    }
+
+    function beep(){
+      try{
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='sine'; o.frequency.value=880;
+        o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime+0.01);
+        o.start();
+        setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.05); o.stop(ctx.currentTime+0.06); }, 140);
+      }catch{}
+    }
+    let titleTimer = null, baseTitle = document.title;
+    function flashTitle(){
+      if(titleTimer) return;
+      let on=false;
+      titleTimer=setInterval(()=>{ document.title = on? '¡Nuevo mensaje!' : baseTitle; on=!on; }, 800);
+      setTimeout(()=>{ clearInterval(titleTimer); titleTimer=null; document.title=baseTitle; }, 6000);
+    }
+
+    function norm(v){ try{return String(v??'').trim()}catch{return''} }
+    function isMine(m){
+      const a=m?.autor||{};
+      const meId=norm(me?.id||me?.user?.id);
+      const auId=norm(a?.id);
+      const meE=(me?.email||me?.user?.email||'').toLowerCase();
+      const auE=(a?.email||'').toLowerCase();
+      const meU=(me?.username||me?.user?.username||'').toLowerCase();
+      const auU=(a?.username||'').toLowerCase();
+      return (meId&&auId&&meId===auId) || (meE&&auE&&meE===auE) || (meU&&auU&&meU===auU);
+    }
+
+    async function tickNotifications(){
+      if(!me) return;
+      const convs=await getJSON('/api/chats/'); if(!convs.ok||!Array.isArray(convs.data)) return;
+      let count=0;
+      for(const c of convs.data){
+        const convId=c.id;
+        const lastReadISO=localStorage.getItem(`chat_last_read_${convId}`)||'';
+        const lastRead=lastReadISO? new Date(lastReadISO).getTime():0;
+        const msgs=await getJSON(`/api/chats/${convId}/messages/`); if(!msgs.ok||!Array.isArray(msgs.data)) continue;
+        const arr=msgs.data;
+        if(!arr.length) continue;
+        const incoming=arr.filter(m => !isMine(m) && (!lastRead || new Date(m.creado).getTime() > lastRead));
+        if(incoming.length){
+          count += incoming.length;
+          const last = incoming[incoming.length-1];
+          const seen = localStorage.getItem(`chat_last_seen_msg_${convId}`) || '';
+          if(String(last.id)!==String(seen)){
+            addCard({convId, who:(last?.autor?.username||last?.autor?.email||'Usuario'), text:last?.contenido||'', when:last?.creado});
+            beep(); flashTitle();
+            localStorage.setItem(`chat_last_seen_msg_${convId}`, String(last.id));
+          }
+        }
+      }
+      setBadge(count);
+    }
+
+    // UI notificaciones
+    const bellBtn = document.getElementById('notifBell');
+    const panelEl = document.getElementById('notifPanel');
+    bellBtn?.addEventListener('click', ()=> panelEl.classList.toggle('hidden'));
+    document.addEventListener('click',(e)=>{ const t=e.target; if(!panelEl.contains(t) && t!==bellBtn && !bellBtn.contains(t)) panelEl.classList.add('hidden'); });
+    document.getElementById('notifMarkAll')?.addEventListener('click', async ()=>{
+      const convs=await getJSON('/api/chats/'); if(!convs.ok||!Array.isArray(convs.data)) return;
+      const now=new Date().toISOString();
+      for(const c of convs.data){
+        localStorage.setItem(`chat_last_read_${c.id}`, now);
+        authFetch(`/api/chats/${c.id}/read/`,{method:'POST'});
+      }
+      document.getElementById('notifList').innerHTML='<div class="p-3 text-slate-400 empty">Sin notificaciones</div>';
+      setBadge(0);
+    });
+
+    // ====== Init ======
+    async function init(){
+      const meResp=await getJSON("/api/perfiles/me/");
+      if(!meResp.ok){
+        messagesEl.innerHTML=`<div class="text-center text-red-600 font-medium mt-8">Debes iniciar sesión para usar el chat.</div>`;
         return;
       }
       me = meResp.data;
 
-      if (articleId) {
-        await ensureConversationByArticle();
-      } else {
-        messagesEl.innerHTML = `<div class="text-center text-slate-500 mt-8">Selecciona un chat o un artículo para empezar una conversación.</div>`;
-      }
-    }
+      if(articleId){ await ensureConversationByArticle(); }
+      else { messagesEl.innerHTML=`<div class="text-center text-slate-500 mt-8">Selecciona un artículo para empezar una conversación.</div>`; }
 
+      // Polling mensajes del chat abierto
+      setInterval(()=>loadMessages(true), 8000);
+
+      // Polling notificaciones globales
+      tickNotifications();
+      setInterval(tickNotifications, 10000);
+    }
     init();
   </script>
 </body>

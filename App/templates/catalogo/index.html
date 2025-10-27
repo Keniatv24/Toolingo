@@ -16,7 +16,7 @@
 <body class="text-slate-800">
   <!-- Navbar -->
   <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6 relative"><!-- relative para posicionar notifPanel -->
       <!-- Logo -->
       <a href="/" class="flex items-center gap-2">
         <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current transition-transform duration-300 hover:rotate-12">
@@ -26,21 +26,38 @@
       </a>
 
       <!-- Nav -->
-      <nav class="hidden md:flex gap-6 text-sm ml-auto items-center">
-        <a href="/" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Inicio</a>
-        <a href="/catalogo/" class="relative text-brand-700 font-semibold after:absolute after:left-0 after:-bottom-1 after:w-full after:h-0.5 after:bg-brand-600">Productos</a>
-        <a id="btnPublicar" href="/publicar/" class="relative transition hover:text-brand-600 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full font-semibold">
+      <nav class="hidden md:flex gap-3 text-sm ml-auto items-center">
+        <a href="/" class="relative transition hover:text-brand-600 px-2 py-2 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full">Inicio</a>
+        <a href="/catalogo/" class="relative text-brand-700 font-semibold px-2 py-2 after:absolute after:left-0 after:-bottom-1 after:w-full after:h-0.5 after:bg-brand-600">Productos</a>
+        <a id="btnPublicar" href="/publicar/" class="relative transition hover:text-brand-600 px-2 py-2 after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-0.5 after:bg-brand-600 after:transition-all after:duration-300 hover:after:w-full font-semibold">
           Publicar
         </a>
-        <!-- Carrito en navbar (redirige a /carrito/) -->
+
+        <!-- 🛒 Carrito -->
         <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
           🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
+        </button>
+
+        <!-- 🔔 Notificaciones -->
+        <button id="notifBell" class="relative p-2 rounded-lg hover:bg-slate-100" title="Notificaciones">🔔
+          <span id="notifBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-red-600 text-white hidden">0</span>
         </button>
       </nav>
 
       <!-- Área auth (derecha) -->
       <div id="authArea" class="relative"></div>
+
+      <!-- Panel flotante de notificaciones -->
+      <div id="notifPanel" class="hidden absolute right-0 top-14 w-80 max-h-96 overflow-auto bg-white border rounded-xl shadow-xl z-[10000]">
+        <div class="px-4 py-2 border-b font-semibold">Notificaciones</div>
+        <div id="notifList" class="p-2 text-sm text-slate-600">
+          <div class="p-3 text-slate-400 empty">Sin notificaciones</div>
+        </div>
+        <div class="px-3 py-2 border-t text-right">
+          <button id="notifMarkAll" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">Marcar todo como leído</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -358,6 +375,123 @@
       await loadCategorias();
       await loadArticulos();
     })();
+  </script>
+
+  <!-- 🔔 Script de notificaciones (campanita) -->
+  <script>
+  (function(){
+    const token = getToken?.() || localStorage.getItem('jwt');
+    if(!token) return;
+
+    const bell   = document.getElementById('notifBell');
+    const badge  = document.getElementById('notifBadge');
+    const panel  = document.getElementById('notifPanel');
+    const listEl = document.getElementById('notifList');
+    const markAllBtn = document.getElementById('notifMarkAll');
+    if(!bell || !badge || !panel || !listEl) return;
+
+    async function getJSON(url,opt={}){ const r=await authFetch(url,opt); let d={}; try{d=await r.json()}catch{} return {ok:r.ok,data:d}; }
+    const keyLastRead = id => `chat_last_read_${id}`;
+    const keyLastSeen = id => `chat_last_seen_msg_${id}`;
+
+    let me = null;
+    function norm(v){ try{return String(v??'').trim()}catch{return''} }
+    function isMine(m){
+      const a=m?.autor||{};
+      const meId=norm(me?.id||me?.user?.id);
+      const auId=norm(a?.id);
+      const meE=(me?.email||me?.user?.email||'').toLowerCase();
+      const auE=(a?.email||'').toLowerCase();
+      const meU=(me?.username||me?.user?.username||'').toLowerCase();
+      const auU=(a?.username||'').toLowerCase();
+      return (meId&&auId&&meId===auId) || (meE&&auE&&meE===auE) || (meU&&auU&&meU===auU);
+    }
+    function beep(){
+      try{
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='sine'; o.frequency.value=880;
+        o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime+0.01);
+        o.start();
+        setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.05); o.stop(ctx.currentTime+0.06); }, 140);
+      }catch{}
+    }
+    function fmtTime(ts){ try{return new Date(ts).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}catch{return''} }
+    function setBadge(n){ if(n>0){ badge.textContent=String(n); badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); } }
+    function addCard({convId,who,text,when}){
+      if(listEl.querySelector('.empty')) listEl.innerHTML='';
+      const item=document.createElement('button');
+      item.type='button';
+      item.className='w-full text-left p-3 rounded-lg hover:bg-slate-50 flex gap-2';
+      item.innerHTML=`
+        <div class="h-8 w-8 rounded-full bg-slate-200 text-slate-600 grid place-items-center font-bold">${(who||'?')[0]?.toUpperCase()||'?'}</div>
+        <div class="min-w-0">
+          <div class="font-medium truncate">${who||'Nuevo mensaje'}</div>
+          <div class="text-slate-500 text-sm line-clamp-2">${text||''}</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">${fmtTime(when)}</div>
+        </div>
+      `;
+      item.addEventListener('click', ()=>{
+        localStorage.setItem(keyLastRead(convId), new Date().toISOString());
+        authFetch(`/api/chats/${convId}/read/`,{method:'POST'});
+        window.location.href = `/chat/?embed=1`;
+        panel.classList.add('hidden');
+      });
+      listEl.prepend(item);
+    }
+
+    let running=false;
+    async function tick(){
+      if(running) return;
+      running=true;
+      try{
+        if(!me){
+          const r=await getJSON('/api/perfiles/me/'); if(!r.ok) return; me=r.data;
+        }
+        const convs=await getJSON('/api/chats/'); if(!convs.ok||!Array.isArray(convs.data)) return;
+        let count=0;
+        for(const c of convs.data){
+          const convId=c.id;
+          const lastReadISO=localStorage.getItem(keyLastRead(convId))||'';
+          const lastRead=lastReadISO? new Date(lastReadISO).getTime():0;
+          const msgs=await getJSON(`/api/chats/${convId}/messages/`); if(!msgs.ok||!Array.isArray(msgs.data)) continue;
+          const arr=msgs.data;
+          if(!arr.length) continue;
+          const incoming=arr.filter(m => !isMine(m) && (!lastRead || new Date(m.creado).getTime() > lastRead));
+          if(incoming.length){
+            count += incoming.length;
+            const last = incoming[incoming.length-1];
+            const seen = localStorage.getItem(keyLastSeen(convId)) || '';
+            if(String(last.id)!==String(seen)){
+              addCard({convId, who:(last?.autor?.username||last?.autor?.email||'Usuario'), text:last?.contenido||'', when:last?.creado});
+              beep();
+              localStorage.setItem(keyLastSeen(convId), String(last.id));
+            }
+          }
+        }
+        setBadge(count);
+      }finally{ running=false; }
+    }
+
+    // UI toggles
+    bell?.addEventListener('click', ()=> panel.classList.toggle('hidden'));
+    document.addEventListener('click',(e)=>{ const t=e.target; if(!panel.contains(t) && t!==bell && !bell.contains(t)) panel.classList.add('hidden'); });
+    markAllBtn?.addEventListener('click', async ()=>{
+      const convs=await getJSON('/api/chats/'); if(!convs.ok||!Array.isArray(convs.data)) return;
+      const now=new Date().toISOString();
+      for(const c of convs.data){
+        localStorage.setItem(keyLastRead(c.id), now);
+        authFetch(`/api/chats/${c.id}/read/`,{method:'POST'});
+      }
+      listEl.innerHTML='<div class="p-3 text-slate-400 empty">Sin notificaciones</div>';
+      setBadge(0);
+    });
+
+    tick();
+    setInterval(tick, 10000);
+  })();
   </script>
 </body>
 </html>

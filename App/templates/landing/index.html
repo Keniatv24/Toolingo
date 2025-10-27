@@ -36,6 +36,10 @@
     .toc a.active { color:#ea580c; background:#fff7ed; font-weight:600; }
 
     html { scroll-behavior: smooth; }
+
+    /* Panel de notificaciones (navbar) */
+    .notif-panel{ position:absolute; right:0; top:52px; width:20rem; max-height:24rem; overflow:auto; background:#fff;
+      border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 12px 32px rgba(15,23,42,.18); z-index: 1000; }
   </style>
 </head>
 <body class="text-slate-800 bg-white">
@@ -53,7 +57,22 @@
       <nav class="hidden md:flex gap-6 text-sm ml-auto items-center">
         <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600">Productos</a>
 
-        <!-- Carrito en navbar (redirige a /carrito/) -->
+        <!-- Campanita -->
+        <button id="notifBell" class="relative p-2 rounded-lg hover:bg-slate-100" title="Notificaciones">
+          🔔
+          <span id="notifBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-red-600 text-white hidden">0</span>
+        </button>
+        <div id="notifPanel" class="hidden notif-panel">
+          <div class="px-4 py-2 border-b text-slate-800 font-semibold">Notificaciones</div>
+          <div id="notifList" class="p-2 text-sm text-slate-700">
+            <div class="p-3 text-slate-400 empty">Sin notificaciones</div>
+          </div>
+          <div class="px-3 py-2 border-t text-right">
+            <button id="notifMarkAll" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">Marcar todo como leído</button>
+          </div>
+        </div>
+
+        <!-- Carrito en navbar -->
         <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
           🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
@@ -246,7 +265,7 @@
       return resp;
     }
 
-    // ---- Botón carrito: ruta /carrito/ con login requerido + badge ----
+    // ---- Carrito + badge ----
     const cartBtn = document.getElementById('cartBtn');
     const cartBadge = document.getElementById('cartBadge');
 
@@ -502,7 +521,144 @@
         }
       }catch(_){}
     })();
+
+    // ============== NOTIFICACIONES (Navbar) ==============
+    const bellBtn  = document.getElementById('notifBell');
+    const badgeEl  = document.getElementById('notifBadge');
+    const panelEl  = document.getElementById('notifPanel');
+    const listEl   = document.getElementById('notifList');
+    const markAll  = document.getElementById('notifMarkAll');
+
+    const setBadge = (n)=>{ if(n>0){ badgeEl.textContent=String(n); badgeEl.classList.remove('hidden'); } else { badgeEl.classList.add('hidden'); } };
+    const norm = (v)=>{ try{return String(v??'').trim()}catch{return''} };
+
+    function isMine(msg, meObj){
+      const a=msg?.autor||{};
+      const meId=norm(meObj?.id||meObj?.user?.id);
+      const auId=norm(a?.id);
+      const meE=(meObj?.email||meObj?.user?.email||'').toLowerCase();
+      const auE=(a?.email||'').toLowerCase();
+      const meU=(meObj?.username||meObj?.user?.username||'').toLowerCase();
+      const auU=(a?.username||'').toLowerCase();
+      return (meId&&auId&&meId===auId)||(meE&&auE&&meE===auE)||(meU&&auU&&meU===auU);
+    }
+    function fmtTime(ts){ try { return new Date(ts).toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"}) } catch { return "" } }
+
+    function addNotifCard({convId,who,text,when}){
+      if(listEl.querySelector('.empty')) listEl.innerHTML='';
+      const item=document.createElement('button');
+      item.type='button';
+      item.className='w-full text-left p-3 rounded-lg hover:bg-slate-50 flex gap-2';
+      item.innerHTML=`
+        <div class="h-8 w-8 rounded-full bg-slate-200 text-slate-600 grid place-items-center font-bold">${(who||'?')[0]?.toUpperCase()||'?'}</div>
+        <div class="min-w-0">
+          <div class="font-medium truncate">${who||'Nuevo mensaje'}</div>
+          <div class="text-slate-500 text-sm line-clamp-2">${(text||'').replace(/</g,'&lt;')}</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">${fmtTime(when)}</div>
+        </div>`;
+      item.addEventListener('click', async ()=>{
+        if(!getToken()){ location.href='/login/?next=/chat/'; return; }
+        localStorage.setItem(`chat_last_read_${convId}`, new Date().toISOString());
+        authFetch(`/api/chats/${convId}/read/`,{method:'POST'}).catch(()=>{});
+        window.location.href = `/chat/`;  // puedes llevar a una bandeja general de chat
+      });
+      listEl.prepend(item);
+    }
+
+    function beep(){
+      try{
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='sine'; o.frequency.value=880;
+        o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime+0.01);
+        o.start();
+        setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.05); o.stop(ctx.currentTime+0.06); }, 140);
+      }catch{}
+    }
+    let titleTimer=null, baseTitle=document.title;
+    function flashTitle(){
+      if(titleTimer) return;
+      let on=false;
+      titleTimer=setInterval(()=>{ document.title = on? '¡Nuevo mensaje!' : baseTitle; on=!on; }, 800);
+      setTimeout(()=>{ clearInterval(titleTimer); titleTimer=null; document.title=baseTitle; }, 6000);
+    }
+
+    async function getMe(){
+      try{
+        const r=await authFetch('/api/perfiles/me/');
+        if(!r.ok) return null;
+        return await r.json();
+      }catch{ return null; }
+    }
+
+    async function tickNotifications(){
+      if(!getToken()) return; // sin sesión no se poll
+      const meObj = await getMe(); if(!meObj) return;
+
+      let count=0;
+
+      // Trae conversaciones del usuario
+      const r=await authFetch('/api/chats/'); if(!r.ok) return;
+      const convs=await r.json(); if(!Array.isArray(convs)) return;
+
+      for(const c of convs){
+        const convId=c.id;
+        const lastReadISO=localStorage.getItem(`chat_last_read_${convId}`)||'';
+        const lastRead=lastReadISO? new Date(lastReadISO).getTime():0;
+
+        const rm=await authFetch(`/api/chats/${convId}/messages/`); if(!rm.ok) continue;
+        const msgs=await rm.json(); if(!Array.isArray(msgs)||!msgs.length) continue;
+
+        const incoming=msgs.filter(m => !isMine(m, meObj) && (!lastRead || new Date(m.creado).getTime() > lastRead));
+        if(incoming.length){
+          count += incoming.length;
+          const last = incoming[incoming.length-1];
+          const seen = localStorage.getItem(`home_last_seen_msg_${convId}`) || '';
+          if(String(last.id)!==String(seen)){
+            addNotifCard({convId, who:(last?.autor?.username||last?.autor?.email||'Usuario'), text:last?.contenido||'', when:last?.creado});
+            beep(); flashTitle();
+            localStorage.setItem(`home_last_seen_msg_${convId}`, String(last.id));
+          }
+        }
+      }
+      setBadge(count);
+    }
+
+    // UI campanita
+    const notifBell = document.getElementById('notifBell');
+    const notifPanel = document.getElementById('notifPanel');
+    notifBell?.addEventListener('click', ()=>{
+      if(!getToken()){ location.href='/login/?next=/'; return; }
+      notifPanel.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e)=>{
+      if(!notifPanel) return;
+      const t=e.target;
+      if(!notifPanel.contains(t) && t!==notifBell && !notifBell.contains(t)){
+        notifPanel.classList.add('hidden');
+      }
+    });
+    document.getElementById('notifMarkAll')?.addEventListener('click', async ()=>{
+      if(!getToken()) return;
+      try{
+        const rc=await authFetch('/api/chats/');
+        if(!rc.ok) return;
+        const convs=await rc.json();
+        const now=new Date().toISOString();
+        for(const c of convs){
+          localStorage.setItem(`chat_last_read_${c.id}`, now);
+          authFetch(`/api/chats/${c.id}/read/`,{method:'POST'}).catch(()=>{});
+        }
+        document.getElementById('notifList').innerHTML='<div class="p-3 text-slate-400 empty">Sin notificaciones</div>';
+        setBadge(0);
+      }catch{}
+    });
+
+    // Polling
+    tickNotifications();
+    setInterval(tickNotifications, 10000);
   </script>
 </body>
 </html>
-

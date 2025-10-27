@@ -18,29 +18,14 @@
     }
   </script>
 
-  <!-- Flatpickr (datepicker) -->
+  <!-- Flatpickr opcional (si quieres usarlo) -->
   <link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/rangePlugin.js"></script>
 
   <style>
     .thumb:is(button)[data-active="true"]{ outline: 2px solid #f97316; outline-offset: 0; }
     .smooth { transition: all .25s cubic-bezier(.22,.61,.36,1); }
-
-    /* Días no disponibles (rojo) */
-    .flatpickr-day.tl-unavailable,
-    .flatpickr-day.tl-unavailable:focus {
-      background:#fee2e2 !important;
-      border-color:#fecaca !important;
-      color:#b91c1c !important;
-      cursor:not-allowed !important;
-    }
-    .flatpickr-day.tl-unavailable:hover { background:#fecaca !important; }
-    .tl-legend { font-size:12px; color:#475569; }
-    .tl-dot { display:inline-block; width:.6rem; height:.6rem; border-radius:9999px; background:#ef4444; vertical-align:middle; margin-right:.4rem; }
-
-    /* ===== Chat overlay ===== */
     .chat-overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display:none; z-index: 9998; }
     .chat-overlay {
       position: fixed; right: 32px; bottom: 32px;
@@ -58,6 +43,7 @@
   </style>
 </head>
 <body class="text-slate-800 bg-white">
+
   <!-- NAVBAR -->
   <header class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
@@ -71,6 +57,8 @@
         <a href="/" class="hover:text-brand-600">Inicio</a>
         <a href="/catalogo/" class="font-semibold text-brand-700">Productos</a>
         <a href="/publicar/" class="font-semibold hover:text-brand-600">Publicar</a>
+
+        <!-- Carrito -->
         <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
         </button>
@@ -133,7 +121,7 @@
   <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
-  <!-- ===== Modal Reserva ===== (estructura base, puedes conectar tus endpoints) -->
+  <!-- ===== Modal Reserva ===== -->
   <div id="reservaModal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-black/30" data-close="true"></div>
     <div class="absolute inset-0 grid place-items-center p-4">
@@ -155,8 +143,8 @@
             </label>
           </div>
 
-          <div class="tl-legend"><span class="tl-dot"></span>No disponible</div>
-          <div id="dispMsg" class="text-sm"></div>
+          <div id="dispMsg" class="text-sm text-emerald-700 hidden">Fechas disponibles ✓</div>
+          <div id="dispBad" class="text-sm text-red-600 hidden">No disponible</div>
 
           <div class="rounded-xl bg-slate-50 p-4 grid grid-cols-2 gap-3 text-sm">
             <div>Días</div><div class="text-right font-semibold" id="sumDias">—</div>
@@ -187,19 +175,38 @@
 
   <script>
     /* ===== Utils ===== */
-    const ART_ID_SERVER = "{{ articulo_id }}";  /* si tu vista pasa articulo_id */
+    const ART_ID_SERVER = "{{ articulo_id }}";  // si tu vista pasa articulo_id
     const ownerBox = document.getElementById('owner');
+    const fmtCOP = n => Number(n||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
     const fmt = n => Number(n||0).toLocaleString('es-CO');
 
+    // JWT helpers
     const TOKEN_KEY='access', REFRESH_KEY='refresh';
-    function getToken(){ return localStorage.getItem(TOKEN_KEY) || null; }
-    function getRefresh(){ return localStorage.getItem(REFRESH_KEY) || null; }
-    function setTokens({access,refresh}){ if(access) localStorage.setItem(TOKEN_KEY,access); if(refresh) localStorage.setItem(REFRESH_KEY,refresh); }
-    async function refreshAccessToken(){ const refresh=getRefresh(); if(!refresh) return null; const r=await fetch('/api/token/refresh/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh})}); if(!r.ok) return null; const d=await r.json(); if(d.access){ setTokens({access:d.access}); return d.access; } return null; }
-    async function authFetch(url,opt={}){ const t=getToken(); if(!t){ location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; throw new Error('No autenticado'); } const h=new Headers(opt.headers||{}); h.set('Authorization',`Bearer ${t}`); if(opt.body && !h.has('Content-Type')) h.set('Content-Type','application/json'); let resp=await fetch(url,{...opt,headers:h}); if(resp.status===401){ const na=await refreshAccessToken(); if(!na) return resp; h.set('Authorization',`Bearer ${na}`); resp=await fetch(url,{...opt,headers:h}); } return resp; }
+    const getToken = ()=> localStorage.getItem(TOKEN_KEY) || null;
+    const getRefresh = ()=> localStorage.getItem(REFRESH_KEY) || null;
+    const setTokens = ({access,refresh})=>{ if(access) localStorage.setItem(TOKEN_KEY,access); if(refresh) localStorage.setItem(REFRESH_KEY,refresh); };
+    async function refreshAccessToken(){ const r=getRefresh(); if(!r) return null; const resp=await fetch('/api/token/refresh/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh:r})}); if(!resp.ok) return null; const d=await resp.json(); if(d.access){ setTokens({access:d.access}); return d.access; } return null; }
+    async function authFetch(url,opt={}){ const t=getToken(); if(!t){ location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; throw new Error('No autenticado'); } const h=new Headers(opt.headers||{}); h.set('Authorization',`Bearer ${t}`); if(opt.body && !h.has('Content-Type')) h.set('Content-Type','application/json'); let resp=await fetch(url,{...opt,headers:h}); if(resp.status===401){ const na=await refreshAccessToken(); if(na){ h.set('Authorization',`Bearer ${na}`); resp=await fetch(url,{...opt,headers:h}); } } return resp; }
 
+    // Navegación carrito
+    const cartBtn=document.getElementById('cartBtn');
+    const cartBadge=document.getElementById('cartBadge');
+    cartBtn?.addEventListener('click',()=>{ if(!getToken()) location.href='/login/?next=/carrito/'; else location.href='/carrito/'; });
+
+    async function refreshCartBadge(){
+      try{
+        const r = await authFetch('/api/carrito/');
+        if(!r.ok) return;
+        const items = await r.json();
+        cartBadge?.classList.toggle('hidden', !(items?.length));
+        if (items?.length) cartBadge.textContent = items.length;
+      }catch(_){}
+    }
+
+    // Avatar HTML
     function avatarHtml(nameLike){ const txt=(nameLike||'').trim(); const ini=txt?txt[0].toUpperCase():'👤'; return `<div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">${ini}</div>`; }
 
+    // Fetch por ID o slug
     async function fetchByIdOrSlug(idOrSlug){
       const direct = await fetch(`/api/articulos/${encodeURIComponent(idOrSlug)}/`); if (direct.ok) return direct.json();
       const q = await fetch(`/api/articulos/?slug=${encodeURIComponent(idOrSlug)}`); if (q.ok){ const arr = await q.json(); if (Array.isArray(arr) && arr.length) return arr[0]; }
@@ -234,7 +241,8 @@
       const ubi=a.ubicacion || ''; const price=a.precio_por_dia ? `$${fmt(a.precio_por_dia)}/día` : '';
       document.getElementById('ubiprice').textContent = [ubi, price].filter(Boolean).join(' • ') || '—';
       const pricePill=document.getElementById('pricePill'); if(price){ pricePill.textContent=price; pricePill.classList.remove('hidden'); }
-      document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.'; renderOwner(a);
+      document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.'; 
+      renderOwner(a);
 
       // Galería
       const main=document.getElementById('galleryMain'); const thumbs=document.getElementById('thumbs'); const imgs=[];
@@ -257,25 +265,123 @@
       catch(err){ document.getElementById('title').textContent='Artículo no encontrado'; document.getElementById('desc').textContent='No pudimos cargar la información del artículo.'; console.error(err); }
     }
 
-    // ====== Reserva (placeholder; conecta tu lógica real) ======
+    // ====== Reserva (cálculos + POST carrito) ======
+    const fInicio = ()=> document.getElementById('fInicio');
+    const fFin = ()=> document.getElementById('fFin');
+    const sumDias = document.getElementById('sumDias');
+    const sumPPD  = document.getElementById('sumPPD');
+    const sumTotal= document.getElementById('sumTotal');
+    const dispMsg = document.getElementById('dispMsg');
+    const dispBad = document.getElementById('dispBad');
+
+    function esToIsoDate(s){
+      if(!s) return '';
+      if(s.includes('-')) return s.trim();
+      const [dd,mm,yy]=s.split('/').map(x=>x.trim());
+      if(!dd||!mm||!yy) return '';
+      return `${yy.padStart(4,'0')}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+    }
+
+    function diffDays(isoStart, isoEnd){
+      try{
+        const a = new Date(isoStart+'T00:00:00');
+        const b = new Date(isoEnd+'T00:00:00');
+        const ms = b - a;
+        const d = Math.round(ms/86400000);
+        return d>0 ? d : 0;
+      }catch{ return 0; }
+    }
+
+    function recalcSummary(a){
+      const iniISO = esToIsoDate(fInicio().value);
+      const finISO = esToIsoDate(fFin().value);
+
+      const dias = diffDays(iniISO, finISO);
+      const ppd = Number(a.precio_por_dia || 0);
+      const total = dias * ppd;
+
+      sumDias.textContent = dias || '—';
+      sumPPD.textContent  = ppd ? fmtCOP(ppd) : '—';
+      sumTotal.textContent= total ? fmtCOP(total) : '—';
+
+      // Semáforo simple (puedes conectar tu disponibilidad real)
+      const ok = dias>0;
+      dispMsg.classList.toggle('hidden', !ok);
+      dispBad.classList.toggle('hidden', ok);
+
+      document.getElementById('btnConfirmar').disabled = !ok;
+    }
+
+    function wireAddToCart(a){
+      const btn = document.getElementById('btnConfirmar');
+      btn.onclick = async () => {
+        const isoIni = esToIsoDate(fInicio().value);
+        const isoFin = esToIsoDate(fFin().value);
+        if(!isoIni || !isoFin){ alert('Elige fechas válidas.'); return; }
+
+        const payload = {
+          articulo: a.id || a.pk || a.uuid || a,   // ajusta si tu API usa otro nombre
+          fecha_inicio: isoIni,
+          fecha_fin: isoFin,
+        };
+
+        try{
+          const r = await authFetch('/api/carrito/', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+          });
+
+          if(!r.ok){
+            let msg = 'No se pudo agregar al carrito.';
+            try{
+              const err = await r.json();
+              msg = err?.detail || err?.error || JSON.stringify(err);
+            }catch{
+              try{ msg = await r.text(); }catch{}
+            }
+            alert(msg);
+            return;
+          }
+
+          await refreshCartBadge();
+          document.getElementById('reservaModal')?.classList.add('hidden');
+          if(confirm('✅ ¡Agregado! ¿Ir al carrito ahora?')) location.href='/carrito/';
+        }catch(e){
+          console.error(e);
+          alert('Error de red al agregar al carrito.');
+        }
+      };
+    }
+
     function openReservaModal(a){
       document.getElementById('mArtTitle').textContent = a.titulo || 'Artículo';
       document.getElementById('reservaModal').classList.remove('hidden');
-      // Aquí puedes inicializar flatpickr, disponibilidad, etc.
+
+      // Flatpickr sencillo en formato dd/mm/aaaa
+      if(window.flatpickr){
+        flatpickr(fInicio(), {dateFormat:'d/m/Y', locale:'es'});
+        flatpickr(fFin(),    {dateFormat:'d/m/Y', locale:'es'});
+      }
+
+      // listeners de recálculo
+      [fInicio(), fFin()].forEach(el=> el.addEventListener('input', ()=> recalcSummary(a)));
+      recalcSummary(a);
+
+      // conectar botón agregar
+      wireAddToCart(a);
     }
+
     document.querySelectorAll('#reservaModal [data-close="true"]').forEach(el=>{
       el.addEventListener('click', ()=> document.getElementById('reservaModal').classList.add('hidden'));
     });
 
     // ====== Chat Overlay ======
     function openChatOverlay(articleId){
-      if (!localStorage.getItem('access') && !localStorage.getItem('jwt')) {
-        window.location.href=`/login/?next=${encodeURIComponent(location.pathname)}`;
-        return;
-      }
+      if (!getToken()) { window.location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; return; }
       const frame=document.getElementById('chatFrame');
-      // Si luego quieres saludo automático, añade &intent=contact
-      frame.src=`/chat/?embed=1&article=${encodeURIComponent(articleId)}`;
+      const bust = Date.now();
+      frame.src=`/chat/?embed=1&article=${encodeURIComponent(articleId)}&intent=contact&v=${bust}`;
       document.getElementById('chatBackdrop').style.display='block';
       document.getElementById('chatOverlay').style.display='block';
     }
@@ -292,6 +398,7 @@
 
     /* ===== Arranque ===== */
     loadArticulo();
+    refreshCartBadge();
   </script>
 </body>
 </html>
