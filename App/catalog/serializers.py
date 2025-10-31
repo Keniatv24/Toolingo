@@ -109,6 +109,9 @@ class ArticuloSerializer(serializers.ModelSerializer):
             "creado",
             "portada",
             "imagenes",
+            "lat",
+             "lng",
+
         )
         read_only_fields = ("propietario",)
 

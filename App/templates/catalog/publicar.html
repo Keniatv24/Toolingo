@@ -5,12 +5,24 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Publicar artículo – Toolingo</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{brand:{600:'#f97316',700:'#c2410c'}}}}}</script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 600: '#f97316', 700: '#c2410c' }
+          }
+        }
+      }
+    };
+  </script>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800">
   <main class="max-w-2xl mx-auto p-6">
     <a href="/" class="inline-flex items-center gap-2 mb-6">
-      <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current"><path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current">
+        <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
+      </svg>
       <span class="text-lg font-extrabold">Toolingo</span>
     </a>
 
@@ -19,36 +31,59 @@
       <p class="text-sm text-slate-600 mb-4">Completa los datos y publica tu herramienta.</p>
 
       <form id="pubForm" class="grid md:grid-cols-2 gap-4">
+        <!-- Título -->
         <div class="md:col-span-2">
           <label class="text-sm text-slate-600">Título</label>
           <input id="titulo" class="w-full border rounded-xl px-3 py-2" placeholder="Taladro percutor 800W" required />
         </div>
+
+        <!-- Descripción -->
         <div class="md:col-span-2">
           <label class="text-sm text-slate-600">Descripción</label>
           <textarea id="descripcion" rows="3" class="w-full border rounded-xl px-3 py-2" placeholder="Características, estado, incluye..."></textarea>
         </div>
+
+        <!-- Categoría -->
         <div>
           <label class="text-sm text-slate-600">Categoría</label>
           <select id="categoria" class="w-full border rounded-xl px-3 py-2" required></select>
         </div>
+
+        <!-- Precio -->
         <div>
           <label class="text-sm text-slate-600">Precio por día (COP)</label>
           <input id="precio" type="number" class="w-full border rounded-xl px-3 py-2" placeholder="35000" required />
         </div>
+
+        <!-- Depósito -->
         <div>
           <label class="text-sm text-slate-600">Depósito (opcional)</label>
           <input id="deposito" type="number" class="w-full border rounded-xl px-3 py-2" placeholder="80000" />
         </div>
-        <div>
-          <label class="text-sm text-slate-600">Ubicación</label>
-          <input id="ubicacion" class="w-full border rounded-xl px-3 py-2" placeholder="Medellín" />
+
+        <!-- Ubicación -->
+        <div class="md:col-span-2">
+          <label class="text-sm text-slate-600 flex items-center justify-between">
+            <span>Ubicación (texto: barrio/ciudad/dirección)</span>
+            <button id="btnGeo" type="button" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">📍 Usar mi ubicación</button>
+          </label>
+          <input id="ubicacion" class="w-full border rounded-xl px-3 py-2" placeholder="Medellín, Laureles" required />
+          <p id="geoInfo" class="text-xs text-slate-500 mt-1"></p>
         </div>
+
+        <!-- Coordenadas ocultas -->
+        <input id="lat" type="hidden" />
+        <input id="lng" type="hidden" />
+
+        <!-- Imágenes -->
         <div class="md:col-span-2">
           <label class="text-sm text-slate-600">Fotos del artículo (mínimo 1)</label>
           <input id="imagenes" type="file" accept="image/*" multiple required class="w-full border rounded-xl px-3 py-2" />
           <div id="preview" class="mt-2 flex flex-wrap gap-2"></div>
           <p class="text-xs text-slate-500">Puedes subir varias. La primera será la principal.</p>
         </div>
+
+        <!-- Botón -->
         <div class="md:col-span-2">
           <button class="w-full py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition" type="submit">Publicar</button>
         </div>
@@ -58,7 +93,7 @@
     </section>
   </main>
 
-      <script>
+  <script>
     // 1) Requiere login
     (function authGuard(){
       const t = localStorage.getItem('access');
@@ -68,35 +103,7 @@
       }
     })();
 
-    // 2) Verificar que el perfil esté completo (sin caché y sin depender de status)
-    (async function profileGuard(){
-      const t = localStorage.getItem('access');
-      if(!t) return;
-      try{
-        const r = await fetch(`/api/perfiles/me/?t=${Date.now()}`, {
-          headers:{ Authorization:`Bearer ${t}` },
-          cache: 'no-store'
-        });
-        if(!r.ok) throw new Error('No se pudo validar el perfil.');
-
-        const p = await r.json();
-        const required = ['nombre_completo','tipo_documento','numero_documento','telefono','pais','ciudad'];
-        const missing = required.filter(k => {
-          const v = p[k];
-          return v === null || v === undefined || String(v).trim().length === 0;
-        });
-
-        if(missing.length){
-          const next = encodeURIComponent('/publicar/');
-          location.replace(`/perfil/editar/?next=${next}`);
-        }
-      }catch(e){
-        const next = encodeURIComponent('/publicar/');
-        location.replace(`/perfil/editar/?next=${next}`);
-      }
-    })();
-
-    // 3) Cargar categorías
+    // 2) Cargar categorías
     (async function loadCats(){
       try {
         const r = await fetch('/api/categorias/');
@@ -113,7 +120,7 @@
       }
     })();
 
-    // 4) Preview imágenes
+    // 3) Preview imágenes
     const imgInput = document.getElementById('imagenes');
     const preview  = document.getElementById('preview');
     imgInput?.addEventListener('change', () => {
@@ -130,16 +137,45 @@
       });
     });
 
+    // 4) Botón geolocalización
+    document.getElementById('btnGeo').addEventListener('click', () => {
+      const btn = document.getElementById('btnGeo');
+      const info = document.getElementById('geoInfo');
+      if (!('geolocation' in navigator)) {
+        alert('Tu navegador no soporta geolocalización.');
+        return;
+      }
+      const old = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Obteniendo…';
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords || {};
+          document.getElementById('lat').value = (latitude ?? '').toFixed(6);
+          document.getElementById('lng').value = (longitude ?? '').toFixed(6);
+          info.textContent = `Coordenadas detectadas: ${latitude?.toFixed(6)}, ${longitude?.toFixed(6)} (se guardarán)`;
+          btn.disabled = false;
+          btn.textContent = old;
+        },
+        () => {
+          info.textContent = 'No se pudo obtener tu ubicación. Escríbela manualmente.';
+          btn.disabled = false;
+          btn.textContent = old;
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }
+      );
+    });
+
     // 5) Envío del formulario
     document.getElementById('pubForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const msg = document.getElementById('msg'); 
-      msg.textContent='';
+      const msg = document.getElementById('msg');
+      msg.textContent = '';
 
       const token = localStorage.getItem('access');
-      if (!token) { 
-        location.replace('/login/?next=/publicar/'); 
-        return; 
+      if (!token) {
+        location.replace('/login/?next=/publicar/');
+        return;
       }
 
       const files = document.getElementById('imagenes').files;
@@ -157,6 +193,15 @@
       fd.append('deposito', document.getElementById('deposito').value || '0');
       fd.append('ubicacion', document.getElementById('ubicacion').value.trim());
       fd.append('disponibilidad_global', 'true');
+
+      // Coordenadas
+      const lat = document.getElementById('lat').value;
+      const lng = document.getElementById('lng').value;
+      if (lat && lng) {
+        fd.append('lat', lat);
+        fd.append('lng', lng);
+      }
+
       for (const f of files) fd.append('imagenes', f);
 
       try {
@@ -165,18 +210,19 @@
           headers: { 'Authorization': `Bearer ${token}` },
           body: fd
         });
-        if (r.status === 401) { 
-          location.replace('/login/?next=/publicar/'); 
-          return; 
+
+        if (r.status === 401) {
+          location.replace('/login/?next=/publicar/');
+          return;
         }
         if (!r.ok) {
           const err = await r.json().catch(()=>({detail:'Error'}));
-          throw new Error(err.detail || 'Error al publicar');
+          throw new Error(err.detail || JSON.stringify(err));
         }
         await r.json();
-        msg.textContent = ' ¡Artículo publicado!';
+        msg.textContent = '✅ ¡Artículo publicado con éxito!';
         msg.className = 'text-sm text-green-700';
-        setTimeout(()=> location.replace('/catalogo/'), 900);
+        setTimeout(()=> location.replace('/catalogo/'), 1200);
       } catch (e2) {
         msg.textContent = e2.message || 'Error desconocido';
         msg.className = 'text-sm text-red-600';

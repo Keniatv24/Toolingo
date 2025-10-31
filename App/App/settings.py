@@ -122,3 +122,11 @@ CORS_ALLOWED_ORIGINS = [
 
 # Usuario personalizado
 AUTH_USER_MODEL = "users.User"
+EXTERNAL_GEO = {
+    "NOMINATIM_BASE": "https://nominatim.openstreetmap.org/search",
+    # Nominatim requiere un User-Agent identificable:
+    "USER_AGENT": "Toolingo/1.0 (contacto: tu-email@dominio.com)"
+}
+# Timeout en segundos para requests externas
+HTTP_CLIENT_TIMEOUT = 8
+

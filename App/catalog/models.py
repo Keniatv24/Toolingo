@@ -39,6 +39,13 @@ class Articulo(models.Model):
     disponibilidad_global = models.BooleanField(default=True)
     ubicacion = models.CharField(max_length=140)
     creado = models.DateTimeField(auto_now_add=True)
+    lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitud en grados decimales")
+    lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Longitud en grados decimales")
+
+    @property
+    def has_coords(self) -> bool:
+        return self.lat is not None and self.lng is not None
+
 
     def clean(self):
         if not self.categoria.es_hoja:

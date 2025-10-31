@@ -16,7 +16,7 @@
 <body class="text-slate-800">
   <!-- Navbar -->
   <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6 relative"><!-- relative para posicionar notifPanel -->
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6 relative">
       <!-- Logo -->
       <a href="/" class="flex items-center gap-2">
         <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current transition-transform duration-300 hover:rotate-12">
@@ -49,7 +49,7 @@
       <div id="authArea" class="relative"></div>
 
       <!-- Panel flotante de notificaciones -->
-      <div id="notifPanel" class="hidden absolute right-0 top-14 w-80 max-h-96 overflow-auto bg-white border rounded-xl shadow-xl z-[10000]">
+      <div id="notifPanel" class="hidden absolute right-0 top-14 w-80 max-h-96 overflow-auto bg-white border rounded-2xl shadow-xl z-[10000]">
         <div class="px-4 py-2 border-b font-semibold">Notificaciones</div>
         <div id="notifList" class="p-2 text-sm text-slate-600">
           <div class="p-3 text-slate-400 empty">Sin notificaciones</div>
@@ -96,17 +96,14 @@
       return resp;
     }
 
-    // --- Botón carrito: redirige a /carrito/ con login requerido ---
+    // --- Botón carrito ---
     const cartBtn = document.getElementById('cartBtn');
     const cartBadge = document.getElementById('cartBadge');
-
     cartBtn?.addEventListener('click', () => {
       const t = getToken();
       if (!t) location.href = '/login/?next=/carrito/';
       else location.href = '/carrito/';
     });
-
-    // Inicializa badge si hay sesión
     (async () => {
       if (!getToken()) { cartBadge?.classList.add('hidden'); return; }
       try {
@@ -118,17 +115,15 @@
       } catch(_) {}
     })();
 
-    // --- Render de botón/login o menú de usuario (simple) ---
+    // --- Render auth simple ---
     (function(){
       const access = getToken();
       const el = document.getElementById('authArea');
       if (!el) return;
-
       const iconUser = `
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.76-3.58-5-8-5Z"/>
         </svg>`;
-
       if (!access) {
         el.innerHTML = `
           <a href="/login/"
@@ -139,7 +134,6 @@
           </a>`;
         return;
       }
-
       const chevron = `
         <svg class="w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>`;
       el.innerHTML = `
@@ -155,15 +149,12 @@
           <a href="/publicar/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Publicar artículo</a>
           <button id="logoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-slate-50 text-red-600">Cerrar sesión</button>
         </div>`;
-
       const btn = document.getElementById('btnUser');
       const menu = document.getElementById('menuUser');
       const out  = document.getElementById('logoutBtn');
-
       const toggle = () => menu.classList.toggle('hidden');
       const closeOutside = (e) => { if (!menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden'); };
       const logout = () => { localStorage.clear(); location.reload(); };
-
       btn.addEventListener('click', toggle);
       document.addEventListener('click', closeOutside);
       out.addEventListener('click', logout);
@@ -177,7 +168,7 @@
 
     <!-- Filtros -->
     <section class="mt-6 p-4 border rounded-2xl bg-white shadow-sm transition hover:shadow-md">
-      <form id="filters" class="grid md:grid-cols-5 gap-3 items-end">
+      <form id="filters" class="grid md:grid-cols-6 gap-3 items-end">
         <div class="md:col-span-2">
           <label class="text-sm text-slate-600">Buscar (texto)</label>
           <input id="q" type="text" class="w-full border rounded-xl px-3 py-2 transition focus:ring-2 focus:ring-brand-100 outline-none" placeholder="taladro, generador..." />
@@ -191,13 +182,27 @@
           <input id="pmax" type="number" class="w-full border rounded-xl px-3 py-2 transition focus:ring-2 focus:ring-brand-100 outline-none" placeholder="100000" />
         </div>
         <div>
-          <label class="text-sm text-slate-600">Ubicación</label>
+          <label class="text-sm text-slate-600">Ubicación (ciudad)</label>
           <input id="ubi" type="text" class="w-full border rounded-xl px-3 py-2 transition focus:ring-2 focus:ring-brand-100 outline-none" placeholder="Medellín..." />
         </div>
 
-        <div class="md:col-span-5 flex gap-3">
+        <!-- Radio + Cerca de mí -->
+        <div>
+          <label class="text-sm text-slate-600">Radio (km)</label>
+          <input id="radio" type="number" min="1" class="w-full border rounded-xl px-3 py-2 transition focus:ring-2 focus:ring-brand-100 outline-none" placeholder="10" />
+        </div>
+        <div class="md:col-span-6 flex flex-wrap gap-3 items-center">
           <button class="px-4 py-2 rounded-xl bg-brand-600 text-white transition transform hover:bg-brand-700 hover:-translate-y-0.5" type="submit">Aplicar filtros</button>
           <button id="clear" class="px-4 py-2 rounded-xl border transition hover:bg-slate-50 hover:-translate-y-0.5" type="button">Limpiar</button>
+
+          <!-- Botón "Cerca de mí" -->
+          <button id="nearbyBtn" type="button" class="ml-auto px-4 py-2 rounded-xl border transition hover:bg-slate-50 flex items-center gap-2">
+            <span>📍</span><span>Cerca de mí</span>
+          </button>
+
+          <!-- lat/lng ocultos -->
+          <input id="lat" type="hidden" />
+          <input id="lng" type="hidden" />
         </div>
       </form>
     </section>
@@ -234,16 +239,14 @@
     let CATS = [], ITEMS = [], PAGE = parseInt(qs.get('page') || '1');
     const PER_PAGE = 9;
 
+    // --- Cargar categorías ---
     async function loadCategorias() {
       const el = byId('cats');
       el.innerHTML = 'Cargando categorías...';
       const r = await fetch('/api/categorias/');
       CATS = await r.json();
       const byParent = {};
-      CATS.forEach(c => {
-        const pid = c.parent || 'root';
-        (byParent[pid] ||= []).push(c);
-      });
+      CATS.forEach(c => { const pid = c.parent || 'root'; (byParent[pid] ||= []).push(c); });
       function renderNode(parentId, level=0) {
         const arr = byParent[parentId] || [];
         return arr.map(c => {
@@ -261,16 +264,24 @@
       el.innerHTML = renderNode('root').join('');
     }
 
+    // --- QS helpers (incluye nuevos campos) ---
     function filtersToQS() {
       const q = byId('q').value.trim();
       const pmin = byId('pmin').value.trim();
       const pmax = byId('pmax').value.trim();
       const ubi = byId('ubi').value.trim();
+      const radio = byId('radio').value.trim();
+      const lat = byId('lat').value.trim();
+      const lng = byId('lng').value.trim();
+
       const params = new URLSearchParams();
       if (q) params.set('q', q);
       if (pmin) params.set('pmin', pmin);
       if (pmax) params.set('pmax', pmax);
       if (ubi) params.set('ubi', ubi);
+      if (radio) params.set('radio', radio);
+      if (lat) params.set('lat', lat);
+      if (lng) params.set('lng', lng);
       if (PAGE > 1) params.set('page', PAGE);
       const s = params.toString();
       return s ? '&' + s : '';
@@ -289,35 +300,111 @@
       dfs(start); return leaves;
     }
 
+    /* ===========================
+       NEARBY: normalizador + carga
+       =========================== */
+
+    // Normaliza respuestas: [], {items:[]}, {results:[]}, {data:[]}, o {features:[{properties:..}]}
+    function normalizeNearbyResponse(data) {
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.items))   return data.items;
+      if (data && Array.isArray(data.results)) return data.results;
+      if (data && Array.isArray(data.data))    return data.data;
+      if (data && Array.isArray(data.features)) {
+        return data.features.map(f => f?.properties || f).filter(Boolean);
+      }
+      return [];
+    }
+
+    async function fetchCerca(params) {
+      const u = new URL(location.origin + '/api/articulos/cerca/');
+      Object.entries(params).forEach(([k, v]) => v && u.searchParams.set(k, String(v)));
+      if (!u.searchParams.get('radio_km')) u.searchParams.set('radio_km', '10');
+      const r = await fetch(u.toString());
+      const j = r.ok ? await r.json().catch(() => ({})) : {};
+      return normalizeNearbyResponse(j);
+    }
+
+    // Carga artículos con soporte completo de “cerca”
     async function loadArticulos() {
       const status = byId('status'), grid = byId('grid');
       grid.innerHTML = ''; status.textContent = 'Cargando artículos...';
-      const q = qs.get('q') || byId('q').value.trim();
-      const pmin = qs.get('pmin') || byId('pmin').value.trim();
-      const pmax = qs.get('pmax') || byId('pmax').value.trim();
-      const ubi  = qs.get('ubi') || byId('ubi').value.trim();
+
+      const qTxt  = (qs.get('q')    ?? byId('q').value.trim());
+      const pmin  = (qs.get('pmin') ?? byId('pmin').value.trim());
+      const pmax  = (qs.get('pmax') ?? byId('pmax').value.trim());
+      const ubi   = (qs.get('ubi')  ?? byId('ubi').value.trim());
+      const radio = (qs.get('radio')?? byId('radio').value.trim());
+      const latQS = qs.get('lat');  const lngQS = qs.get('lng');
+      const lat   = latQS || byId('lat').value.trim();
+      const lng   = lngQS || byId('lng').value.trim();
+
       const subcat = qs.get('subcat'); const cat = qs.get('cat');
-      const urls = [];
-      function buildUrl(slug){
-        const u = new URL(location.origin + '/api/articulos/');
-        u.searchParams.set('ordering', '-creado');
-        if (slug) u.searchParams.set('categoria', slug);
-        if (pmin) u.searchParams.set('precio_min', pmin);
-        if (pmax) u.searchParams.set('precio_max', pmax);
-        if (ubi)  u.searchParams.set('ubicacion', ubi);
-        return u.toString();
+
+      const useCercaByCoords = !!(radio && lat && lng);
+      const useCercaByCity   = !!(radio && ubi && !lat && !lng);
+      const useNearby = useCercaByCoords || useCercaByCity;
+
+      let items = [];
+
+      if (useCercaByCoords) {
+        items = await fetchCerca({ lat, lng, radio_km: radio });
+        status.textContent = `Mostrando ${items.length} resultado(s) cerca de tu ubicación a ${radio} km.`;
+      } else if (useCercaByCity) {
+        items = await fetchCerca({ ciudad: ubi, radio_km: radio });
+        status.textContent = `Mostrando ${items.length} resultado(s) a ${radio} km de ${ubi}.`;
+      } else {
+        // Flujo normal por categorías/filtros
+        const urls = [];
+        function buildUrl(slug){
+          const u = new URL(location.origin + '/api/articulos/');
+          u.searchParams.set('ordering', '-creado');
+          if (slug) u.searchParams.set('categoria', slug);
+          if (pmin) u.searchParams.set('precio_min', pmin);
+          if (pmax) u.searchParams.set('precio_max', pmax);
+          if (ubi)  u.searchParams.set('ubicacion', ubi);
+          return u.toString();
+        }
+        if (subcat) urls.push(buildUrl(subcat));
+        else if (cat) leafSlugsUnderCatSlug(cat).forEach(s => urls.push(buildUrl(s)));
+        else urls.push(buildUrl(null));
+
+        const results = await Promise.all(urls.map(u => fetch(u).then(r => r.json())));
+        items = results.flat();
+        status.textContent = `Mostrando ${items.length} resultado(s).`;
       }
-      if (subcat) { urls.push(buildUrl(subcat)); }
-      else if (cat) { leafSlugsUnderCatSlug(cat).forEach(s => urls.push(buildUrl(s))); }
-      else { urls.push(buildUrl(null)); }
-      const results = await Promise.all(urls.map(u => fetch(u).then(r => r.json())));
-      let items = results.flat();
-      const qlow = (q || '').toLowerCase();
-      if (qlow) items = items.filter(a => a.titulo.toLowerCase().includes(qlow) || (a.descripcion||'').toLowerCase().includes(qlow));
-      ITEMS = items; renderPage();
-      status.textContent = `Mostrando ${ITEMS.length} resultado(s)`;
+
+      // Filtro por texto: en modo “cerca” solo si el usuario escribió algo
+      const qlow = (qTxt || '').toLowerCase();
+      if (qlow) {
+        items = items.filter(a =>
+          (a.titulo||'').toLowerCase().includes(qlow) ||
+          (a.descripcion||'').toLowerCase().includes(qlow)
+        );
+      }
+
+      // Filtro por precio local para “cerca”
+      if (useNearby && (pmin || pmax)) {
+        const minV = pmin ? Number(pmin) : null;
+        const maxV = pmax ? Number(pmax) : null;
+        items = items.filter(a => {
+          const v = Number(a.precio_por_dia||0);
+          if (minV!==null && v < minV) return false;
+          if (maxV!==null && v > maxV) return false;
+          return true;
+        });
+      }
+
+      ITEMS = items;
+      renderPage();
+
+      if (useNearby && items.length === 0) {
+        status.innerHTML +=
+          ' <span class="text-slate-400">Sin resultados. Amplía el radio o limpia los filtros.</span>';
+      }
     }
 
+    // Render tarjetas y paginación
     function renderCard(a) {
       const imgUrl = a.portada || (a.imagenes && a.imagenes[0] && a.imagenes[0].url) || null;
       const imgTag = imgUrl
@@ -330,7 +417,7 @@
             ${imgTag}
             <h3 class="font-semibold line-clamp-1">${a.titulo}</h3>
             <p class="text-sm text-slate-500">
-              ${a.ubicacion || ''} • $${Number(a.precio_por_dia||0).toLocaleString('es-CO')}/día
+              ${(a.ubicacion||'').toString()} • $${Number(a.precio_por_dia||0).toLocaleString('es-CO')}/día
             </p>
           </a>
           <div class="mt-2 flex items-center justify-between text-sm">
@@ -360,24 +447,66 @@
       renderPage();
     }
 
+    // Eventos filtros / limpiar
     byId('filters').addEventListener('submit', (e) => {
       e.preventDefault(); PAGE = 1;
       const params = new URLSearchParams(location.search);
-      ['q','pmin','pmax','ubi'].forEach(k => { const v = byId(k).value.trim(); if (v) params.set(k, v); else params.delete(k); });
+      ['q','pmin','pmax','ubi','radio','lat','lng'].forEach(k => {
+        const v = byId(k).value.trim();
+        if (v) params.set(k, v); else params.delete(k);
+      });
       history.pushState({}, '', `${location.pathname}?${params.toString()}`); loadArticulos();
     });
     byId('clear').addEventListener('click', () => {
-      ['q','pmin','pmax','ubi'].forEach(k => byId(k).value='');
+      ['q','pmin','pmax','ubi','radio','lat','lng'].forEach(k => byId(k).value='');
       history.pushState({}, '', '/catalogo/'); PAGE = 1; loadArticulos();
     });
-    (function primeFiltersFromQS(){ ['q','pmin','pmax','ubi'].forEach(k => { const v = qs.get(k); if (v) byId(k).value = v; }); })();
+
+    // Precargar inputs desde QS
+    (function primeFiltersFromQS(){
+      ['q','pmin','pmax','ubi','radio','lat','lng'].forEach(k => { const v = qs.get(k); if (v) byId(k).value = v; });
+    })();
+
+    // Botón “Cerca de mí”
+    (function(){
+      const btn = byId('nearbyBtn');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        if (!('geolocation' in navigator)) { alert('Tu navegador no soporta geolocalización.'); return; }
+        const oldText = btn.innerHTML;
+        btn.disabled = true; btn.innerHTML = 'Obteniendo ubicación…';
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords || {};
+            byId('lat').value = latitude?.toFixed(6) || '';
+            byId('lng').value = longitude?.toFixed(6) || '';
+            if (!byId('radio').value) byId('radio').value = '10';
+            byId('ubi').value = '';
+            const params = new URLSearchParams(location.search);
+            ['lat','lng','radio'].forEach(k => params.set(k, byId(k).value));
+            ['q','pmin','pmax'].forEach(k => { const v = byId(k).value.trim(); if (v) params.set(k, v); });
+            params.delete('ubi');
+            history.pushState({}, '', `${location.pathname}?${params.toString()}`);
+            PAGE = 1; loadArticulos();
+            btn.disabled = false; btn.innerHTML = oldText;
+          },
+          () => {
+            alert('No pudimos obtener tu ubicación. Intenta escribir una ciudad y un radio.');
+            btn.disabled = false; btn.innerHTML = oldText;
+          },
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }
+        );
+      });
+    })();
+
+    // Init
     (async function init(){
       await loadCategorias();
       await loadArticulos();
     })();
   </script>
 
-  <!-- 🔔 Script de notificaciones (campanita) -->
+  <!--  Script de notificaciones (campanita) -->
   <script>
   (function(){
     const token = getToken?.() || localStorage.getItem('jwt');
@@ -444,8 +573,7 @@
 
     let running=false;
     async function tick(){
-      if(running) return;
-      running=true;
+      if(running) return; running=true;
       try{
         if(!me){
           const r=await getJSON('/api/perfiles/me/'); if(!r.ok) return; me=r.data;
