@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Detalle del artículo – Toolingo</title>
 
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -18,14 +19,49 @@
     }
   </script>
 
-  <!-- Flatpickr opcional (si quieres usarlo) -->
+  <!-- Flatpickr (datepicker) -->
   <link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/rangePlugin.js"></script>
 
   <style>
     .thumb:is(button)[data-active="true"]{ outline: 2px solid #f97316; outline-offset: 0; }
     .smooth { transition: all .25s cubic-bezier(.22,.61,.36,1); }
+
+    /* ===== Booking-like styles ===== */
+    .flatpickr-calendar {
+      border-radius: 14px !important;
+      box-shadow: 0 18px 48px rgba(15,23,42,.18) !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+    .flatpickr-day { font-weight: 500; border-radius: 8px !important; }
+    .flatpickr-day.inRange,
+    .flatpickr-day.prevMonthDay.inRange,
+    .flatpickr-day.nextMonthDay.inRange{
+      background:#e7f0ff !important; border-color:#e7f0ff !important; color:#0f172a !important;
+    }
+    .flatpickr-day.startRange, .flatpickr-day.endRange{
+      background:#2563eb !important; color:#fff !important; border-color:#2563eb !important;
+    }
+    .flatpickr-day.startRange { border-top-left-radius:10px !important; border-bottom-left-radius:10px !important; }
+    .flatpickr-day.endRange   { border-top-right-radius:10px !important; border-bottom-right-radius:10px !important; }
+    .flatpickr-day.inRange:hover{ background:#dbeafe !important; }
+
+    /* Días no disponibles (rojo) */
+    .flatpickr-day.tl-unavailable,
+    .flatpickr-day.tl-unavailable:focus {
+      background:#fee2e2 !important;
+      border-color:#fecaca !important;
+      color:#b91c1c !important;
+      cursor:not-allowed !important;
+    }
+    .flatpickr-day.tl-unavailable:hover { background:#fecaca !important; }
+
+    .tl-legend { font-size:12px; color:#475569; }
+    .tl-dot { display:inline-block; width:.6rem; height:.6rem; border-radius:9999px; background:#ef4444; vertical-align:middle; margin-right:.4rem; }
+
+    /* ===== Chat overlay ===== */
     .chat-overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display:none; z-index: 9998; }
     .chat-overlay {
       position: fixed; right: 32px; bottom: 32px;
@@ -43,7 +79,6 @@
   </style>
 </head>
 <body class="text-slate-800 bg-white">
-
   <!-- NAVBAR -->
   <header class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
@@ -56,13 +91,31 @@
       <nav class="hidden md:flex ml-auto items-center gap-6 text-sm">
         <a href="/" class="hover:text-brand-600">Inicio</a>
         <a href="/catalogo/" class="font-semibold text-brand-700">Productos</a>
-        <a href="/publicar/" class="font-semibold hover:text-brand-600">Publicar</a>
+        <a href="/publicar/" id="btnPublicar" class="font-semibold hover:text-brand-600">Publicar</a>
 
         <!-- Carrito -->
-        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">🛒
+        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
+          🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
         </button>
+
+        <!-- Campanita de notificaciones -->
+        <button id="notifBell" class="relative p-2 rounded-lg hover:bg-slate-100" title="Notificaciones">
+          🔔
+          <span id="notifBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-red-600 text-white hidden">0</span>
+        </button>
       </nav>
+
+      <!-- Panel flotante de notificaciones -->
+      <div id="notifPanel" class="hidden absolute right-4 top-14 w-80 max-h-96 overflow-auto bg-white border rounded-xl shadow-xl z-[10000]">
+        <div class="px-4 py-2 border-b font-semibold">Notificaciones</div>
+        <div id="notifList" class="p-2 text-sm text-slate-600">
+          <div class="p-3 text-slate-400">Sin notificaciones</div>
+        </div>
+        <div class="px-3 py-2 border-t text-right">
+          <button id="notifMarkAll" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">Marcar todo como leído</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -121,11 +174,11 @@
   <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
-  <!-- ===== Modal Reserva ===== -->
+  <!-- ===== Modal Reserva (Booking-like) ===== -->
   <div id="reservaModal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-black/30" data-close="true"></div>
     <div class="absolute inset-0 grid place-items-center p-4">
-      <div class="w-full max-w-lg rounded-2xl bg-white shadow-lift border">
+      <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl border">
         <div class="px-5 py-4 border-b flex items-center justify-between">
           <h3 class="text-lg font-semibold">Reservar <span id="mArtTitle" class="font-bold"></span></h3>
           <button type="button" class="p-2 rounded hover:bg-slate-100" data-close="true">✕</button>
@@ -135,29 +188,40 @@
           <div class="grid sm:grid-cols-2 gap-4">
             <label class="grid gap-1">
               <span class="text-sm text-slate-600">Fecha inicio</span>
-              <input id="fInicio" type="text" class="border rounded-lg px-3 py-2" placeholder="dd/mm/aaaa">
+              <input id="fInicio" type="text" class="border rounded-xl px-3 py-2" placeholder="dd/mm/aaaa">
             </label>
             <label class="grid gap-1">
               <span class="text-sm text-slate-600">Fecha fin</span>
-              <input id="fFin" type="text" class="border rounded-lg px-3 py-2" placeholder="dd/mm/aaaa">
+              <input id="fFin" type="text" class="border rounded-xl px-3 py-2" placeholder="dd/mm/aaaa">
             </label>
           </div>
 
-          <div id="dispMsg" class="text-sm text-emerald-700 hidden">Fechas disponibles ✓</div>
-          <div id="dispBad" class="text-sm text-red-600 hidden">No disponible</div>
-
-          <div class="rounded-xl bg-slate-50 p-4 grid grid-cols-2 gap-3 text-sm">
-            <div>Días</div><div class="text-right font-semibold" id="sumDias">—</div>
-            <div>Precio por día</div><div class="text-right font-semibold" id="sumPPD">—</div>
-            <div>Total estimado</div><div class="text-right font-bold text-slate-900" id="sumTotal">—</div>
+          <div class="flex items-center gap-3 text-sm">
+            <div class="tl-legend"><span class="tl-dot"></span>Días no disponibles</div>
+            <div id="dispMsg" class="text-sm text-slate-600"></div>
           </div>
 
-          <div class="text-xs text-slate-500">* El precio final se confirma al crear la solicitud.</div>
+          <div class="rounded-2xl bg-slate-50 p-4 text-sm">
+            <div class="flex items-center justify-between">
+              <span>Días</span><span class="font-semibold" id="sumDias">—</span>
+            </div>
+            <div class="flex items-center justify-between mt-1">
+              <span>Precio por día</span><span class="font-semibold" id="sumPPD">—</span>
+            </div>
+            <div class="flex items-center justify-between mt-3 pt-3 border-t text-base">
+              <span class="font-semibold">Total estimado</span>
+              <span class="font-bold text-slate-900" id="sumTotal">—</span>
+            </div>
+          </div>
+
+          <div class="text-[12px] text-slate-500">
+            * El precio final se confirma al crear la solicitud.
+          </div>
         </div>
 
         <div class="px-5 py-4 border-t flex gap-3 justify-end">
           <button type="button" class="px-4 py-2 rounded-lg border hover:bg-slate-50" data-close="true">Cancelar</button>
-          <button id="btnConfirmar" type="button" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700" disabled>Agregar al carrito</button>
+          <button id="btnConfirmar" type="button" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50" disabled>Agregar al carrito</button>
         </div>
       </div>
     </div>
@@ -174,39 +238,111 @@
   </div>
 
   <script>
-    /* ===== Utils ===== */
-    const ART_ID_SERVER = "{{ articulo_id }}";  // si tu vista pasa articulo_id
+    /* ===== Utils / Auth ===== */
+    const ART_ID_SERVER = "{{ articulo_id }}";  /* si tu vista pasa articulo_id */
     const ownerBox = document.getElementById('owner');
-    const fmtCOP = n => Number(n||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
     const fmt = n => Number(n||0).toLocaleString('es-CO');
+    const fmtCOP = x => Number(x||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+    const oneDay = 24*60*60*1000;
 
-    // JWT helpers
+    // Tokens
     const TOKEN_KEY='access', REFRESH_KEY='refresh';
-    const getToken = ()=> localStorage.getItem(TOKEN_KEY) || null;
-    const getRefresh = ()=> localStorage.getItem(REFRESH_KEY) || null;
-    const setTokens = ({access,refresh})=>{ if(access) localStorage.setItem(TOKEN_KEY,access); if(refresh) localStorage.setItem(REFRESH_KEY,refresh); };
-    async function refreshAccessToken(){ const r=getRefresh(); if(!r) return null; const resp=await fetch('/api/token/refresh/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh:r})}); if(!resp.ok) return null; const d=await resp.json(); if(d.access){ setTokens({access:d.access}); return d.access; } return null; }
-    async function authFetch(url,opt={}){ const t=getToken(); if(!t){ location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; throw new Error('No autenticado'); } const h=new Headers(opt.headers||{}); h.set('Authorization',`Bearer ${t}`); if(opt.body && !h.has('Content-Type')) h.set('Content-Type','application/json'); let resp=await fetch(url,{...opt,headers:h}); if(resp.status===401){ const na=await refreshAccessToken(); if(na){ h.set('Authorization',`Bearer ${na}`); resp=await fetch(url,{...opt,headers:h}); } } return resp; }
-
-    // Navegación carrito
-    const cartBtn=document.getElementById('cartBtn');
-    const cartBadge=document.getElementById('cartBadge');
-    cartBtn?.addEventListener('click',()=>{ if(!getToken()) location.href='/login/?next=/carrito/'; else location.href='/carrito/'; });
-
-    async function refreshCartBadge(){
-      try{
-        const r = await authFetch('/api/carrito/');
-        if(!r.ok) return;
-        const items = await r.json();
-        cartBadge?.classList.toggle('hidden', !(items?.length));
-        if (items?.length) cartBadge.textContent = items.length;
-      }catch(_){}
+    function getToken(){ return localStorage.getItem(TOKEN_KEY) || null; }
+    function getRefresh(){ return localStorage.getItem(REFRESH_KEY) || null; }
+    function setTokens({access,refresh}){ if(access) localStorage.setItem(TOKEN_KEY,access); if(refresh) localStorage.setItem(REFRESH_KEY,refresh); }
+    async function refreshAccessToken(){
+      const refresh=getRefresh(); if(!refresh) return null;
+      const r=await fetch('/api/token/refresh/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh})});
+      if(!r.ok) return null; const d=await r.json();
+      if(d.access){ setTokens({access:d.access}); return d.access; } return null;
+    }
+    async function authFetch(url,opt={}){
+      const t=getToken();
+      if(!t){ location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; throw new Error('No autenticado'); }
+      const h=new Headers(opt.headers||{});
+      h.set('Authorization',`Bearer ${t}`);
+      if(opt.body && !h.has('Content-Type')) h.set('Content-Type','application/json');
+      let resp=await fetch(url,{...opt,headers:h});
+      if(resp.status===401){
+        const na=await refreshAccessToken(); if(!na) return resp;
+        h.set('Authorization',`Bearer ${na}`); resp=await fetch(url,{...opt,headers:h});
+      }
+      return resp;
     }
 
-    // Avatar HTML
+    // Publicar -> fuerza login si no hay token
+    (function(){
+      const t = getToken();
+      const a = document.getElementById('btnPublicar');
+      if (!t && a) a.href = '/login/?next=/publicar/';
+    })();
+
+    // Carrito (badge + click)
+    const cartBtn = document.getElementById('cartBtn');
+    const cartBadge = document.getElementById('cartBadge');
+    cartBtn?.addEventListener('click', () => {
+      const t = getToken();
+      if (!t) location.href = '/login/?next=/carrito/';
+      else location.href = '/carrito/';
+    });
+    (async () => {
+      if (!getToken()) { cartBadge?.classList.add('hidden'); return; }
+      try {
+        const r = await authFetch('/api/carrito/');
+        if (!r.ok) return;
+        const items = await r.json();
+        cartBadge.classList.toggle('hidden', items.length === 0);
+        cartBadge.textContent = items.length;
+      } catch(_) {}
+    })();
+
+    // ===== Notificaciones (campanita) =====
+    const notifBell  = document.getElementById('notifBell');
+    const notifBadge = document.getElementById('notifBadge');
+    const notifPanel = document.getElementById('notifPanel');
+    const notifList  = document.getElementById('notifList');
+    const notifMarkAll = document.getElementById('notifMarkAll');
+
+    function togglePanel(){ notifPanel.classList.toggle('hidden'); }
+    document.addEventListener('click',(e)=>{
+      if (!notifPanel) return;
+      if (notifPanel.contains(e.target) || notifBell.contains(e.target)) return;
+      notifPanel.classList.add('hidden');
+    });
+    notifBell?.addEventListener('click',togglePanel);
+
+    async function loadNotifs(){
+      if (!getToken()) return;
+      try{
+        const r = await authFetch('/api/notificaciones/?ordering=-creado&limit=20');
+        if(!r.ok) return;
+        const data = await r.json(); // espera array [{id,texto,leido,creado},...]
+        const list = Array.isArray(data) ? data : (data.results || []);
+        const unread = list.filter(n=>!n.leido).length;
+        notifBadge.classList.toggle('hidden', unread===0);
+        notifBadge.textContent = unread;
+        if (list.length===0){
+          notifList.innerHTML = `<div class="p-3 text-slate-400">Sin notificaciones</div>`;
+        } else {
+          notifList.innerHTML = list.map(n => `
+            <div class="p-2 rounded ${n.leido?'':'bg-slate-50'}">
+              <div class="text-sm ${n.leido?'text-slate-600':'text-slate-900 font-medium'}">${n.texto || 'Notificación'}</div>
+              <div class="text-[11px] text-slate-400">${new Date(n.creado).toLocaleString('es-CO')}</div>
+            </div>`).join('');
+        }
+      }catch(_) {}
+    }
+    notifMarkAll?.addEventListener('click', async ()=>{
+      try{ await authFetch('/api/notificaciones/marcar-todas/',{method:'POST'}); }catch(_){}
+      loadNotifs();
+    });
+    // Poll sencillo
+    setInterval(loadNotifs, 10000);
+    loadNotifs();
+
+    // ====== Datos del artículo ======
     function avatarHtml(nameLike){ const txt=(nameLike||'').trim(); const ini=txt?txt[0].toUpperCase():'👤'; return `<div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">${ini}</div>`; }
 
-    // Fetch por ID o slug
     async function fetchByIdOrSlug(idOrSlug){
       const direct = await fetch(`/api/articulos/${encodeURIComponent(idOrSlug)}/`); if (direct.ok) return direct.json();
       const q = await fetch(`/api/articulos/?slug=${encodeURIComponent(idOrSlug)}`); if (q.ok){ const arr = await q.json(); if (Array.isArray(arr) && arr.length) return arr[0]; }
@@ -241,8 +377,7 @@
       const ubi=a.ubicacion || ''; const price=a.precio_por_dia ? `$${fmt(a.precio_por_dia)}/día` : '';
       document.getElementById('ubiprice').textContent = [ubi, price].filter(Boolean).join(' • ') || '—';
       const pricePill=document.getElementById('pricePill'); if(price){ pricePill.textContent=price; pricePill.classList.remove('hidden'); }
-      document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.'; 
-      renderOwner(a);
+      document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.'; renderOwner(a);
 
       // Galería
       const main=document.getElementById('galleryMain'); const thumbs=document.getElementById('thumbs'); const imgs=[];
@@ -265,122 +400,14 @@
       catch(err){ document.getElementById('title').textContent='Artículo no encontrado'; document.getElementById('desc').textContent='No pudimos cargar la información del artículo.'; console.error(err); }
     }
 
-    // ====== Reserva (cálculos + POST carrito) ======
-    const fInicio = ()=> document.getElementById('fInicio');
-    const fFin = ()=> document.getElementById('fFin');
-    const sumDias = document.getElementById('sumDias');
-    const sumPPD  = document.getElementById('sumPPD');
-    const sumTotal= document.getElementById('sumTotal');
-    const dispMsg = document.getElementById('dispMsg');
-    const dispBad = document.getElementById('dispBad');
-
-    function esToIsoDate(s){
-      if(!s) return '';
-      if(s.includes('-')) return s.trim();
-      const [dd,mm,yy]=s.split('/').map(x=>x.trim());
-      if(!dd||!mm||!yy) return '';
-      return `${yy.padStart(4,'0')}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
-    }
-
-    function diffDays(isoStart, isoEnd){
-      try{
-        const a = new Date(isoStart+'T00:00:00');
-        const b = new Date(isoEnd+'T00:00:00');
-        const ms = b - a;
-        const d = Math.round(ms/86400000);
-        return d>0 ? d : 0;
-      }catch{ return 0; }
-    }
-
-    function recalcSummary(a){
-      const iniISO = esToIsoDate(fInicio().value);
-      const finISO = esToIsoDate(fFin().value);
-
-      const dias = diffDays(iniISO, finISO);
-      const ppd = Number(a.precio_por_dia || 0);
-      const total = dias * ppd;
-
-      sumDias.textContent = dias || '—';
-      sumPPD.textContent  = ppd ? fmtCOP(ppd) : '—';
-      sumTotal.textContent= total ? fmtCOP(total) : '—';
-
-      // Semáforo simple (puedes conectar tu disponibilidad real)
-      const ok = dias>0;
-      dispMsg.classList.toggle('hidden', !ok);
-      dispBad.classList.toggle('hidden', ok);
-
-      document.getElementById('btnConfirmar').disabled = !ok;
-    }
-
-    function wireAddToCart(a){
-      const btn = document.getElementById('btnConfirmar');
-      btn.onclick = async () => {
-        const isoIni = esToIsoDate(fInicio().value);
-        const isoFin = esToIsoDate(fFin().value);
-        if(!isoIni || !isoFin){ alert('Elige fechas válidas.'); return; }
-
-        const payload = {
-          articulo: a.id || a.pk || a.uuid || a,   // ajusta si tu API usa otro nombre
-          fecha_inicio: isoIni,
-          fecha_fin: isoFin,
-        };
-
-        try{
-          const r = await authFetch('/api/carrito/', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify(payload)
-          });
-
-          if(!r.ok){
-            let msg = 'No se pudo agregar al carrito.';
-            try{
-              const err = await r.json();
-              msg = err?.detail || err?.error || JSON.stringify(err);
-            }catch{
-              try{ msg = await r.text(); }catch{}
-            }
-            alert(msg);
-            return;
-          }
-
-          await refreshCartBadge();
-          document.getElementById('reservaModal')?.classList.add('hidden');
-          if(confirm('✅ ¡Agregado! ¿Ir al carrito ahora?')) location.href='/carrito/';
-        }catch(e){
-          console.error(e);
-          alert('Error de red al agregar al carrito.');
-        }
-      };
-    }
-
-    function openReservaModal(a){
-      document.getElementById('mArtTitle').textContent = a.titulo || 'Artículo';
-      document.getElementById('reservaModal').classList.remove('hidden');
-
-      // Flatpickr sencillo en formato dd/mm/aaaa
-      if(window.flatpickr){
-        flatpickr(fInicio(), {dateFormat:'d/m/Y', locale:'es'});
-        flatpickr(fFin(),    {dateFormat:'d/m/Y', locale:'es'});
-      }
-
-      // listeners de recálculo
-      [fInicio(), fFin()].forEach(el=> el.addEventListener('input', ()=> recalcSummary(a)));
-      recalcSummary(a);
-
-      // conectar botón agregar
-      wireAddToCart(a);
-    }
-
-    document.querySelectorAll('#reservaModal [data-close="true"]').forEach(el=>{
-      el.addEventListener('click', ()=> document.getElementById('reservaModal').classList.add('hidden'));
-    });
-
     // ====== Chat Overlay ======
     function openChatOverlay(articleId){
-      if (!getToken()) { window.location.href=`/login/?next=${encodeURIComponent(location.pathname)}`; return; }
+      if (!localStorage.getItem('access') && !localStorage.getItem('jwt')) {
+        window.location.href=`/login/?next=${encodeURIComponent(location.pathname)}`;
+        return;
+      }
       const frame=document.getElementById('chatFrame');
-      const bust = Date.now();
+      const bust = Date.now(); // recarga forzada
       frame.src=`/chat/?embed=1&article=${encodeURIComponent(articleId)}&intent=contact&v=${bust}`;
       document.getElementById('chatBackdrop').style.display='block';
       document.getElementById('chatOverlay').style.display='block';
@@ -396,9 +423,137 @@
       document.getElementById('chatFrame').src='about:blank';
     };
 
+    // ====== Reserva (Booking-like) ======
+    let __ART__ = null;          // se setea al abrir modal
+    let __fpInstance = null;     // instancia de flatpickr
+
+    function openReservaModal(a){
+      __ART__ = a || window.__ARTICULO__ || {};
+      document.getElementById('mArtTitle').textContent = __ART__.titulo || 'Artículo';
+      document.getElementById('reservaModal').classList.remove('hidden');
+      initBookingCalendar(__ART__);
+    }
+    document.querySelectorAll('#reservaModal [data-close="true"]').forEach(el=>{
+      el.addEventListener('click', ()=> document.getElementById('reservaModal').classList.add('hidden'));
+    });
+
+    // Disponibilidad
+    async function fetchBookedDates(articleId){
+      if (__ART__ && Array.isArray(__ART__.fechas_ocupadas) && __ART__.fechas_ocupadas.length){
+        return { pricePerDay: __ART__.precio_por_dia || 0, booked: __ART__.fechas_ocupadas };
+      }
+      try{
+        const r = await fetch(`/api/articulos/${encodeURIComponent(articleId)}/disponibilidad/`);
+        if(!r.ok) throw 0;
+        const data = await r.json();
+        return { pricePerDay: data.price_per_day || 0, booked: data.booked || [] };
+      }catch{
+        return { pricePerDay: __ART__?.precio_por_dia || 0, booked: [] };
+      }
+    }
+    function toFlatpickrDisable(booked){
+      if (!Array.isArray(booked)) return [];
+      return booked.map(b=>{
+        if (typeof b === 'string') return b;
+        if (b && b.from && b.to) return { from:b.from, to:b.to };
+        return null;
+      }).filter(Boolean);
+    }
+    function buildDisabledDateSet(booked){
+      const set = new Set();
+      const one = 24*60*60*1000;
+      booked.forEach(b=>{
+        if (typeof b === 'string'){
+          set.add(b);
+        } else if (b && b.from && b.to){
+          const d0 = new Date(b.from+'T00:00:00'); const d1 = new Date(b.to+'T00:00:00');
+          for(let t=d0.getTime(); t<=d1.getTime(); t+=one){
+            set.add(new Date(t).toISOString().slice(0,10));
+          }
+        }
+      });
+      return set;
+    }
+
+    async function initBookingCalendar(art){
+      const fIni = document.getElementById('fInicio');
+      const fFin = document.getElementById('fFin');
+      const diasEl = document.getElementById('sumDias');
+      const ppdEl  = document.getElementById('sumPPD');
+      const totEl  = document.getElementById('sumTotal');
+      const btnAdd = document.getElementById('btnConfirmar');
+      const dispMsg= document.getElementById('dispMsg');
+
+      fIni.value=''; fFin.value=''; diasEl.textContent='—'; ppdEl.textContent='—'; totEl.textContent='—'; btnAdd.disabled=true; dispMsg.textContent='';
+
+      const { pricePerDay, booked } = await fetchBookedDates(art.id || ART_ID_SERVER);
+      ppdEl.textContent = pricePerDay ? fmtCOP(pricePerDay) : '—';
+      const disableList = toFlatpickrDisable(booked);
+      const disabledSet = buildDisabledDateSet(booked);
+
+      if (__fpInstance) { try{__fpInstance.destroy();}catch{} __fpInstance=null; }
+
+      __fpInstance = flatpickr(fIni, {
+        altInput: true,
+        altFormat: "d/m/Y",
+        dateFormat: "Y-m-d",
+        mode: "range",
+        plugins: [ new rangePlugin({ input: "#fFin" }) ],
+        minDate: "today",
+        disable: disableList,
+        showMonths: 2,
+        locale: "es",
+        onDayCreate: function(_, __, ___, dayElem){
+          const dateStr = dayElem.dateObj?.toISOString?.().slice(0,10);
+          if (dateStr && disabledSet.has(dateStr)) dayElem.classList.add("tl-unavailable");
+        },
+        onChange: function(selected){
+          if (selected.length < 2){ diasEl.textContent='—'; totEl.textContent='—'; btnAdd.disabled=true; return; }
+          const d0 = new Date(selected[0].setHours(0,0,0,0));
+          const d1 = new Date(selected[1].setHours(0,0,0,0));
+
+          // verificar bloqueos en el medio
+          for(let t=d0.getTime(); t<=d1.getTime(); t+=oneDay){
+            const iso = new Date(t).toISOString().slice(0,10);
+            if (disabledSet.has(iso)){ dispMsg.innerHTML = `<span class="text-red-600 font-medium">⚠ Hay días no disponibles dentro del rango.</span>`; btnAdd.disabled=true; return; }
+          }
+          dispMsg.textContent = 'Fechas disponibles ✅';
+          const days = Math.max(1, Math.round((d1 - d0)/oneDay) + 1);
+          diasEl.textContent = String(days);
+          totEl.textContent = fmtCOP(days * (pricePerDay || 0));
+          btnAdd.disabled = false;
+        }
+      });
+    }
+
+    async function addToCart({artId, startISO, endISO}){
+      const r = await authFetch('/api/carrito/',{
+        method:'POST',
+        body: JSON.stringify({ articulo: artId, fecha_inicio: startISO, fecha_fin: endISO })
+      });
+      return r;
+    }
+    document.getElementById('btnConfirmar').addEventListener('click', async ()=>{
+      if (!__fpInstance) return;
+      const sel = __fpInstance.selectedDates || [];
+      if (sel.length < 2) return;
+      const d0 = sel[0]; const d1 = sel[1];
+      const startISO = d0.toISOString().slice(0,10);
+      const endISO   = d1.toISOString().slice(0,10);
+      const artId    = (__ART__ && (__ART__.id || __ART__.pk)) || ART_ID_SERVER;
+
+      try{
+        const resp = await addToCart({artId, startISO, endISO});
+        if (!resp.ok){
+          const msg = (await resp.json().catch(()=>({}))).detail || 'No se pudo agregar al carrito.';
+          alert(msg); return;
+        }
+        window.location.href = '/carrito/';
+      }catch(e){ alert('No se pudo agregar al carrito.'); }
+    });
+
     /* ===== Arranque ===== */
     loadArticulo();
-    refreshCartBadge();
   </script>
 </body>
 </html>
