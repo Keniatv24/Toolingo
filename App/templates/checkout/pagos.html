@@ -1,0 +1,159 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Pagos simulados – Toolingo</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors:{ brand:{50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'} },
+        boxShadow:{ soft:'0 10px 28px rgba(15,23,42,.08)' }
+      }}
+    }
+  </script>
+</head>
+<body class="bg-white text-slate-800">
+  <!-- NAV -->
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+      <a href="/" class="flex items-center gap-2">
+        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current">
+          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
+        </svg>
+        <span class="text-lg font-extrabold">Toolingo</span>
+      </a>
+      <nav class="hidden md:flex ml-auto items-center gap-6 text-sm">
+        <a href="/catalogo/" class="hover:text-brand-600">Productos</a>
+        <a href="/carrito/" class="hover:text-brand-600">Carrito</a>
+        <a href="/checkout/" class="hover:text-brand-600">Pagar</a>
+        <span class="font-semibold text-brand-700">Pagos</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Pagos simulados</h1>
+        <p class="text-slate-600 mt-1">Aquí verás los pagos que confirmaste en la pantalla de checkout.</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnExport" class="px-3 py-2 rounded-lg border hover:bg-slate-50 text-sm">Exportar JSON</button>
+        <button id="btnClear" class="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm">Borrar todos</button>
+      </div>
+    </div>
+
+    <section id="list" class="mt-6 grid gap-4"></section>
+
+    <template id="row">
+      <article class="rounded-2xl border shadow-soft p-4">
+        <div class="flex items-start gap-3">
+          <div class="h-9 w-9 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold shrink-0">💳</div>
+          <div class="min-w-0 grow">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="font-semibold text-lg">Pago <span data-id class="text-slate-500 font-normal"></span></h3>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">Simulado</span>
+            </div>
+            <div class="text-sm text-slate-600 mt-1">
+              <span data-fecha></span> •
+              <span>Metodo: <b data-metodo></b></span> •
+              <span>Cuotas: <b data-cuotas></b></span> •
+              <span>Tarjeta: **** <b data-last4></b></span>
+            </div>
+            <div class="mt-2 text-base font-bold">Total: <span data-total></span></div>
+
+            <details class="mt-3">
+              <summary class="cursor-pointer text-sm text-brand-700 hover:underline">Ver ítems</summary>
+              <div data-items class="mt-2 text-sm"></div>
+            </details>
+          </div>
+          <button data-del class="px-2 py-1 rounded-lg border hover:bg-slate-50 text-xs shrink-0">Eliminar</button>
+        </div>
+      </article>
+    </template>
+  </main>
+
+  <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
+  <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
+
+  <script>
+    const fmtCOP = n => Number(n||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+
+    function loadAll(){
+      try { return JSON.parse(localStorage.getItem('sim_pagos') || '[]'); }
+      catch { return []; }
+    }
+    function saveAll(arr){
+      localStorage.setItem('sim_pagos', JSON.stringify(arr));
+    }
+
+    function render(){
+      const list = document.getElementById('list');
+      const data = loadAll();
+
+      if (!data.length){
+        list.innerHTML = `
+          <div class="rounded-2xl border p-6 text-center text-slate-600">
+            Aún no tienes pagos simulados. Ve al <a class="text-brand-700 hover:underline" href="/checkout/">checkout</a> y confirma uno.
+          </div>`;
+        return;
+      }
+
+      const tpl = document.getElementById('row');
+      list.innerHTML = '';
+      data.forEach((pago, idx) => {
+        const node = tpl.content.cloneNode(true);
+        node.querySelector('[data-id]').textContent = pago.id;
+        node.querySelector('[data-fecha]').textContent = new Date(pago.fecha_iso).toLocaleString('es-CO');
+        node.querySelector('[data-metodo]').textContent = pago.metodo.toUpperCase();
+        node.querySelector('[data-cuotas]').textContent = pago.cuotas || '1';
+        node.querySelector('[data-last4]').textContent = pago.last4 || '••••';
+        node.querySelector('[data-total]').textContent = fmtCOP(pago.total || 0);
+
+        const itemsBox = node.querySelector('[data-items]');
+        itemsBox.innerHTML = (pago.items || []).map(it => `
+          <div class="flex items-center justify-between gap-3 py-1 border-b last:border-0">
+            <div class="min-w-0">
+              <div class="font-medium truncate">${it.titulo || 'Artículo'}</div>
+              <div class="text-slate-500 text-xs">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
+            </div>
+            <div class="text-sm font-semibold">${fmtCOP(it.total_estimado || 0)}</div>
+          </div>
+        `).join('');
+
+        node.querySelector('[data-del]').addEventListener('click', () => {
+          const arr = loadAll();
+          arr.splice(idx, 1);
+          saveAll(arr);
+          render();
+        });
+
+        list.appendChild(node);
+      });
+    }
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      if (confirm('¿Borrar todos los pagos simulados?')) {
+        localStorage.removeItem('sim_pagos');
+        render();
+      }
+    });
+
+    document.getElementById('btnExport').addEventListener('click', () => {
+      const data = localStorage.getItem('sim_pagos') || '[]';
+      const blob = new Blob([data], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'pagos_simulados.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    render();
+  </script>
+</body>
+</html>

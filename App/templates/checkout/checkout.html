@@ -224,12 +224,19 @@
     const subtotalEl = document.getElementById('subtotal');
     const totalEl = document.getElementById('total');
 
+    // >>> NUEVO: guardaremos los ítems del carrito para componer el pago
+    let __CART_ITEMS__ = [];
+
     async function loadSummary(){
       try{
-        const r = await authFetch('/api/carrito/'); const items = await r.json();
-        countEl.textContent = items.length;
+        const r = await authFetch('/api/carrito/'); 
+        const items = await r.json();
+
+        __CART_ITEMS__ = Array.isArray(items) ? items : [];
+
+        countEl.textContent = __CART_ITEMS__.length;
         let sum = 0;
-        itemsBox.innerHTML = items.map(it=>{
+        itemsBox.innerHTML = __CART_ITEMS__.map(it=>{
           sum += Number(it.total_estimado||0);
           const img = it.articulo_portada
             ? `<img src="${it.articulo_portada}" class="h-14 w-20 rounded object-cover border" alt="">`
@@ -284,23 +291,61 @@
     let selectedMethod = 'credit';
     selectMethod(selectedMethod);
 
-    // ===== Acciones de pago (demo)
+    // ===== Acciones de pago (demo + guardar simulación)
     document.getElementById('payBtn').addEventListener('click', ()=>{
       const num = document.getElementById('cardNumber').value.replace(/\s+/g,'');
       const name = document.getElementById('cardName').value.trim();
       const mm = document.getElementById('expMM').value.trim();
       const yy = document.getElementById('expYY').value.trim();
       const cvv = document.getElementById('cvv').value.trim();
-      if(num.length < 13 || !name || mm.length!==2 || yy.length!==2 || cvv.length<3){
-        alert('Completa los datos de la tarjeta.'); return;
+      const cuotas = document.getElementById('installments').value || '1';
+
+      // Validación simple para métodos de tarjeta
+      if(selectedMethod==='credit' || selectedMethod==='debit'){
+        if(num.length < 13 || !name || mm.length!==2 || yy.length!==2 || cvv.length<3){
+          alert('Completa los datos de la tarjeta.'); 
+          return;
+        }
       }
-      alert('Simulación: pago con tarjeta listo para integrarse ✅');
+
+      // Total del carrito
+      const total = (__CART_ITEMS__ || []).reduce((acc, it) => acc + Number(it.total_estimado||0), 0);
+
+      // Objeto de pago simulado
+      const pago = {
+        id: `PAY-${Date.now()}`,
+        fecha_iso: new Date().toISOString(),
+        metodo: selectedMethod || 'credit',
+        cuotas,
+        last4: (num || '').slice(-4) || '',
+        total,
+        items: (__CART_ITEMS__ || []).map(it => ({
+          id: it.id || null,
+          articulo_id: it.articulo || it.articulo_id || null,
+          titulo: it.articulo_titulo || 'Artículo',
+          fecha_inicio: it.fecha_inicio,
+          fecha_fin: it.fecha_fin,
+          dias: it.dias,
+          total_estimado: it.total_estimado
+        }))
+      };
+
+      // Guardar en localStorage (historial)
+      try{
+        const arr = JSON.parse(localStorage.getItem('sim_pagos') || '[]');
+        arr.unshift(pago);
+        localStorage.setItem('sim_pagos', JSON.stringify(arr));
+      }catch(_){
+        localStorage.setItem('sim_pagos', JSON.stringify([pago]));
+      }
+
+      alert('Simulación: pago con tarjeta listo para integrarse ');
+      // Redirigir al historial de pagos
+      window.location.href = '/pagos/';
     });
 
     document.getElementById('goAlt').addEventListener('click', ()=>{
-      if(selectedMethod==='pse') alert('Simulación: redirigir a PSE ');
-      if(selectedMethod==='addi') alert('Simulación: redirigir a ADDI ');
-      if(selectedMethod==='siste') alert('Simulación: redirigir a SisteCredito ');
+      alert('Simulación: redirigir a pasarela externa');
     });
 
     loadSummary();

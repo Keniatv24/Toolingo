@@ -26,6 +26,7 @@ from django.shortcuts import render
 from chat.views import ConversationViewSet
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_sameorigin
+from . import views
 
 
 
@@ -92,6 +93,8 @@ urlpatterns = [
     path("carrito/", TemplateView.as_view(template_name="cart/index.html"), name="carrito"),
     path('checkout/', TemplateView.as_view(template_name='checkout/checkout.html'), name='checkout'),
     path("chat/", ChatWidgetView.as_view(), name="chat_ui"),
+    path("pagos/", views.pagos_view, name="pagos"),
+
 ]
 
 

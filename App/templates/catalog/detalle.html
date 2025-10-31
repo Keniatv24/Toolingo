@@ -29,7 +29,7 @@
     .thumb:is(button)[data-active="true"]{ outline: 2px solid #f97316; outline-offset: 0; }
     .smooth { transition: all .25s cubic-bezier(.22,.61,.36,1); }
 
-    /* ===== Booking-like styles ===== */
+    /* Booking-like styles */
     .flatpickr-calendar {
       border-radius: 14px !important;
       box-shadow: 0 18px 48px rgba(15,23,42,.18) !important;
@@ -48,7 +48,7 @@
     .flatpickr-day.endRange   { border-top-right-radius:10px !important; border-bottom-right-radius:10px !important; }
     .flatpickr-day.inRange:hover{ background:#dbeafe !important; }
 
-    /* Días no disponibles (rojo) */
+    /* Días no disponibles */
     .flatpickr-day.tl-unavailable,
     .flatpickr-day.tl-unavailable:focus {
       background:#fee2e2 !important;
@@ -61,7 +61,7 @@
     .tl-legend { font-size:12px; color:#475569; }
     .tl-dot { display:inline-block; width:.6rem; height:.6rem; border-radius:9999px; background:#ef4444; vertical-align:middle; margin-right:.4rem; }
 
-    /* ===== Chat overlay ===== */
+    /* Chat overlay*/
     .chat-overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display:none; z-index: 9998; }
     .chat-overlay {
       position: fixed; right: 32px; bottom: 32px;
@@ -174,7 +174,7 @@
   <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
-  <!-- ===== Modal Reserva (Booking-like) ===== -->
+  <!--  Modal Reserva -->
   <div id="reservaModal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-black/30" data-close="true"></div>
     <div class="absolute inset-0 grid place-items-center p-4">
@@ -238,8 +238,7 @@
   </div>
 
   <script>
-    /* ===== Utils / Auth ===== */
-    const ART_ID_SERVER = "{{ articulo_id }}";  /* si tu vista pasa articulo_id */
+    /*  Utils / Auth  */
     const ownerBox = document.getElementById('owner');
     const fmt = n => Number(n||0).toLocaleString('es-CO');
     const fmtCOP = x => Number(x||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
@@ -277,7 +276,7 @@
       if (!t && a) a.href = '/login/?next=/publicar/';
     })();
 
-    // Carrito (badge + click)
+    // Carrito
     const cartBtn = document.getElementById('cartBtn');
     const cartBadge = document.getElementById('cartBadge');
     cartBtn?.addEventListener('click', () => {
@@ -296,7 +295,7 @@
       } catch(_) {}
     })();
 
-    // ===== Notificaciones (campanita) =====
+    // Notificaciones
     const notifBell  = document.getElementById('notifBell');
     const notifBadge = document.getElementById('notifBadge');
     const notifPanel = document.getElementById('notifPanel');
@@ -316,7 +315,7 @@
       try{
         const r = await authFetch('/api/notificaciones/?ordering=-creado&limit=20');
         if(!r.ok) return;
-        const data = await r.json(); // espera array [{id,texto,leido,creado},...]
+        const data = await r.json();
         const list = Array.isArray(data) ? data : (data.results || []);
         const unread = list.filter(n=>!n.leido).length;
         notifBadge.classList.toggle('hidden', unread===0);
@@ -336,11 +335,10 @@
       try{ await authFetch('/api/notificaciones/marcar-todas/',{method:'POST'}); }catch(_){}
       loadNotifs();
     });
-    // Poll sencillo
     setInterval(loadNotifs, 10000);
     loadNotifs();
 
-    // ====== Datos del artículo ======
+    // Datos del artículo
     function avatarHtml(nameLike){ const txt=(nameLike||'').trim(); const ini=txt?txt[0].toUpperCase():'👤'; return `<div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">${ini}</div>`; }
 
     async function fetchByIdOrSlug(idOrSlug){
@@ -400,14 +398,14 @@
       catch(err){ document.getElementById('title').textContent='Artículo no encontrado'; document.getElementById('desc').textContent='No pudimos cargar la información del artículo.'; console.error(err); }
     }
 
-    // ====== Chat Overlay ======
+    // Chat Overlay 
     function openChatOverlay(articleId){
       if (!localStorage.getItem('access') && !localStorage.getItem('jwt')) {
         window.location.href=`/login/?next=${encodeURIComponent(location.pathname)}`;
         return;
       }
       const frame=document.getElementById('chatFrame');
-      const bust = Date.now(); // recarga forzada
+      const bust = Date.now();
       frame.src=`/chat/?embed=1&article=${encodeURIComponent(articleId)}&intent=contact&v=${bust}`;
       document.getElementById('chatBackdrop').style.display='block';
       document.getElementById('chatOverlay').style.display='block';
@@ -423,9 +421,86 @@
       document.getElementById('chatFrame').src='about:blank';
     };
 
-    // ====== Reserva (Booking-like) ======
-    let __ART__ = null;          // se setea al abrir modal
-    let __fpInstance = null;     // instancia de flatpickr
+    
+
+    // 1) Helpers para leer pagos simulados y formar rangos / sets
+    function parseRangesFromPaymentItems(items, artId){
+      const out=[];
+      (items||[]).forEach(it=>{
+        const itemArt = it.articulo_id ?? it.articulo ?? it.id;
+        if (String(itemArt) !== String(artId)) return;
+        const from = (it.fecha_inicio || it.from || '').slice(0,10);
+        const to   = (it.fecha_fin   || it.to   || '').slice(0,10);
+        if(from && to) out.push({from,to});
+      });
+      return out;
+    }
+
+    function getSimPaidRanges(artId){
+      const ranges=[];
+      try{
+        // Soportar ambas llaves: la página de pagos guarda 'tl_payments'
+        const rawA = localStorage.getItem('tl_payments');
+        const rawB = localStorage.getItem('sim_pagos');
+        const lists = []
+        if (rawA) lists.push(JSON.parse(rawA));
+        if (rawB) lists.push(JSON.parse(rawB));
+        lists.forEach(list=>{
+          if(!Array.isArray(list)) return;
+          list.forEach(p=>{
+            // estructura esperada:articulo_id, fecha_inicio, fecha_fin
+            ranges.push(...parseRangesFromPaymentItems(p.items, artId));
+          });
+        });
+      }catch(_){}
+      return ranges;
+    }
+
+    function buildDisabledDateSet(ranges){
+      const set=new Set(); const ONE=24*60*60*1000;
+      (ranges||[]).forEach(r=>{
+        if(typeof r==='string'){ set.add(r); return; }
+        if(r && r.from && r.to){
+          const d0=new Date(r.from+'T00:00:00'), d1=new Date(r.to+'T00:00:00');
+          for(let t=d0.getTime(); t<=d1.getTime(); t+=ONE){
+            set.add(new Date(t).toISOString().slice(0,10));
+          }
+        }
+      });
+      return set;
+    }
+    function toFlatpickrDisable(ranges){
+      return (ranges||[]).map(r=>{
+        if(typeof r==='string') return r;
+        if(r && r.from && r.to) return {from:r.from,to:r.to};
+        return null;
+      }).filter(Boolean);
+    }
+
+    // 2) Carga combinada: API + fechas precargadas + simulación localStorage
+    async function fetchBookedDates(articleId){
+      const localRanges = (window.__ARTICULO__?.fechas_ocupadas || []).slice();
+
+      let apiPrice = window.__ARTICULO__?.precio_por_dia || 0;
+      let apiRanges = [];
+      try{
+        const r = await fetch(`/api/articulos/${encodeURIComponent(articleId)}/disponibilidad/`);
+        if (r.ok){
+          const data = await r.json();
+          apiPrice  = data.price_per_day ?? apiPrice;
+          apiRanges = Array.isArray(data.booked) ? data.booked : [];
+        }
+      }catch(_){}
+
+      // rangos desde pagos simulados en localStorage
+      const simRanges = getSimPaidRanges(articleId);
+
+      return { pricePerDay: apiPrice, booked: [...localRanges, ...apiRanges, ...simRanges] };
+    }
+
+    //Reserva 
+    let __ART__ = null;
+    let __fpInstance = null;
 
     function openReservaModal(a){
       __ART__ = a || window.__ARTICULO__ || {};
@@ -436,44 +511,6 @@
     document.querySelectorAll('#reservaModal [data-close="true"]').forEach(el=>{
       el.addEventListener('click', ()=> document.getElementById('reservaModal').classList.add('hidden'));
     });
-
-    // Disponibilidad
-    async function fetchBookedDates(articleId){
-      if (__ART__ && Array.isArray(__ART__.fechas_ocupadas) && __ART__.fechas_ocupadas.length){
-        return { pricePerDay: __ART__.precio_por_dia || 0, booked: __ART__.fechas_ocupadas };
-      }
-      try{
-        const r = await fetch(`/api/articulos/${encodeURIComponent(articleId)}/disponibilidad/`);
-        if(!r.ok) throw 0;
-        const data = await r.json();
-        return { pricePerDay: data.price_per_day || 0, booked: data.booked || [] };
-      }catch{
-        return { pricePerDay: __ART__?.precio_por_dia || 0, booked: [] };
-      }
-    }
-    function toFlatpickrDisable(booked){
-      if (!Array.isArray(booked)) return [];
-      return booked.map(b=>{
-        if (typeof b === 'string') return b;
-        if (b && b.from && b.to) return { from:b.from, to:b.to };
-        return null;
-      }).filter(Boolean);
-    }
-    function buildDisabledDateSet(booked){
-      const set = new Set();
-      const one = 24*60*60*1000;
-      booked.forEach(b=>{
-        if (typeof b === 'string'){
-          set.add(b);
-        } else if (b && b.from && b.to){
-          const d0 = new Date(b.from+'T00:00:00'); const d1 = new Date(b.to+'T00:00:00');
-          for(let t=d0.getTime(); t<=d1.getTime(); t+=one){
-            set.add(new Date(t).toISOString().slice(0,10));
-          }
-        }
-      });
-      return set;
-    }
 
     async function initBookingCalendar(art){
       const fIni = document.getElementById('fInicio');
@@ -488,6 +525,8 @@
 
       const { pricePerDay, booked } = await fetchBookedDates(art.id || ART_ID_SERVER);
       ppdEl.textContent = pricePerDay ? fmtCOP(pricePerDay) : '—';
+
+      // convertir a formato flatpickr y Set para pintar de rojo
       const disableList = toFlatpickrDisable(booked);
       const disabledSet = buildDisabledDateSet(booked);
 
@@ -505,17 +544,22 @@
         locale: "es",
         onDayCreate: function(_, __, ___, dayElem){
           const dateStr = dayElem.dateObj?.toISOString?.().slice(0,10);
-          if (dateStr && disabledSet.has(dateStr)) dayElem.classList.add("tl-unavailable");
+          if (dateStr && disabledSet.has(dateStr)) dayElem.classList.add("tl-unavailable"); // 🔴
         },
         onChange: function(selected){
-          if (selected.length < 2){ diasEl.textContent='—'; totEl.textContent='—'; btnAdd.disabled=true; return; }
+          if (selected.length < 2){
+            diasEl.textContent='—'; totEl.textContent='—'; btnAdd.disabled=true; return;
+          }
           const d0 = new Date(selected[0].setHours(0,0,0,0));
           const d1 = new Date(selected[1].setHours(0,0,0,0));
 
-          // verificar bloqueos en el medio
+          // impedir rangos que toquen días ocupados
           for(let t=d0.getTime(); t<=d1.getTime(); t+=oneDay){
             const iso = new Date(t).toISOString().slice(0,10);
-            if (disabledSet.has(iso)){ dispMsg.innerHTML = `<span class="text-red-600 font-medium">⚠ Hay días no disponibles dentro del rango.</span>`; btnAdd.disabled=true; return; }
+            if (disabledSet.has(iso)){
+              dispMsg.innerHTML = `<span class="text-red-600 font-medium">⚠ Hay días no disponibles dentro del rango.</span>`;
+              btnAdd.disabled=true; return;
+            }
           }
           dispMsg.textContent = 'Fechas disponibles ✅';
           const days = Math.max(1, Math.round((d1 - d0)/oneDay) + 1);
@@ -552,7 +596,7 @@
       }catch(e){ alert('No se pudo agregar al carrito.'); }
     });
 
-    /* ===== Arranque ===== */
+    
     loadArticulo();
   </script>
 </body>
