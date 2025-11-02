@@ -46,6 +46,8 @@
 
       <nav class="hidden md:flex gap-6 text-sm ml-auto items-center">
         <a href="{% url 'catalogo' %}" class="relative font-semibold transition hover:text-brand-600">{% trans "Productos" %}</a>
+        <a href="{% url 'productos_aliados' %}" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">{% trans "Productos aliados" %}</a>
+
 
         <!-- Campanita -->
         <button id="notifBell" class="relative p-2 rounded-lg hover:bg-slate-100" title="{% trans 'Notificaciones' %}">
@@ -248,7 +250,20 @@
 
     // Prefijo de idioma para rutas generadas en JS
     const LANG = (document.documentElement.lang || 'es').toLowerCase();
-    const L = (p) => `/${LANG}${p.startsWith('/')?p:`/${p}`}`;
+// Normaliza rutas respetando i18n y evitando doble prefijo /es/
+function L(p){
+  if(!p) return '/';
+  if(typeof p !== 'string') p = String(p);
+  // No tocar URLs absolutas
+  if(p.startsWith('http://') || p.startsWith('https://')) return p;
+  // Si ya viene con /<lang>/ al inicio, déjala tal cual
+  if(p === `/${LANG}` || p.startsWith(`/${LANG}/`)) return p;
+  // No anteponer prefijo para APIs ni rutas ya absolutas de backend sin i18n
+  if(p.startsWith('/api/')) return p;
+  // Caso general: anteponer prefijo de idioma
+  return `/${LANG}${p.startsWith('/') ? p : `/${p}`}`;
+}
+
 
     // ===== JWT helpers + authFetch =====
     const TOKEN_KEY='access', REFRESH_KEY='refresh';
@@ -521,6 +536,8 @@
           <a href="${L('{% url "perfil" %}')} " class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">{% trans "Mi perfil" %}</a>
           <a href="${L('{% url "perfil_editar" %}')} " class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">{% trans "Editar perfil" %}</a>
           <a href="${L('{% url "publicar" %}')} " class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">{% trans "Publicar artículo" %}</a>
+          <!-- 👉 NUEVO: item en el dropdown para Productos aliados -->
+          <a href="${L('{% url "productos_aliados" %}')} " class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">{% trans "Productos aliados" %}</a>
           <button id="logoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-slate-50 text-red-600">{% trans "Cerrar sesión" %}</button>
         </div>`;
 
