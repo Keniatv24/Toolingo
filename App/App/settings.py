@@ -143,3 +143,5 @@ EXTERNAL_GEO = {
 }
 # Timeout en segundos para requests externas
 HTTP_CLIENT_TIMEOUT = 8
+
+EXTERNAL_ALLY_PRODUCTS_URL = "https://jsonplaceholder.typicode.com/todos/"

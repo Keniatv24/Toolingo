@@ -1,5 +1,7 @@
 from django.db.models import Prefetch
 from django.shortcuts import render
+from rest_framework.views import APIView
+
 
 from rest_framework import viewsets, permissions, status, mixins, filters
 from rest_framework.response import Response
@@ -281,3 +283,27 @@ class ArticuloViewSet(ModelViewSet):
 # -------------------- Vista de detalle (template) --------------------
 def articulo_detalle(request, id):
     return render(request, "catalog/detalle.html", {"articulo_id": str(id)})
+
+# --- Servicio JSON para aliados ---
+class AliadosArticuloList(APIView):
+    """
+    Servicio público de aliados: lista de artículos en formato JSON.
+    Devuelve campos estables y enlaces a detalle.
+    """
+    def get(self, request):
+        articulos = Articulo.objects.all()[:50]
+        base = request.build_absolute_uri("/")[:-1]  # quita la '/' final
+
+        data = []
+        for a in articulos:
+            item = {
+                "id": getattr(a, "id", None),
+                "titulo": getattr(a, "titulo", f"Articulo {getattr(a, 'id', '')}"),
+                "detail_api": f"{base}/api/articulos/{getattr(a, 'id', '')}/",
+            }
+            slug = getattr(a, "slug", None)
+            if slug:
+                item["detail_web"] = f"{base}/articulo/{slug}/"
+            data.append(item)
+
+        return Response(data, status=status.HTTP_200_OK)

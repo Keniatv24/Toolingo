@@ -18,6 +18,9 @@ from users.views import ProfileViewSet, UserViewSet
 from catalog.views import CategoriaViewSet, ArticuloViewSet
 from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet, CartItemViewSet
 from chat.views import ConversationViewSet
+from catalog.views import AliadosArticuloList  
+from catalog.pages import productos_aliados    # página HTML que consume externos
+
 
 from . import views  # pagos_view
 
@@ -54,6 +57,9 @@ urlpatterns = [
 
     # Cambio de idioma
     path("i18n/", include("django.conf.urls.i18n")),
+        # Servicio público JSON para equipos aliados:
+    path("api/aliados/productos/", AliadosArticuloList.as_view(), name="aliados-productos"),
+
 
     # Admin
     path("admin/", admin.site.urls),
@@ -73,6 +79,9 @@ urlpatterns += i18n_patterns(
     path("chat/", ChatWidgetView.as_view(), name="chat_ui"),
     path("pagos/", views.pagos_view, name="pagos"),
     path("articulo/<uuid:id>/", articulo_detalle, name="articulo_detalle"),
+    path("productos-aliados/", productos_aliados, name="productos_aliados"),
+
+
     path("i18n/", include("django.conf.urls.i18n")),
 )
 

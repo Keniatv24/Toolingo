@@ -1,0 +1,122 @@
+{% load static %}
+{% load i18n %}
+<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% trans "Productos aliados – Toolingo" %}</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand:{50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c'} },
+          boxShadow: { soft:'0 8px 24px rgba(15,23,42,.06)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    .rail{transition:transform 250ms cubic-bezier(.22,.61,.36,1),filter 250ms;will-change:transform;}
+    .card-pro{transition:transform 220ms cubic-bezier(.22,.61,.36,1),box-shadow 220ms,opacity 220ms,filter 220ms;will-change:transform,box-shadow,filter;}
+    .card-pro:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(15,23,42,.12);filter:saturate(1.02);}
+    .chip{display:inline-flex;align-items:center;font-size:.75rem;padding:.25rem .5rem;border-radius:9999px;border:1px solid rgba(15,23,42,.08)}
+  </style>
+</head>
+<body class="text-slate-800 bg-white">
+
+  <!-- Navbar (idéntica a tu landing) -->
+  <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+      <a href="{% url 'landing' %}" class="flex items-center gap-2">
+        <svg width="28" height="28" viewBox="0 0 24 24" class="text-brand-600 fill-current transition-transform duration-300 hover:rotate-12">
+          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
+        </svg>
+        <span class="text-xl font-extrabold">Toolingo</span>
+      </a>
+
+      <nav class="hidden md:flex gap-6 text-sm ml-auto items-center">
+        <a href="{% url 'catalogo' %}" class="relative font-semibold transition hover:text-brand-600">{% trans "Productos" %}</a>
+        <a href="{{ source_url }}" target="_blank" class="px-3 py-1.5 rounded-lg border hover:bg-slate-50 text-sm">{% trans "Ver fuente JSON" %}</a>
+
+        <form action="{% url 'set_language' %}" method="post" class="ml-2">
+          
+          <input name="next" type="hidden" value="{{ request.get_full_path }}">
+          
+        </form>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero corto con fondo brand -->
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <h1 class="text-3xl md:text-4xl font-extrabold leading-tight text-slate-900">
+        {% trans "Productos aliados" %}
+      </h1>
+      <p class="text-slate-600 mt-2">{% trans "Catálogo sincronizado desde un servicio externo aliado." %}</p>
+    </div>
+  </section>
+
+  <!-- Grid de productos -->
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    {% if error %}
+      <div class="p-4 mb-6 rounded-xl bg-red-100 text-red-700">
+        {% trans "Error al consumir" %} <code class="underline">{{ source_url }}</code>: {{ error }}
+      </div>
+    {% endif %}
+
+    {% if items %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for it in items %}
+          <article class="card-pro rounded-2xl border border-slate-200 bg-white shadow-soft overflow-hidden">
+            <div class="relative">
+              <img src="{{ it.img }}" alt="{{ it.titulo }}" class="w-full aspect-[16/10] object-cover">
+              {% if it.precio_fmt %}
+                <span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm shadow text-brand-700">
+                  {{ it.precio_fmt }} / {% trans "día" %}
+                </span>
+              {% endif %}
+            </div>
+
+            <div class="p-4">
+              <h3 class="font-semibold tracking-tight line-clamp-2 text-slate-900">{{ it.titulo }}</h3>
+
+              <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                {% if it.estado %}
+                  <span class="chip bg-emerald-50 text-emerald-700 border-emerald-100">{{ it.estado }}</span>
+                {% endif %}
+                {% if it.disponible is not None %}
+                  {% if it.disponible %}
+                    <span class="chip bg-brand-50 text-brand-700 border-brand-100">{% trans "Disponible" %}</span>
+                  {% else %}
+                    <span class="chip bg-slate-100 text-slate-600">{% trans "No disponible" %}</span>
+                  {% endif %}
+                {% endif %}
+                {% if it.ubicacion %}
+                  <span class="chip">📍 {{ it.ubicacion }}</span>
+                {% endif %}
+                <span class="text-slate-400">ID: {{ it.id }}</span>
+              </div>
+
+              <div class="mt-4 flex items-center gap-2">
+                {% if it.detail_web %}
+                  <a href="{{ it.detail_web }}" class="flex-1 text-center px-3 py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition text-sm">{% trans "Ver en sitio" %}</a>
+                {% endif %}
+                {% if it.detail_api %}
+                  <a href="{{ it.detail_api }}" class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-sm">API</a>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% if not error %}
+        <p class="text-slate-600">{% trans "No se recibieron productos del aliado." %}</p>
+      {% endif %}
+    {% endif %}
+  </main>
+</body>
+</html>
