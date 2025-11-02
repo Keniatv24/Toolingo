@@ -1,0 +1,251 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Toolingo 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-01 15:54-0500\n"
+"PO-Revision-Date: 2025-11-01 00:00+0000\n"
+"Last-Translator: You <you@example.com>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: templates/landing/index.html:9
+msgid "Toolingo – Alquiler de equipos y herramientas"
+msgstr ""
+
+#: templates/landing/index.html:48
+msgid "Productos"
+msgstr "Products"
+
+#: templates/landing/index.html:51 templates/landing/index.html:56
+msgid "Notificaciones"
+msgstr ""
+
+#: templates/landing/index.html:58 templates/landing/index.html:655
+msgid "Sin notificaciones"
+msgstr ""
+
+#: templates/landing/index.html:61
+msgid "Marcar todo como leído"
+msgstr ""
+
+#: templates/landing/index.html:66
+msgid "Carrito"
+msgstr ""
+
+#: templates/landing/index.html:94
+msgid ""
+"Toolingo es el <span class=\"text-brand-600\">marketplace</span> para\n"
+"          alquilar equipos y herramientas cerca de ti."
+msgstr ""
+
+#: templates/landing/index.html:98
+msgid ""
+"Publica tus herramientas como propietario o encuentra la indicada para tu "
+"proyecto como arrendatario. Seguro, rápido y con calificaciones verificadas."
+msgstr ""
+
+#: templates/landing/index.html:101
+msgid "Explorar servicios"
+msgstr ""
+
+#: templates/landing/index.html:103
+msgid "+ Disponibilidad por días • + Depósito opcional • + Pagos seguros"
+msgstr ""
+
+#: templates/landing/index.html:110
+msgid "Búsqueda rápida"
+msgstr ""
+
+#: templates/landing/index.html:114
+msgid "¿Qué herramienta necesitas?"
+msgstr ""
+
+#: templates/landing/index.html:115
+msgid "Buscar"
+msgstr ""
+
+#: templates/landing/index.html:119
+msgid "¿No ves lo que buscas?"
+msgstr ""
+
+#: templates/landing/index.html:120
+msgid "Ir al catálogo completo"
+msgstr ""
+
+#: templates/landing/index.html:127
+msgid ""
+"Prueba el buscador con <span class=\"font-medium text-slate-700\">“taladro”, "
+"“andamio”, “mezcladora”</span>."
+msgstr ""
+
+#: templates/landing/index.html:128
+msgid "Se muestran hasta 5 resultados recientes."
+msgstr ""
+
+#: templates/landing/index.html:142
+msgid "En esta página"
+msgstr ""
+
+#: templates/landing/index.html:147
+msgid "¿Cómo funciona?"
+msgstr ""
+
+#: templates/landing/index.html:148 templates/landing/index.html:187
+msgid "Servicios principales"
+msgstr ""
+
+#: templates/landing/index.html:149 templates/landing/index.html:208
+msgid "Artículos destacados"
+msgstr ""
+
+#: templates/landing/index.html:159
+msgid "¿Cómo funciona Toolingo?"
+msgstr ""
+
+#: templates/landing/index.html:160
+msgid "Tres pasos sencillos para rentar o publicar:"
+msgstr ""
+
+#: templates/landing/index.html:165
+msgid "Explora"
+msgstr ""
+
+#: templates/landing/index.html:167
+msgid "Filtra por categoría, ubicación y precio por día."
+msgstr ""
+
+#: templates/landing/index.html:172
+msgid "Reserva"
+msgstr ""
+
+#: templates/landing/index.html:174
+msgid "Elige fechas disponibles y realiza el pago seguro."
+msgstr ""
+
+#: templates/landing/index.html:179
+msgid "Califica"
+msgstr ""
+
+#: templates/landing/index.html:181
+msgid "Entrega/recibe el equipo y deja tu calificación."
+msgstr ""
+
+#: templates/landing/index.html:188
+msgid "Alquila por día herramientas para construcción, jardinería y más."
+msgstr ""
+
+#: templates/landing/index.html:192
+msgid "Construcción"
+msgstr ""
+
+#: templates/landing/index.html:193
+msgid "Demoledores, mezcladoras, compactadoras"
+msgstr ""
+
+#: templates/landing/index.html:196
+msgid "Eléctricas"
+msgstr ""
+
+#: templates/landing/index.html:197
+msgid "Taladros, esmeriles, sierras"
+msgstr ""
+
+#: templates/landing/index.html:200
+msgid "Alturas"
+msgstr ""
+
+#: templates/landing/index.html:201
+msgid "Andamios, escaleras"
+msgstr ""
+
+#: templates/landing/index.html:209
+msgid "Ver todo"
+msgstr ""
+
+#: templates/landing/index.html:225
+msgid "¿Listo para publicar o alquilar?"
+msgstr ""
+
+#: templates/landing/index.html:226
+msgid "Crea tu cuenta y empieza a generar ingresos con tus herramientas."
+msgstr ""
+
+#: templates/landing/index.html:230
+msgid "Inicia sesión"
+msgstr ""
+
+#: templates/landing/index.html:311
+msgid "Ver detalle"
+msgstr ""
+
+#: templates/landing/index.html:360
+msgid "Sin resultados para"
+msgstr ""
+
+#: templates/landing/index.html:364
+msgid "Ver más resultados"
+msgstr ""
+
+#: templates/landing/index.html:366
+msgid "No se pudieron cargar los resultados."
+msgstr ""
+
+#: templates/landing/index.html:382
+msgid "Aún no hay artículos publicados."
+msgstr ""
+
+#: templates/landing/index.html:382
+msgid "¡Publica el primero!"
+msgstr ""
+
+#: templates/landing/index.html:387
+msgid "No se pudieron cargar los artículos."
+msgstr ""
+
+#: templates/landing/index.html:477
+msgid "Iniciar sesión"
+msgstr ""
+
+#: templates/landing/index.html:478
+msgid "Registrarse"
+msgstr ""
+
+#: templates/landing/index.html:495
+msgid "Mi cuenta"
+msgstr ""
+
+#: templates/landing/index.html:504
+msgid "Mi perfil"
+msgstr ""
+
+#: templates/landing/index.html:505
+msgid "Editar perfil"
+msgstr ""
+
+#: templates/landing/index.html:506
+msgid "Publicar artículo"
+msgstr ""
+
+#: templates/landing/index.html:507
+msgid "Cerrar sesión"
+msgstr ""
+
+#: templates/landing/index.html:560
+msgid "Nuevo mensaje"
+msgstr ""
+
+#: templates/landing/index.html:589
+msgid "¡Nuevo mensaje!"
+msgstr ""
+
+#: templates/landing/index.html:622
+msgid "Usuario"
+msgstr ""
+
+#: templates/landing/index.html:101
+msgid "Explorar servicios"
+msgstr "Explore services"

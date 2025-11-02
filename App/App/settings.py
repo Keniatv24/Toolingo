@@ -1,3 +1,4 @@
+# App/App/settings.py
 from pathlib import Path
 from datetime import timedelta
 
@@ -24,28 +25,27 @@ INSTALLED_APPS = [
     "users",
     "catalog",
     "rentals",
-    'chat',
+    "chat",
 ]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
+    "django.middleware.common.CommonMiddleware",   
+    "django.middleware.locale.LocaleMiddleware",   
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "App.urls"
 
-from pathlib import Path
-BASE_DIR = Path(__file__).resolve().parent.parent
+ROOT_URLCONF = "App.urls"
 
 TEMPLATES = [{
     "BACKEND": "django.template.backends.django.DjangoTemplates",
-    "DIRS": [BASE_DIR / "templates"],   
+    "DIRS": [BASE_DIR / "templates"],
     "APP_DIRS": True,
     "OPTIONS": {
         "context_processors": [
@@ -53,13 +53,14 @@ TEMPLATES = [{
             "django.template.context_processors.request",
             "django.contrib.auth.context_processors.auth",
             "django.contrib.messages.context_processors.messages",
+            "django.template.context_processors.i18n",  # ← importante
         ],
     },
 }]
 
 WSGI_APPLICATION = "App.wsgi.application"
 
-# Base de datos: SQLite para empezar (luego cambiamos a Postgres, si queremos :))
+# Base de datos: SQLite para empezar
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -74,10 +75,20 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# === I18N / L10N ===
 LANGUAGE_CODE = "es"
 TIME_ZONE = "America/Bogota"
 USE_I18N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ("es", "Español"),
+    ("en", "English"),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [
@@ -100,6 +111,9 @@ REST_FRAMEWORK = {
         "django_filters.rest_framework.DjangoFilterBackend",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # (Opcional) Paginación recomendada:
+    # "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    # "PAGE_SIZE": 10,
 }
 
 SPECTACULAR_SETTINGS = {
@@ -108,7 +122,6 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
-from datetime import timedelta
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -122,6 +135,7 @@ CORS_ALLOWED_ORIGINS = [
 
 # Usuario personalizado
 AUTH_USER_MODEL = "users.User"
+
 EXTERNAL_GEO = {
     "NOMINATIM_BASE": "https://nominatim.openstreetmap.org/search",
     # Nominatim requiere un User-Agent identificable:
@@ -129,4 +143,3 @@ EXTERNAL_GEO = {
 }
 # Timeout en segundos para requests externas
 HTTP_CLIENT_TIMEOUT = 8
-

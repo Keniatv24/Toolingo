@@ -1,45 +1,35 @@
 {% load static %}
+{% load i18n %}
 
 <!doctype html>
-<html lang="es">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Toolingo – Alquiler de equipos y herramientas</title>
+  <title>{% trans "Toolingo – Alquiler de equipos y herramientas" %}</title>
 
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: {
-            brand: {
-              50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',
-              400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c'
-            }
-          },
-          boxShadow: { soft: '0 8px 24px rgba(15,23,42,.06)' }
+          colors: { brand:{50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c'} },
+          boxShadow: { soft:'0 8px 24px rgba(15,23,42,.06)' }
         }
       }
     }
   </script>
 
   <style>
-    .rail { transition: transform 250ms cubic-bezier(.22,.61,.36,1), filter 250ms; will-change: transform; }
-    .rail.has-hover > .card-pro:not(.is-hover) { opacity: .9; transform: translateY(0) scale(.985); filter: saturate(.95); }
-    .card-pro { transition: transform 220ms cubic-bezier(.22,.61,.36,1), box-shadow 220ms, opacity 220ms, filter 220ms; will-change: transform, box-shadow, filter; }
-    .card-pro.is-hover { transform: translateY(-6px); box-shadow: 0 14px 40px rgba(15,23,42,.12); filter: saturate(1.02); }
-
-    .toc a { display:block; padding:.5rem .75rem; border-radius:.6rem; color:#334155; font-size:.925rem; }
-    .toc a:hover { background:#f1f5f9; }
-    .toc a.active { color:#ea580c; background:#fff7ed; font-weight:600; }
-
-    html { scroll-behavior: smooth; }
-
-    /* Panel de notificaciones (navbar) */
-    .notif-panel{ position:absolute; right:0; top:52px; width:20rem; max-height:24rem; overflow:auto; background:#fff;
-      border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 12px 32px rgba(15,23,42,.18); z-index: 1000; }
+    .rail{transition:transform 250ms cubic-bezier(.22,.61,.36,1),filter 250ms;will-change:transform;}
+    .rail.has-hover>.card-pro:not(.is-hover){opacity:.9;transform:translateY(0) scale(.985);filter:saturate(.95);}
+    .card-pro{transition:transform 220ms cubic-bezier(.22,.61,.36,1),box-shadow 220ms,opacity 220ms,filter 220ms;will-change:transform,box-shadow,filter;}
+    .card-pro.is-hover{transform:translateY(-6px);box-shadow:0 14px 40px rgba(15,23,42,.12);filter:saturate(1.02);}
+    .toc a{display:block;padding:.5rem .75rem;border-radius:.6rem;color:#334155;font-size:.925rem;}
+    .toc a:hover{background:#f1f5f9;}
+    .toc a.active{color:#ea580c;background:#fff7ed;font-weight:600;}
+    html{scroll-behavior:smooth;}
+    .notif-panel{position:absolute;right:0;top:52px;width:20rem;max-height:24rem;overflow:auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,.18);z-index:1000;}
   </style>
 </head>
 <body class="text-slate-800 bg-white">
@@ -47,7 +37,7 @@
   <!-- Navbar -->
   <header class="sticky top-0 bg-white/80 backdrop-blur border-b border-slate-200 z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
-      <a href="/" class="flex items-center gap-2">
+      <a href="{% url 'landing' %}" class="flex items-center gap-2">
         <svg width="28" height="28" viewBox="0 0 24 24" class="text-brand-600 fill-current transition-transform duration-300 hover:rotate-12">
           <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
         </svg>
@@ -55,31 +45,43 @@
       </a>
 
       <nav class="hidden md:flex gap-6 text-sm ml-auto items-center">
-        <a href="/catalogo/" class="relative font-semibold transition hover:text-brand-600">Productos</a>
+        <a href="{% url 'catalogo' %}" class="relative font-semibold transition hover:text-brand-600">{% trans "Productos" %}</a>
 
         <!-- Campanita -->
-        <button id="notifBell" class="relative p-2 rounded-lg hover:bg-slate-100" title="Notificaciones">
+        <button id="notifBell" class="relative p-2 rounded-lg hover:bg-slate-100" title="{% trans 'Notificaciones' %}">
           🔔
           <span id="notifBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-red-600 text-white hidden">0</span>
         </button>
         <div id="notifPanel" class="hidden notif-panel">
-          <div class="px-4 py-2 border-b text-slate-800 font-semibold">Notificaciones</div>
+          <div class="px-4 py-2 border-b text-slate-800 font-semibold">{% trans "Notificaciones" %}</div>
           <div id="notifList" class="p-2 text-sm text-slate-700">
-            <div class="p-3 text-slate-400 empty">Sin notificaciones</div>
+            <div class="p-3 text-slate-400 empty">{% trans "Sin notificaciones" %}</div>
           </div>
           <div class="px-3 py-2 border-t text-right">
-            <button id="notifMarkAll" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">Marcar todo como leído</button>
+            <button id="notifMarkAll" class="text-xs px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">{% trans "Marcar todo como leído" %}</button>
           </div>
         </div>
 
-        <!-- Carrito en navbar -->
-        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="Carrito">
+        <!-- Carrito -->
+        <button id="cartBtn" class="relative p-2 rounded-lg hover:bg-slate-100" title="{% trans 'Carrito' %}">
           🛒
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
         </button>
+
+        <!-- Selector de idioma -->
+        <form action="{% url 'set_language' %}" method="post" class="ml-2">
+          {% csrf_token %}
+          <input name="next" type="hidden" value="{{ request.get_full_path }}">
+          <select name="language" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+            {% get_current_language as LANGUAGE_CODE %}
+            {% get_available_languages as LANGUAGES %}
+            {% for lang in LANGUAGES %}
+              <option value="{{ lang.0 }}" {% if lang.0 == LANGUAGE_CODE %}selected{% endif %}>{{ lang.1 }}</option>
+            {% endfor %}
+          </select>
+        </form>
       </nav>
 
-      <!-- User menu mount point -->
       <div id="userMenuMount" class="relative"></div>
     </div>
   </header>
@@ -88,42 +90,49 @@
   <section class="bg-brand-50">
     <div class="max-w-6xl mx-auto px-4 py-16 grid md:grid-cols-2 gap-10 items-center">
       <div>
-        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">
-          Toolingo es el <span class="text-brand-600">marketplace</span> para
-          alquilar equipos y herramientas cerca de ti.
+        <h1 class="text-5xl font-extrabold leading-tight text-slate-900">
+          {% blocktrans trimmed %}
+            Toolingo es el <span class="text-brand-600">marketplace</span>
+            para alquilar equipos y herramientas cerca de ti.
+          {% endblocktrans %}
         </h1>
-        <p class="mt-4 text-slate-700 text-lg">
-          Publica tus herramientas como propietario o encuentra la indicada para tu proyecto como arrendatario.
-          Seguro, rápido y con calificaciones verificadas.
+
+        <p class="text-gray-600 mt-4">
+          {% blocktrans trimmed %}
+            Publica tus herramientas como propietario o encuentra la indicada
+            para tu proyecto como arrendatario. Seguro, rápido y con calificaciones verificadas.
+          {% endblocktrans %}
         </p>
+
         <div class="mt-6 flex gap-3">
-          <a href="#servicios" class="px-5 py-3 rounded-xl bg-brand-600 text-white transition transform hover:bg-brand-700 hover:-translate-y-1">Explorar servicios</a>
+          <a href="#servicios" class="px-5 py-3 rounded-xl bg-brand-600 text-white transition transform hover:bg-brand-700 hover:-translate-y-1">{% trans "Explorar servicios" %}</a>
         </div>
-        <div class="mt-6 text-sm text-slate-600">+ Disponibilidad por días • + Depósito opcional • + Pagos seguros</div>
+        <div class="mt-6 text-sm text-slate-600">{% trans "+ Disponibilidad por días • + Depósito opcional • + Pagos seguros" %}</div>
       </div>
 
       <!-- Búsqueda -->
       <div class="bg-white rounded-2xl shadow-soft p-6 border border-slate-100 transition hover:shadow-lg">
         <div class="grid md:grid-cols-3 gap-4">
           <div class="md:col-span-2">
-            <div class="text-sm mb-2 text-slate-500">Búsqueda rápida</div>
+            <div class="text-sm mb-2 text-slate-500">{% trans "Búsqueda rápida" %}</div>
             <form id="searchForm" class="flex gap-2">
               <input id="searchInput"
                      class="w-full border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-brand-200 transition"
-                     placeholder="¿Qué herramienta necesitas?" />
-              <button class="px-4 rounded-xl bg-brand-600 text-white transition hover:bg-brand-700 hover:-translate-y-0.5">Buscar</button>
+                     placeholder="{% trans '¿Qué herramienta necesitas?' %}" />
+              <button class="px-4 rounded-xl bg-brand-600 text-white transition hover:bg-brand-700 hover:-translate-y-0.5">{% trans "Buscar" %}</button>
             </form>
             <div id="searchResults" class="mt-4 space-y-2"></div>
             <div class="mt-3 text-xs text-slate-500">
-              ¿No ves lo que buscas? <a class="text-brand-700 hover:underline" href="/catalogo/">Ir al catálogo completo</a>.
+              {% trans "¿No ves lo que buscas?" %}
+              <a class="text-brand-700 hover:underline" href="{% url 'catalogo' %}">{% trans "Ir al catálogo completo" %}</a>.
             </div>
           </div>
           <div class="flex">
             <div class="rounded-2xl shadow-sm p-4 border border-slate-200 transition hover:shadow-lg w-full">
               <div class="text-sm mb-2 font-semibold text-gray-700"></div>
               <div class="mt-3 text-xs text-gray-500 space-y-2">
-                <p>Prueba el buscador con <span class="font-medium text-slate-700">“taladro”, “andamio”, “mezcladora”</span>.</p>
-                <p>Se muestran hasta 5 resultados recientes.</p>
+                <p>{% blocktrans %}Prueba el buscador con <span class="font-medium text-slate-700">“taladro”, “andamio”, “mezcladora”</span>.{% endblocktrans %}</p>
+                <p>{% trans "Se muestran hasta 5 resultados recientes." %}</p>
               </div>
             </div>
           </div>
@@ -133,18 +142,18 @@
     </div>
   </section>
 
-  <!-- Contenido principal con sidebar -->
+  <!-- Contenido principal -->
   <main class="max-w-6xl mx-auto px-4 mt-16 lg:grid lg:grid-cols-[270px_1fr] lg:gap-10">
     <aside class="toc sticky top-24 self-start hidden lg:block">
       <div class="bg-slate-60 border border-slate-200 rounded-xl p-4">
-        <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">En esta página</div>
+        <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">{% trans "En esta página" %}</div>
         <div class="relative pl-4">
           <div class="absolute left-0 top-0 w-1 rounded-full bg-slate-200 h-full"></div>
           <div id="tocProgress" class="absolute left-0 top-0 w-1 rounded-full bg-brand-600" style="height:0%"></div>
           <nav class="space-y-1">
-            <a href="#como" data-target="como">¿Cómo funciona?</a>
-            <a href="#servicios" data-target="servicios">Servicios principales</a>
-            <a href="#destacados" data-target="destacados">Artículos destacados</a>
+            <a href="#como" data-target="como">{% trans "¿Cómo funciona?" %}</a>
+            <a href="#servicios" data-target="servicios">{% trans "Servicios principales" %}</a>
+            <a href="#destacados" data-target="destacados">{% trans "Artículos destacados" %}</a>
           </nav>
         </div>
       </div>
@@ -154,57 +163,57 @@
       <div class="h-12 lg:h-16"></div>
 
       <section id="como" class="py-16">
-        <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">¿Cómo funciona Toolingo?</h2>
-        <p class="mt-1 text-slate-600">Tres pasos sencillos para rentar o publicar:</p>
+        <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">{% trans "¿Cómo funciona Toolingo?" %}</h2>
+        <p class="mt-1 text-slate-600">{% trans "Tres pasos sencillos para rentar o publicar:" %}</p>
         <div id="gridComo" class="rail grid md:grid-cols-3 gap-6 mt-6">
           <div class="card-pro p-6 rounded-2xl border border-slate-200 bg-white shadow-soft">
             <div class="flex items-center gap-4 mb-3">
               <div class="h-10 w-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold">1</div>
-              <h3 class="font-semibold text-lg tracking-tight">Explora</h3>
+              <h3 class="font-semibold text-lg tracking-tight">{% trans "Explora" %}</h3>
             </div>
-            <p class="text-slate-600 leading-relaxed">Filtra por categoría, ubicación y precio por día.</p>
+            <p class="text-slate-600 leading-relaxed">{% trans "Filtra por categoría, ubicación y precio por día." %}</p>
           </div>
           <div class="card-pro p-6 rounded-2xl border border-slate-200 bg-white shadow-soft">
             <div class="flex items-center gap-4 mb-3">
               <div class="h-10 w-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold">2</div>
-              <h3 class="font-semibold text-lg tracking-tight">Reserva</h3>
+              <h3 class="font-semibold text-lg tracking-tight">{% trans "Reserva" %}</h3>
             </div>
-            <p class="text-slate-600 leading-relaxed">Elige fechas disponibles y realiza el pago seguro.</p>
+            <p class="text-slate-600 leading-relaxed">{% trans "Elige fechas disponibles y realiza el pago seguro." %}</p>
           </div>
           <div class="card-pro p-6 rounded-2xl border border-slate-200 bg-white shadow-soft">
             <div class="flex items-center gap-4 mb-3">
               <div class="h-10 w-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold">3</div>
-              <h3 class="font-semibold text-lg tracking-tight">Califica</h3>
+              <h3 class="font-semibold text-lg tracking-tight">{% trans "Califica" %}</h3>
             </div>
-            <p class="text-slate-600 leading-relaxed">Entrega/recibe el equipo y deja tu calificación.</p>
+            <p class="text-slate-600 leading-relaxed">{% trans "Entrega/recibe el equipo y deja tu calificación." %}</p>
           </div>
         </div>
       </section>
 
       <section id="servicios" class="py-16">
-        <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Servicios principales</h2>
-        <p class="text-slate-600 mt-1">Alquila por día herramientas para construcción, jardinería y más.</p>
+        <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">{% trans "Servicios principales" %}</h2>
+        <p class="text-slate-600 mt-1">{% trans "Alquila por día herramientas para construcción, jardinería y más." %}</p>
 
         <div id="gridServicios" class="rail grid sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
           <div class="card-pro p-6 rounded-2xl bg-white border border-slate-200 shadow-soft">
-            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">Construcción</span>
-            <div class="mt-2 text-slate-700">Demoledores, mezcladoras, compactadoras</div>
+            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">{% trans "Construcción" %}</span>
+            <div class="mt-2 text-slate-700">{% trans "Demoledores, mezcladoras, compactadoras" %}</div>
           </div>
           <div class="card-pro p-6 rounded-2xl bg-white border border-slate-200 shadow-soft">
-            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">Eléctricas</span>
-            <div class="mt-2 text-slate-700">Taladros, esmeriles, sierras</div>
+            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">{% trans "Eléctricas" %}</span>
+            <div class="mt-2 text-slate-700">{% trans "Taladros, esmeriles, sierras" %}</div>
           </div>
           <div class="card-pro p-6 rounded-2xl bg-white border border-slate-200 shadow-soft">
-            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">Alturas</span>
-            <div class="mt-2 text-slate-700">Andamios, escaleras</div>
+            <span class="inline-block text-sm font-semibold text-brand-700 bg-brand-50 px-2 py-1 rounded">{% trans "Alturas" %}</span>
+            <div class="mt-2 text-slate-700">{% trans "Andamios, escaleras" %}</div>
           </div>
         </div>
       </section>
 
       <section id="destacados" class="py-16">
         <div class="flex items-end justify-between">
-          <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Artículos destacados</h2>
-          <a href="/catalogo/" class="text-sm text-brand-700 hover:underline">Ver todo</a>
+          <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">{% trans "Artículos destacados" %}</h2>
+          <a href="{% url 'catalogo' %}" class="text-sm text-brand-700 hover:underline">{% trans "Ver todo" %}</a>
         </div>
 
         <div id="gridDest" class="rail grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
@@ -220,12 +229,12 @@
 
       <section class="py-16 bg-brand-600 text-white rounded-2xl mb-16">
         <div class="px-6 md:px-10 text-center">
-          <h2 class="text-3xl font-bold tracking-tight">¿Listo para publicar o alquilar?</h2>
-          <p class="mt-2 text-brand-100">Crea tu cuenta y empieza a generar ingresos con tus herramientas.</p>
+          <h2 class="text-3xl font-bold tracking-tight">{% trans "¿Listo para publicar o alquilar?" %}</h2>
+          <p class="mt-2 text-brand-100">{% trans "Crea tu cuenta y empieza a generar ingresos con tus herramientas." %}</p>
           <div class="mt-6">
-            <a href="/login/?next=/publicar/"
+            <a href="{% url 'login' %}?next={% url 'publicar' %}"
                class="px-6 py-3 bg-white text-brand-700 rounded-xl font-semibold transition transform hover:bg-slate-100 hover:-translate-y-1">
-              Inicia sesión
+              {% trans "Inicia sesión" %}
             </a>
           </div>
         </div>
@@ -236,6 +245,10 @@
   <!-- JS -->
   <script>
     const fmtCOP = n => Number(n||0).toLocaleString('es-CO');
+
+    // Prefijo de idioma para rutas generadas en JS
+    const LANG = (document.documentElement.lang || 'es').toLowerCase();
+    const L = (p) => `/${LANG}${p.startsWith('/')?p:`/${p}`}`;
 
     // ===== JWT helpers + authFetch =====
     const TOKEN_KEY='access', REFRESH_KEY='refresh';
@@ -270,8 +283,8 @@
     const cartBadge = document.getElementById('cartBadge');
 
     cartBtn?.addEventListener('click', () => {
-      if (!getToken()) location.href = '/login/?next=/carrito/';
-      else location.href = '/carrito/';
+      if (!getToken()) location.href = L('{% url "login" %}?next={% url "carrito" %}');
+      else location.href = L('{% url "carrito" %}');
     });
 
     (async ()=> {
@@ -285,14 +298,15 @@
       } catch(_) {}
     })();
 
-    // -------- Búsqueda / Destacados / Efectos  --------
+    // -------- Búsqueda / Destacados --------
     function cardArticulo(a){
       const imgUrl = a.portada || (a.imagenes && a.imagenes[0]?.url) || null;
       const price  = a.precio_por_dia ? `$${fmtCOP(a.precio_por_dia)}/día` : '';
       const ubic   = a.ubicacion ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100">${a.ubicacion}</span>` : '';
+      const href   = L(`/articulo/${a.id}/`);
       return `
         <article class="card-pro group rounded-2xl border border-slate-200 bg-white shadow-soft overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
-          <a href="/articulo/${a.id}/" class="block" aria-label="Ver detalle de ${a.titulo}">
+          <a href="${href}" class="block" aria-label="Ver detalle de ${a.titulo}">
             <div class="relative">
               ${imgUrl ? `<img src="${imgUrl}" alt="${a.titulo}" class="w-full aspect-[16/10] object-cover">` : `<div class="w-full aspect-[16/10] bg-brand-100"></div>`}
               ${price ? `<span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm shadow text-brand-700">${price}</span>` : ``}
@@ -301,8 +315,7 @@
               <h3 class="font-semibold tracking-tight line-clamp-1 group-hover:text-brand-700 transition">${a.titulo}</h3>
               <div class="mt-1 text-xs text-slate-500 flex items-center gap-2">${ubic}</div>
               <div class="mt-3">
-                <span class="text-sm text-brand-700 hover:underline">Ver detalle</span>
-                
+                <span class="text-sm text-brand-700 hover:underline">{% trans "Ver detalle" %}</span>
               </div>
             </div>
           </a>
@@ -315,11 +328,12 @@
 
     function miniCard(a){
       const price = a.precio_por_dia ? `$${fmtCOP(a.precio_por_dia)}/día` : '';
+      const href  = L(`/articulo/${a.id}/`);
       return `
-        <a href="/articulo/${a.id}/" class="block rounded-xl border p-3 hover:shadow-md transition group" aria-label="Ver detalle de ${a.titulo}">
+        <a href="${href}" class="block rounded-xl border p-3 hover:shadow-md transition group" aria-label="Ver detalle de ${a.titulo}">
           <div class="flex items-start gap-3">
             <div class="h-12 w-12 rounded-lg bg-slate-100 overflow-hidden">
-              ${a.portada || (a.imagenes && a.imagenes[0]?.url) ? `<img src="${a.portada || a.imagenes[0]?.url}" alt="${a.titulo}" class="h-full w-full object-cover" />` : ``}
+              ${(a.portada || (a.imagenes && a.imagenes[0]?.url)) ? `<img src="${a.portada || a.imagenes[0]?.url}" alt="${a.titulo}" class="h-full w-full object-cover" />` : ``}
             </div>
             <div class="min-w-0">
               <div class="text-sm font-semibold line-clamp-1 group-hover:text-brand-700">${a.titulo}</div>
@@ -341,48 +355,58 @@
         </div>`;
       try{
         let r = await fetch('/api/articulos/?ordering=-creado&search=' + encodeURIComponent(q));
-        let items = await r.json();
+        let data = await r.json();
+        let items = Array.isArray(data) ? data :
+                    Array.isArray(data?.results) ? data.results :
+                    Array.isArray(data?.items) ? data.items : [];
         if(!Array.isArray(items)){
           const r2 = await fetch('/api/articulos/?ordering=-creado');
           const all = await r2.json();
-          items = Array.isArray(all) ? all : [];
+          items = Array.isArray(all) ? all : (Array.isArray(all?.results) ? all.results : []);
         }
         const needle = q.toLowerCase();
         const filtrados = items.filter(a => ((a.titulo||'').toLowerCase().includes(needle)) || ((a.descripcion||'').toLowerCase?.().includes?.(needle))).slice(0,5);
         if(filtrados.length === 0){
-          $searchResults.innerHTML = `<div class="rounded-xl border p-4 text-sm text-slate-500">Sin resultados para <span class="font-semibold">"${q}"</span>.</div>`;
+          $searchResults.innerHTML = `<div class="rounded-xl border p-4 text-sm text-slate-500">{% trans "Sin resultados para" %} <span class="font-semibold">"${q}"</span>.</div>`;
           return;
         }
         $searchResults.innerHTML = filtrados.map(miniCard).join('') +
-          `<div class="text-xs text-slate-500"><a class="text-brand-700 hover:underline" href="/catalogo/?q=${encodeURIComponent(q)}">Ver más resultados</a></div>`;
+          `<div class="text-xs text-slate-500"><a class="text-brand-700 hover:underline" href="${L('/catalogo/')}?q=${encodeURIComponent(q)}">{% trans "Ver más resultados" %}</a></div>`;
       }catch(_){
-        $searchResults.innerHTML = `<div class="rounded-xl border p-4 text-red-600 text-sm">No se pudieron cargar los resultados.</div>`;
+        $searchResults.innerHTML = `<div class="rounded-xl border p-4 text-red-600 text-sm">{% trans "No se pudieron cargar los resultados." %}</div>`;
       }
     }
 
     $searchForm?.addEventListener('submit', (ev) => { ev.preventDefault(); buscar($searchInput.value); });
     $searchInput?.addEventListener('input', (e) => { const q = e.target.value; clearTimeout($searchInput._t); $searchInput._t = setTimeout(() => buscar(q), 250); });
 
+    // --- DESTACADOS (robusto y mostrando 3 como antes) ---
     async function loadDestacados(){
       const grid = document.getElementById('gridDest');
       grid.innerHTML = '';
-      for(let i=0;i<6;i++){ grid.append(document.getElementById('card-skeleton').content.cloneNode(true)); }
+      for(let i=0;i<3;i++){ grid.append(document.getElementById('card-skeleton').content.cloneNode(true)); }
       try{
-        const r = await fetch('/api/articulos/?ordering=-creado');
-        let items = await r.json();
-        items = items.slice(0,6);
-        if(!Array.isArray(items) || items.length === 0){
-          grid.innerHTML = `<div class="col-span-full text-center text-slate-500 border rounded-2xl py-10">Aún no hay artículos publicados. <a class="text-brand-700 hover:underline" href="/publicar/">¡Publica el primero!</a></div>`;
+        const r = await fetch('/api/articulos/?ordering=-creado&page_size=6');
+        const data = await r.json();
+        // Soporta lista directa, paginación DRF (results) o campo items
+        let items = Array.isArray(data) ? data :
+                    Array.isArray(data?.results) ? data.results :
+                    Array.isArray(data?.items) ? data.items : [];
+        // Si el backend marca "destacado", priorizamos; si no, tomamos los 3 más recientes
+        const destacados = items.filter(it => it.destacado === true);
+        const pick = (destacados.length ? destacados : items).slice(0,3);
+        if(!pick.length){
+          grid.innerHTML = `<div class="col-span-full text-center text-slate-500 border rounded-2xl py-10">{% trans "Aún no hay artículos publicados." %} <a class="text-brand-700 hover:underline" href="${L('{% url "publicar" %}')}">{% trans "¡Publica el primero!" %}</a></div>`;
           return;
         }
-        grid.innerHTML = items.map(cardArticulo).join('');
+        grid.innerHTML = pick.map(cardArticulo).join('');
       }catch(_){
-        grid.innerHTML = `<div class="col-span-full text-center text-red-600">No se pudieron cargar los artículos.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center text-red-600">{% trans "No se pudieron cargar los artículos." %}</div>`;
       }
     }
     loadDestacados();
 
-    function setupRailMotion(railId) {
+    function setupRailMotion(railId){
       const rail = document.getElementById(railId);
       if (!rail) return;
       rail.addEventListener('mouseenter', () => rail.classList.add('has-hover'));
@@ -462,13 +486,13 @@
 
       const access = getToken();
       const html = String.raw;
-      const logout = () => { localStorage.removeItem('access'); localStorage.removeItem('refresh'); location.replace('/'); };
+      const logout = () => { localStorage.removeItem('access'); localStorage.removeItem('refresh'); location.replace(L('{% url "landing" %}')); };
 
       if (!access) {
         mount.innerHTML = html`
           <div class="flex items-center gap-3">
-            <a href="/login/" class="px-3 py-1.5 rounded-lg border transition hover:bg-slate-50">Iniciar sesión</a>
-            <a href="/registro/" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white transition hover:bg-brand-700">Registrarse</a>
+            <a href="${L('{% url "login" %}')} " class="px-3 py-1.5 rounded-lg border transition hover:bg-slate-50">{% trans "Iniciar sesión" %}</a>
+            <a href="${L('{% url "registro" %}')} " class="px-3 py-1.5 rounded-lg bg-brand-600 text-white transition hover:bg-brand-700">{% trans "Registrarse" %}</a>
           </div>`;
         document.getElementById('cartBadge')?.classList.add('hidden');
         return;
@@ -485,7 +509,7 @@
           if (r2.ok) { const u = await r2.json(); displayName = (u.nombre || u.email || '').trim(); }
         } catch (_) {}
       }
-      if (!displayName) displayName = 'Mi cuenta';
+      if (!displayName) displayName = '{% trans "Mi cuenta" %}';
 
       mount.innerHTML = html`
         <button id="btnUser" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition hover:bg-slate-50">
@@ -494,10 +518,10 @@
           <svg class="w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
         </button>
         <div id="menuUser" class="absolute right-0 mt-2 w-56 rounded-2xl border bg-white shadow-lg p-2 hidden">
-          <a href="/perfil/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Mi perfil</a>
-          <a href="/perfil/editar/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Editar perfil</a>
-          <a href="/publicar/" class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">Publicar artículo</a>
-          <button id="logoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-slate-50 text-red-600">Cerrar sesión</button>
+          <a href="${L('{% url "perfil" %}')} " class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">{% trans "Mi perfil" %}</a>
+          <a href="${L('{% url "perfil_editar" %}')} " class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">{% trans "Editar perfil" %}</a>
+          <a href="${L('{% url "publicar" %}')} " class="block px-3 py-2 rounded-lg text-sm hover:bg-slate-50">{% trans "Publicar artículo" %}</a>
+          <button id="logoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-slate-50 text-red-600">{% trans "Cerrar sesión" %}</button>
         </div>`;
 
       const btn = document.getElementById('btnUser');
@@ -510,7 +534,6 @@
       document.addEventListener('click', closeOnClickOutside);
       out.addEventListener('click', logout);
 
-      // Badge carrito al iniciar sesión
       try{
         const r = await authFetch('/api/carrito/');
         if (r.ok) {
@@ -522,12 +545,11 @@
       }catch(_){}
     })();
 
-    // ============== NOTIFICACIONES (Navbar) ==============
-    const bellBtn  = document.getElementById('notifBell');
+    // ===== Notificaciones =====
+    const notifBell = document.getElementById('notifBell');
+    const notifPanel = document.getElementById('notifPanel');
     const badgeEl  = document.getElementById('notifBadge');
-    const panelEl  = document.getElementById('notifPanel');
     const listEl   = document.getElementById('notifList');
-    const markAll  = document.getElementById('notifMarkAll');
 
     const setBadge = (n)=>{ if(n>0){ badgeEl.textContent=String(n); badgeEl.classList.remove('hidden'); } else { badgeEl.classList.add('hidden'); } };
     const norm = (v)=>{ try{return String(v??'').trim()}catch{return''} };
@@ -552,15 +574,15 @@
       item.innerHTML=`
         <div class="h-8 w-8 rounded-full bg-slate-200 text-slate-600 grid place-items-center font-bold">${(who||'?')[0]?.toUpperCase()||'?'}</div>
         <div class="min-w-0">
-          <div class="font-medium truncate">${who||'Nuevo mensaje'}</div>
+          <div class="font-medium truncate">${who||'{% trans "Nuevo mensaje" %}'}</div>
           <div class="text-slate-500 text-sm line-clamp-2">${(text||'').replace(/</g,'&lt;')}</div>
           <div class="text-[11px] text-slate-400 mt-0.5">${fmtTime(when)}</div>
         </div>`;
       item.addEventListener('click', async ()=>{
-        if(!getToken()){ location.href='/login/?next=/chat/'; return; }
+        if(!getToken()){ location.href=L('{% url "login" %}?next={% url "chat_ui" %}'); return; }
         localStorage.setItem(`chat_last_read_${convId}`, new Date().toISOString());
         authFetch(`/api/chats/${convId}/read/`,{method:'POST'}).catch(()=>{});
-        window.location.href = `/chat/`;  // puedes llevar a una bandeja general de chat
+        window.location.href = L('{% url "chat_ui" %}');
       });
       listEl.prepend(item);
     }
@@ -581,25 +603,22 @@
     function flashTitle(){
       if(titleTimer) return;
       let on=false;
-      titleTimer=setInterval(()=>{ document.title = on? '¡Nuevo mensaje!' : baseTitle; on=!on; }, 800);
+      titleTimer=setInterval(()=>{ document.title = on? '{% trans "¡Nuevo mensaje!" %}' : baseTitle; on=!on; }, 800);
       setTimeout(()=>{ clearInterval(titleTimer); titleTimer=null; document.title=baseTitle; }, 6000);
     }
 
     async function getMe(){
       try{
-        const r=await authFetch('/api/perfiles/me/');
-        if(!r.ok) return null;
+        const r=await authFetch('/api/perfiles/me/'); if(!r.ok) return null;
         return await r.json();
       }catch{ return null; }
     }
 
     async function tickNotifications(){
-      if(!getToken()) return; // sin sesión no se poll
+      if(!getToken()) return;
       const meObj = await getMe(); if(!meObj) return;
-
       let count=0;
 
-      // Trae conversaciones del usuario
       const r=await authFetch('/api/chats/'); if(!r.ok) return;
       const convs=await r.json(); if(!Array.isArray(convs)) return;
 
@@ -617,7 +636,7 @@
           const last = incoming[incoming.length-1];
           const seen = localStorage.getItem(`home_last_seen_msg_${convId}`) || '';
           if(String(last.id)!==String(seen)){
-            addNotifCard({convId, who:(last?.autor?.username||last?.autor?.email||'Usuario'), text:last?.contenido||'', when:last?.creado});
+            addNotifCard({convId, who:(last?.autor?.username||last?.autor?.email||'{% trans "Usuario" %}'), text:last?.contenido||'', when:last?.creado});
             beep(); flashTitle();
             localStorage.setItem(`home_last_seen_msg_${convId}`, String(last.id));
           }
@@ -626,11 +645,8 @@
       setBadge(count);
     }
 
-    // UI campanita
-    const notifBell = document.getElementById('notifBell');
-    const notifPanel = document.getElementById('notifPanel');
     notifBell?.addEventListener('click', ()=>{
-      if(!getToken()){ location.href='/login/?next=/'; return; }
+      if(!getToken()){ location.href=L('{% url "login" %}?next={% url "landing" %}'); return; }
       notifPanel.classList.toggle('hidden');
     });
     document.addEventListener('click', (e)=>{
@@ -651,12 +667,11 @@
           localStorage.setItem(`chat_last_read_${c.id}`, now);
           authFetch(`/api/chats/${c.id}/read/`,{method:'POST'}).catch(()=>{});
         }
-        document.getElementById('notifList').innerHTML='<div class="p-3 text-slate-400 empty">Sin notificaciones</div>';
+        document.getElementById('notifList').innerHTML='<div class="p-3 text-slate-400 empty">{% trans "Sin notificaciones" %}</div>';
         setBadge(0);
       }catch{}
     });
 
-    // Polling
     tickNotifications();
     setInterval(tickNotifications, 10000);
   </script>

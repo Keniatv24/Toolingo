@@ -1,0 +1,259 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-02 13:45-0500\n"
+"PO-Revision-Date: 2025-11-02 14:50-0500\n"
+"Last-Translator: Toolingo Dev <dev@toolingo.com>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: templates/landing/index.html:9
+msgid "Toolingo – Alquiler de equipos y herramientas"
+msgstr "Toolingo – Equipment and tool rental"
+
+#: templates/landing/index.html:48
+msgid "Productos"
+msgstr "Products"
+
+#: templates/landing/index.html:51 templates/landing/index.html:56
+msgid "Notificaciones"
+msgstr "Notifications"
+
+#: templates/landing/index.html:58 templates/landing/index.html:662
+msgid "Sin notificaciones"
+msgstr "No notifications"
+
+#: templates/landing/index.html:61
+msgid "Marcar todo como leído"
+msgstr "Mark all as read"
+
+#: templates/landing/index.html:66
+msgid "Carrito"
+msgstr "Cart"
+
+#: templates/landing/index.html:94
+msgid ""
+"Toolingo es el <span class=\"text-brand-600\">marketplace</span> "
+"para alquilar equipos y herramientas cerca de ti."
+msgstr ""
+"Toolingo is the <span class=\"text-brand-600\">marketplace</span> "
+"for renting equipment and tools near you."
+
+#: templates/landing/index.html:101
+msgid ""
+"Publica tus herramientas como propietario o encuentra la indicada "
+"para tu proyecto como arrendatario. Seguro, rápido y con calificaciones verificadas."
+msgstr ""
+"List your tools as an owner or find the right one for your project as a renter. "
+"Safe, fast, and with verified ratings."
+
+#: templates/landing/index.html:108
+msgid "Explorar servicios"
+msgstr "Explore services"
+
+#: templates/landing/index.html:110
+msgid "+ Disponibilidad por días • + Depósito opcional • + Pagos seguros"
+msgstr "+ Availability by the day • + Optional deposit • + Secure payments"
+
+#: templates/landing/index.html:117
+msgid "Búsqueda rápida"
+msgstr "Quick search"
+
+#: templates/landing/index.html:121
+msgid "¿Qué herramienta necesitas?"
+msgstr "What tool do you need?"
+
+#: templates/landing/index.html:122
+msgid "Buscar"
+msgstr "Search"
+
+#: templates/landing/index.html:126
+msgid "¿No ves lo que buscas?"
+msgstr "Not finding what you need?"
+
+#: templates/landing/index.html:127
+msgid "Ir al catálogo completo"
+msgstr "Go to full catalog"
+
+#: templates/landing/index.html:134
+msgid ""
+"Prueba el buscador con <span class=\"font-medium text-slate-700\">“taladro”, "
+"“andamio”, “mezcladora”</span>."
+msgstr ""
+"Try the search with <span class=\"font-medium text-slate-700\">“drill”, "
+"“scaffold”, “mixer”</span>."
+
+#: templates/landing/index.html:135
+msgid "Se muestran hasta 5 resultados recientes."
+msgstr "Up to 5 recent results are shown."
+
+#: templates/landing/index.html:149
+msgid "En esta página"
+msgstr "On this page"
+
+#: templates/landing/index.html:154
+msgid "¿Cómo funciona?"
+msgstr "How it works?"
+
+#: templates/landing/index.html:155 templates/landing/index.html:194
+msgid "Servicios principales"
+msgstr "Main services"
+
+#: templates/landing/index.html:156 templates/landing/index.html:215
+msgid "Artículos destacados"
+msgstr "Featured items"
+
+#: templates/landing/index.html:166
+msgid "¿Cómo funciona Toolingo?"
+msgstr "How does Toolingo work?"
+
+#: templates/landing/index.html:167
+msgid "Tres pasos sencillos para rentar o publicar:"
+msgstr "Three simple steps to rent or list:"
+
+#: templates/landing/index.html:172
+msgid "Explora"
+msgstr "Explore"
+
+#: templates/landing/index.html:174
+msgid "Filtra por categoría, ubicación y precio por día."
+msgstr "Filter by category, location and day price."
+
+#: templates/landing/index.html:179
+msgid "Reserva"
+msgstr "Book"
+
+#: templates/landing/index.html:181
+msgid "Elige fechas disponibles y realiza el pago seguro."
+msgstr "Pick available dates and pay securely."
+
+#: templates/landing/index.html:186
+msgid "Califica"
+msgstr "Rate"
+
+#: templates/landing/index.html:188
+msgid "Entrega/recibe el equipo y deja tu calificación."
+msgstr "Hand over/receive the equipment and leave a rating."
+
+#: templates/landing/index.html:195
+msgid "Alquila por día herramientas para construcción, jardinería y más."
+msgstr "Rent tools by day for construction, gardening and more."
+
+#: templates/landing/index.html:199
+msgid "Construcción"
+msgstr "Construction"
+
+#: templates/landing/index.html:200
+msgid "Demoledores, mezcladoras, compactadoras"
+msgstr "Jackhammers, mixers, compactors"
+
+#: templates/landing/index.html:203
+msgid "Eléctricas"
+msgstr "Power tools"
+
+#: templates/landing/index.html:204
+msgid "Taladros, esmeriles, sierras"
+msgstr "Drills, grinders, saws"
+
+#: templates/landing/index.html:207
+msgid "Alturas"
+msgstr "Heights"
+
+#: templates/landing/index.html:208
+msgid "Andamios, escaleras"
+msgstr "Scaffolds, ladders"
+
+#: templates/landing/index.html:216
+msgid "Ver todo"
+msgstr "See all"
+
+#: templates/landing/index.html:232
+msgid "¿Listo para publicar o alquilar?"
+msgstr "Ready to list or rent?"
+
+#: templates/landing/index.html:233
+msgid "Crea tu cuenta y empieza a generar ingresos con tus herramientas."
+msgstr "Create your account and start earning with your tools."
+
+#: templates/landing/index.html:237
+msgid "Inicia sesión"
+msgstr "Sign in"
+
+#: templates/landing/index.html:318
+msgid "Ver detalle"
+msgstr "See detail"
+
+#: templates/landing/index.html:367
+msgid "Sin resultados para"
+msgstr "No results for"
+
+#: templates/landing/index.html:371
+msgid "Ver más resultados"
+msgstr "See more results"
+
+#: templates/landing/index.html:373
+msgid "No se pudieron cargar los resultados."
+msgstr "The results could not be loaded."
+
+#: templates/landing/index.html:389
+msgid "Aún no hay artículos publicados."
+msgstr "No items published yet."
+
+#: templates/landing/index.html:389
+msgid "¡Publica el primero!"
+msgstr "Publish the first one!"
+
+#: templates/landing/index.html:394
+msgid "No se pudieron cargar los artículos."
+msgstr "Couldn't load items."
+
+#: templates/landing/index.html:484
+msgid "Iniciar sesión"
+msgstr "Login"
+
+#: templates/landing/index.html:485
+msgid "Registrarse"
+msgstr "Register"
+
+#: templates/landing/index.html:502
+msgid "Mi cuenta"
+msgstr "My account"
+
+#: templates/landing/index.html:511
+msgid "Mi perfil"
+msgstr "My profile"
+
+#: templates/landing/index.html:512
+msgid "Editar perfil"
+msgstr "Edit profile"
+
+#: templates/landing/index.html:513
+msgid "Publicar artículo"
+msgstr "List an item"
+
+#: templates/landing/index.html:514
+msgid "Cerrar sesión"
+msgstr "Sign out"
+
+#: templates/landing/index.html:567
+msgid "Nuevo mensaje"
+msgstr "New message"
+
+#: templates/landing/index.html:596
+msgid "¡Nuevo mensaje!"
+msgstr "New message!"
+
+#: templates/landing/index.html:629
+msgid "Usuario"
+msgstr "User"

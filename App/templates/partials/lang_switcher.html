@@ -1,0 +1,27 @@
+{% load i18n i18n_extras %}
+<form action="{% url 'set_language' %}" method="post" id="langForm" class="inline-block">
+  {% csrf_token %}
+  <input name="next" id="langNext" type="hidden" value="{{ request.get_full_path }}">
+  <select name="language" id="langSelect" class="text-sm border rounded px-2 py-1">
+    {% get_current_language as LANGUAGE_CODE %}
+    {% get_available_languages as LANGUAGES %}
+    {% for lang in LANGUAGES %}
+      {% switch_lang_url lang.0 as translated_url %}
+      <option value="{{ lang.0 }}" data-next="{{ translated_url }}"
+              {% if lang.0 == LANGUAGE_CODE %}selected{% endif %}>
+        {{ lang.1 }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
+<script>
+(function(){
+  const sel = document.getElementById('langSelect');
+  const next = document.getElementById('langNext');
+  sel?.addEventListener('change', function(){
+    const opt = sel.options[sel.selectedIndex];
+    if (opt?.dataset?.next) next.value = opt.dataset.next;
+    sel.form.submit();
+  });
+})();
+</script>
