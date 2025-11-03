@@ -14,14 +14,12 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from App.views import SimularPagoView  # <-- necesitamos esta
 from users.views import ProfileViewSet, UserViewSet
-from catalog.views import CategoriaViewSet, ArticuloViewSet
+from catalog.views import CategoriaViewSet, ArticuloViewSet, AliadosArticuloList
 from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet, CartItemViewSet
 from chat.views import ConversationViewSet
-from catalog.views import AliadosArticuloList  
-from catalog.pages import productos_aliados    # página HTML que consume externos
-
-
+from catalog.pages import productos_aliados  # página HTML que consume externos
 from . import views  # pagos_view
 
 @method_decorator(xframe_options_sameorigin, name="dispatch")
@@ -45,23 +43,27 @@ router.register(r"chats", ConversationViewSet, basename="chat")
 
 # -------- URLs sin prefijo de idioma (API/admin/docs/i18n) --------
 urlpatterns = [
+    # 1) RUTA ESPECÍFICA ANTES DEL ROUTER (para evitar el 405)
+    path("api/pagos/simular/", SimularPagoView.as_view(), name="pagos-simular"),
+
+    # 2) API del router
     path("api/", include(router.urls)),
 
-    # JWT
+    # 3) JWT
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
-    # API schema & docs
+    # 4) API schema & docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
 
-    # Cambio de idioma
+    # 5) Cambio de idioma
     path("i18n/", include("django.conf.urls.i18n")),
-        # Servicio público JSON para equipos aliados:
+
+    # 6) Servicio público JSON para equipos aliados:
     path("api/aliados/productos/", AliadosArticuloList.as_view(), name="aliados-productos"),
 
-
-    # Admin
+    # 7) Admin
     path("admin/", admin.site.urls),
 ]
 
@@ -80,9 +82,6 @@ urlpatterns += i18n_patterns(
     path("pagos/", views.pagos_view, name="pagos"),
     path("articulo/<uuid:id>/", articulo_detalle, name="articulo_detalle"),
     path("productos-aliados/", productos_aliados, name="productos_aliados"),
-
-
-    path("i18n/", include("django.conf.urls.i18n")),
 )
 
 # Archivos MEDIA en dev

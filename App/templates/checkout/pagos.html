@@ -41,7 +41,15 @@
         <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Pagos simulados</h1>
         <p class="text-slate-600 mt-1">Aquí verás los pagos que confirmaste en la pantalla de checkout.</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2 justify-end">
+        <!-- 🔶 BOTONES DIP NUEVOS -->
+        <button id="btnWalletDip" class="px-3 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 text-sm">
+          Pagar con billetera (DIP)
+        </button>
+        <button id="btnChequeDip" class="px-3 py-2 rounded-lg border hover:bg-slate-50 text-sm">
+          Generar cheque (PDF DIP)
+        </button>
+        <!-- existentes -->
         <button id="btnExport" class="px-3 py-2 rounded-lg border hover:bg-slate-50 text-sm">Exportar JSON</button>
         <button id="btnClear" class="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm">Borrar todos</button>
       </div>
@@ -107,9 +115,9 @@
       list.innerHTML = '';
       data.forEach((pago, idx) => {
         const node = tpl.content.cloneNode(true);
-        node.querySelector('[data-id]').textContent = pago.id;
-        node.querySelector('[data-fecha]').textContent = new Date(pago.fecha_iso).toLocaleString('es-CO');
-        node.querySelector('[data-metodo]').textContent = pago.metodo.toUpperCase();
+        node.querySelector('[data-id]').textContent = pago.id || '(sin-id)';
+        node.querySelector('[data-fecha]').textContent = pago.fecha_iso ? new Date(pago.fecha_iso).toLocaleString('es-CO') : '';
+        node.querySelector('[data-metodo]').textContent = (pago.metodo || '').toUpperCase();
         node.querySelector('[data-cuotas]').textContent = pago.cuotas || '1';
         node.querySelector('[data-last4]').textContent = pago.last4 || '••••';
         node.querySelector('[data-total]').textContent = fmtCOP(pago.total || 0);
@@ -119,7 +127,7 @@
           <div class="flex items-center justify-between gap-3 py-1 border-b last:border-0">
             <div class="min-w-0">
               <div class="font-medium truncate">${it.titulo || 'Artículo'}</div>
-              <div class="text-slate-500 text-xs">${it.fecha_inicio} → ${it.fecha_fin} · ${it.dias} día(s)</div>
+              <div class="text-slate-500 text-xs">${it.fecha_inicio || ''} → ${it.fecha_fin || ''} · ${it.dias || 0} día(s)</div>
             </div>
             <div class="text-sm font-semibold">${fmtCOP(it.total_estimado || 0)}</div>
           </div>
@@ -151,6 +159,110 @@
       a.download = 'pagos_simulados.json';
       a.click();
       URL.revokeObjectURL(a.href);
+    });
+
+    // ====== 🔶 INTEGRACIÓN DIP: Wallet & Cheque ======
+    const JWT = localStorage.getItem('access');
+    function requireAuth(){
+      if (!JWT){
+        window.location.href = '/es/login/?next=/es/pagos/';
+        return false;
+      }
+      return true;
+    }
+
+    async function apiPagoSimular(body, artefacto=false){
+      const url = artefacto ? '/api/pagos/simular/?artefacto=1' : '/api/pagos/simular/';
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${JWT}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body || {})
+      });
+      return resp;
+    }
+
+    // Añade el pago (JSON) a la lista local y re-renderiza
+    function addPagoLocal(p){
+      const arr = loadAll();
+      // normalizamos por si faltan campos
+      arr.unshift({
+        id: p.id || '',
+        fecha_iso: p.fecha_iso || new Date().toISOString(),
+        metodo: p.metodo || 'wallet',
+        cuotas: (p.extra && p.extra.cuotas) || p.cuotas || 1,
+        last4: (p.extra && p.extra.last4) || p.last4 || '0000',
+        total: p.total || 0,
+        items: p.items || []
+      });
+      saveAll(arr);
+      render();
+    }
+
+    // Botón Wallet (DIP)
+    document.getElementById('btnWalletDip')?.addEventListener('click', async () => {
+      if (!requireAuth()) return;
+
+      // TODO: si tienes el total real en el front, colócalo aquí.
+      const total = prompt('Valor a pagar con billetera (COP):', '165000');
+      const t = parseInt(total || '0', 10);
+      if (!t) return;
+
+      try{
+        const r = await apiPagoSimular({ metodo:'wallet', total: t, payload:{ cuotas:1, last4:'3456' } }, false);
+        const data = await r.json().catch(()=> ({}));
+        if (!r.ok){
+          alert(data.detail || data.error || 'Error procesando pago');
+          return;
+        }
+        if (data.status === 'rejected'){
+          alert(data.error || 'Pago rechazado');
+          return;
+        }
+        addPagoLocal(data);
+        alert('Pago aprobado: ' + (data.id || ''));
+      }catch(e){
+        console.error(e);
+        alert('No se pudo procesar el pago.');
+      }
+    });
+
+    // Botón Cheque (DIP) -> guarda JSON + descarga PDF
+    document.getElementById('btnChequeDip')?.addEventListener('click', async () => {
+      if (!requireAuth()) return;
+
+      const total = prompt('Valor del cheque (COP):', '165000');
+      const t = parseInt(total || '0', 10);
+      if (!t) return;
+
+      try{
+        // 1) Primero obtenemos JSON para guardar en la lista
+        const rMeta = await apiPagoSimular({ metodo:'cheque', total: t }, false);
+        const meta = await rMeta.json().catch(()=> ({}));
+        if (!rMeta.ok){
+          alert(meta.detail || 'Error generando cheque');
+          return;
+        }
+        addPagoLocal(meta);
+
+        // 2) Luego pedimos el artefacto (PDF)
+        const rPdf = await apiPagoSimular({ metodo:'cheque', total: t }, true);
+        if (!rPdf.ok){
+          alert('No se pudo descargar el PDF del cheque.');
+          return;
+        }
+        const blob = await rPdf.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (meta && meta.id ? `cheque_${meta.id}.pdf` : 'cheque.pdf');
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }catch(e){
+        console.error(e);
+        alert('No se pudo generar el cheque.');
+      }
     });
 
     render();
