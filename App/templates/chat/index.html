@@ -35,7 +35,6 @@
     .msg-meta{ font-size:11px; opacity:.7; margin-top:4px; text-align:right; }
     @media (max-width:640px){ .msg{ max-width:85%; } }
 
-    /* Panel notificaciones */
     .notif-panel{ position:absolute; right:0; top:48px; width:20rem; max-height:24rem; overflow:auto; background:#fff;
       border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 12px 32px rgba(15,23,42,.18); z-index: 1000; }
   </style>
@@ -160,14 +159,9 @@
       const {ok,data}=await getJSON(`/api/chats/${conversationId}/messages/`);
       if(!ok || !Array.isArray(data)) return;
 
-      // Detectar último mensaje previo para sonar sólo si es entrante nuevo
-      const lastRenderedId = messagesEl.getAttribute('data-last-id') || null;
       const last = data[data.length-1] || null;
-
       messagesEl.innerHTML="";
       data.forEach(appendMessage);
-
-      if(last){ messagesEl.setAttribute('data-last-id', last.id); }
 
       if(shouldBeep && last && !isMineMessage(last, me)){
         beep(); flashTitle();
@@ -232,7 +226,7 @@
       await loadMessages(false);
     }
 
-    // ====== Notificaciones (campanita) ======
+    // ====== Notificaciones (mezcla CHAT + BACKEND NUEVO) ======
     const bell   = document.getElementById('notifBell');
     const badge  = document.getElementById('notifBadge');
     const panel  = document.getElementById('notifPanel');
@@ -240,32 +234,96 @@
     const markAllBtn = document.getElementById('notifMarkAll');
 
     function setBadge(n){ if(n>0){ badge.textContent=String(n); badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); } }
-    function addCard({convId,who,text,when}){
-      if(listEl.querySelector('.empty')) listEl.innerHTML='';
-      const item=document.createElement('button');
-      item.type='button';
-      item.className='w-full text-left p-3 rounded-lg hover:bg-slate-50 flex gap-2';
-      item.innerHTML=`
-        <div class="h-8 w-8 rounded-full bg-slate-200 text-slate-600 grid place-items-center font-bold">${(who||'?')[0]?.toUpperCase()||'?'}</div>
-        <div class="min-w-0">
-          <div class="font-medium truncate">${who||'Nuevo mensaje'}</div>
-          <div class="text-slate-500 text-sm line-clamp-2">${text||''}</div>
-          <div class="text-[11px] text-slate-400 mt-0.5">${fmtTime(when)}</div>
-        </div>
+    function closePanel(){ panel.classList.add('hidden'); }
+
+    function makeItem({title, body, when, onClick, unread}){
+      const el=document.createElement('button');
+      el.type='button';
+      el.className=`w-full text-left p-3 rounded-lg ${unread?'bg-slate-50':''} hover:bg-slate-50`;
+      el.innerHTML=`
+        <div class="font-medium ${unread?'text-slate-900':'text-slate-700'}">${title||'Notificación'}</div>
+        ${body?`<div class="text-slate-500 text-sm line-clamp-2">${body}</div>`:''}
+        ${when?`<div class="text-[11px] text-slate-400 mt-0.5">${when}</div>`:''}
       `;
-      item.addEventListener('click', async ()=>{
-        localStorage.setItem(`chat_last_read_${convId}`, new Date().toISOString());
-        await authFetch(`/api/chats/${convId}/read/`,{method:'POST'});
-        if (String(convId) !== String(conversationId)) {
-          // Si abren otra conversación, redirige a la bandeja o página general del chat
-          window.location.href = `/chat/?embed=1&article=${encodeURIComponent(articleId||'')}`;
-        } else {
-          // Si es la misma, sólo cerramos panel
-          panel.classList.add('hidden');
-        }
-      });
-      listEl.prepend(item);
+      el.addEventListener('click', ()=>{ onClick?.(); closePanel(); });
+      return el;
     }
+
+    async function loadSystemNotifs(){
+      const tok = getToken(); if(!tok) return {count:0};
+      const r = await fetch('/api/notificaciones/', { headers: {Authorization:`Bearer ${tok}`} }).catch(()=>null);
+      if(!r || !r.ok) return {count:0};
+      const data = await r.json();
+      const list = Array.isArray(data) ? data : (data.results||[]);
+      let count = 0;
+      list.forEach(n=>{
+        const unread = !n.read_at && (!n.expires_at || new Date().toISOString() <= n.expires_at);
+        if(unread) count++;
+        const when = n.created_at ? new Date(n.created_at).toLocaleString('es-CO') : '';
+        listEl.appendChild(makeItem({
+          title: n.title, body: n.body, when,
+          unread,
+          onClick: ()=>{ if(n.action_url) location.href = n.action_url; }
+        }));
+      });
+      return {count};
+    }
+
+    async function loadChatNotifs(){
+      let count = 0;
+      const convs=await getJSON('/api/chats/'); if(!convs.ok||!Array.isArray(convs.data)) return {count};
+      for(const c of convs.data){
+        const convId=c.id;
+        const lastReadISO=localStorage.getItem(`chat_last_read_${convId}`)||'';
+        const lastRead=lastReadISO? new Date(lastReadISO).getTime():0;
+        const msgs=await getJSON(`/api/chats/${convId}/messages/`); if(!msgs.ok||!Array.isArray(msgs.data)) continue;
+        const arr=msgs.data;
+        const incoming=arr.filter(m => !isMineMessage(m, me) && (!lastRead || new Date(m.creado).getTime() > lastRead));
+        if(incoming.length){
+          count += incoming.length;
+          const last = incoming[incoming.length-1];
+          listEl.appendChild(makeItem({
+            title: last?.autor?.username || last?.autor?.email || 'Nuevo mensaje',
+            body: last?.contenido || '',
+            when: new Date(last?.creado).toLocaleString('es-CO'),
+            unread: true,
+            onClick: async ()=>{
+              localStorage.setItem(`chat_last_read_${convId}`, new Date().toISOString());
+              await authFetch(`/api/chats/${convId}/read/`,{method:'POST'});
+              window.location.href = `/chat/?embed=1&article=${encodeURIComponent(articleId||'')}`;
+            }
+          }));
+        }
+      }
+      return {count};
+    }
+
+    async function loadAllNotifs(){
+      listEl.innerHTML = '<div class="p-3 text-slate-400 empty">Sin notificaciones</div>';
+      const r1 = await loadSystemNotifs();
+      const r2 = await loadChatNotifs();
+      const total = (r1.count||0) + (r2.count||0);
+      setBadge(total);
+      if (listEl.querySelector('.empty') && listEl.children.length > 1){
+        listEl.querySelector('.empty')?.remove();
+      }
+    }
+
+    bell?.addEventListener('click', ()=> panel.classList.toggle('hidden'));
+    document.addEventListener('click',(e)=>{ const t=e.target; if(!panel.contains(t) && t!==bell && !bell.contains(t)) panel.classList.add('hidden'); });
+
+    markAllBtn?.addEventListener('click', async ()=>{
+      const tok = getToken();
+      if (tok) await fetch('/api/notificaciones/marcar-todas/', { method:'POST', headers:{Authorization:`Bearer ${tok}`} });
+      const convs=await getJSON('/api/chats/'); if(convs.ok && Array.isArray(convs.data)){
+        const now=new Date().toISOString();
+        for(const c of convs.data){
+          localStorage.setItem(`chat_last_read_${c.id}`, now);
+          authFetch(`/api/chats/${c.id}/read/`,{method:'POST'});
+        }
+      }
+      await loadAllNotifs();
+    });
 
     function beep(){
       try{
@@ -287,60 +345,6 @@
       setTimeout(()=>{ clearInterval(titleTimer); titleTimer=null; document.title=baseTitle; }, 6000);
     }
 
-    function norm(v){ try{return String(v??'').trim()}catch{return''} }
-    function isMine(m){
-      const a=m?.autor||{};
-      const meId=norm(me?.id||me?.user?.id);
-      const auId=norm(a?.id);
-      const meE=(me?.email||me?.user?.email||'').toLowerCase();
-      const auE=(a?.email||'').toLowerCase();
-      const meU=(me?.username||me?.user?.username||'').toLowerCase();
-      const auU=(a?.username||'').toLowerCase();
-      return (meId&&auId&&meId===auId) || (meE&&auE&&meE===auE) || (meU&&auU&&meU===auU);
-    }
-
-    async function tickNotifications(){
-      if(!me) return;
-      const convs=await getJSON('/api/chats/'); if(!convs.ok||!Array.isArray(convs.data)) return;
-      let count=0;
-      for(const c of convs.data){
-        const convId=c.id;
-        const lastReadISO=localStorage.getItem(`chat_last_read_${convId}`)||'';
-        const lastRead=lastReadISO? new Date(lastReadISO).getTime():0;
-        const msgs=await getJSON(`/api/chats/${convId}/messages/`); if(!msgs.ok||!Array.isArray(msgs.data)) continue;
-        const arr=msgs.data;
-        if(!arr.length) continue;
-        const incoming=arr.filter(m => !isMine(m) && (!lastRead || new Date(m.creado).getTime() > lastRead));
-        if(incoming.length){
-          count += incoming.length;
-          const last = incoming[incoming.length-1];
-          const seen = localStorage.getItem(`chat_last_seen_msg_${convId}`) || '';
-          if(String(last.id)!==String(seen)){
-            addCard({convId, who:(last?.autor?.username||last?.autor?.email||'Usuario'), text:last?.contenido||'', when:last?.creado});
-            beep(); flashTitle();
-            localStorage.setItem(`chat_last_seen_msg_${convId}`, String(last.id));
-          }
-        }
-      }
-      setBadge(count);
-    }
-
-    // UI notificaciones
-    const bellBtn = document.getElementById('notifBell');
-    const panelEl = document.getElementById('notifPanel');
-    bellBtn?.addEventListener('click', ()=> panelEl.classList.toggle('hidden'));
-    document.addEventListener('click',(e)=>{ const t=e.target; if(!panelEl.contains(t) && t!==bellBtn && !bellBtn.contains(t)) panelEl.classList.add('hidden'); });
-    document.getElementById('notifMarkAll')?.addEventListener('click', async ()=>{
-      const convs=await getJSON('/api/chats/'); if(!convs.ok||!Array.isArray(convs.data)) return;
-      const now=new Date().toISOString();
-      for(const c of convs.data){
-        localStorage.setItem(`chat_last_read_${c.id}`, now);
-        authFetch(`/api/chats/${c.id}/read/`,{method:'POST'});
-      }
-      document.getElementById('notifList').innerHTML='<div class="p-3 text-slate-400 empty">Sin notificaciones</div>';
-      setBadge(0);
-    });
-
     // ====== Init ======
     async function init(){
       const meResp=await getJSON("/api/perfiles/me/");
@@ -353,12 +357,8 @@
       if(articleId){ await ensureConversationByArticle(); }
       else { messagesEl.innerHTML=`<div class="text-center text-slate-500 mt-8">Selecciona un artículo para empezar una conversación.</div>`; }
 
-      // Polling mensajes del chat abierto
       setInterval(()=>loadMessages(true), 8000);
-
-      // Polling notificaciones globales
-      tickNotifications();
-      setInterval(tickNotifications, 10000);
+      loadAllNotifs(); setInterval(loadAllNotifs, 10000);
     }
     init();
   </script>

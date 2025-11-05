@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Detalle del artículo – Toolingo</title>
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -19,7 +18,6 @@
     }
   </script>
 
-  <!-- Flatpickr (datepicker) -->
   <link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
@@ -29,7 +27,6 @@
     .thumb:is(button)[data-active="true"]{ outline: 2px solid #f97316; outline-offset: 0; }
     .smooth { transition: all .25s cubic-bezier(.22,.61,.36,1); }
 
-    /* Booking-like styles */
     .flatpickr-calendar {
       border-radius: 14px !important;
       box-shadow: 0 18px 48px rgba(15,23,42,.18) !important;
@@ -47,8 +44,6 @@
     .flatpickr-day.startRange { border-top-left-radius:10px !important; border-bottom-left-radius:10px !important; }
     .flatpickr-day.endRange   { border-top-right-radius:10px !important; border-bottom-right-radius:10px !important; }
     .flatpickr-day.inRange:hover{ background:#dbeafe !important; }
-
-    /* Días no disponibles */
     .flatpickr-day.tl-unavailable,
     .flatpickr-day.tl-unavailable:focus {
       background:#fee2e2 !important;
@@ -61,7 +56,6 @@
     .tl-legend { font-size:12px; color:#475569; }
     .tl-dot { display:inline-block; width:.6rem; height:.6rem; border-radius:9999px; background:#ef4444; vertical-align:middle; margin-right:.4rem; }
 
-    /* Chat overlay*/
     .chat-overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display:none; z-index: 9998; }
     .chat-overlay {
       position: fixed; right: 32px; bottom: 32px;
@@ -99,14 +93,14 @@
           <span id="cartBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-brand-600 text-white hidden">0</span>
         </button>
 
-        <!-- Campanita de notificaciones -->
+        <!-- Campanita -->
         <button id="notifBell" class="relative p-2 rounded-lg hover:bg-slate-100" title="Notificaciones">
           🔔
           <span id="notifBadge" class="absolute -top-1 -right-1 text-[11px] px-1.5 py-0.5 rounded-full bg-red-600 text-white hidden">0</span>
         </button>
       </nav>
 
-      <!-- Panel flotante de notificaciones -->
+      <!-- Panel notificaciones -->
       <div id="notifPanel" class="hidden absolute right-4 top-14 w-80 max-h-96 overflow-auto bg-white border rounded-xl shadow-xl z-[10000]">
         <div class="px-4 py-2 border-b font-semibold">Notificaciones</div>
         <div id="notifList" class="p-2 text-sm text-slate-600">
@@ -119,7 +113,6 @@
     </div>
   </header>
 
-  <!-- MAIN -->
   <main class="max-w-6xl mx-auto px-4 py-8">
     <a href="/catalogo/" class="inline-flex items-center gap-2 text-sm text-brand-700 hover:underline">
       <span aria-hidden="true">←</span> Volver al catálogo
@@ -142,7 +135,6 @@
         </div>
         <p id="ubiprice" class="mt-2 text-slate-600"></p>
 
-        <!-- Descripción -->
         <div class="mt-4 p-5 rounded-2xl border bg-white shadow-soft">
           <div class="flex items-center gap-2 mb-2">
             <span class="inline-block h-2 w-2 rounded-full bg-brand-600"></span>
@@ -151,7 +143,6 @@
           <p id="desc" class="text-slate-700 leading-relaxed">Cargando…</p>
         </div>
 
-        <!-- Propietario -->
         <div class="mt-4 p-5 rounded-2xl border bg-white shadow-soft">
           <div class="flex items-center gap-2 mb-3">
             <span class="inline-block h-2 w-2 rounded-full bg-brand-600"></span>
@@ -160,7 +151,6 @@
           <div id="owner" class="flex items-center gap-4"></div>
         </div>
 
-        <!-- Acciones -->
         <div class="mt-6 flex flex-wrap gap-3 items-center">
           <a id="reservarBtn" href="#" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 smooth shadow-soft hover:shadow-lift">Reservar</a>
           <button id="btnContactar" type="button" class="px-4 py-3 rounded-xl border hover:bg-slate-50 smooth">Contactar</button>
@@ -168,11 +158,13 @@
           <button id="checkoutBtn" type="button" class="px-5 py-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 smooth ml-auto hidden">Continuar compra</button>
         </div>
 
-        <!-- ================= Reseñas del artículo (nuevo) ================= -->
+        <!-- ====== Ancla compatible con notificación (#opiniones) ====== -->
+        <div id="opiniones" class="h-0 overflow-hidden"></div>
+
+        <!-- ================= Reseñas ================= -->
         <section id="reviews-root" class="mt-14">
           <h2 class="text-2xl font-extrabold tracking-tight">Opiniones</h2>
 
-          <!-- Resumen -->
           <div id="rev-summary" class="mt-5 rounded-2xl border p-5 grid sm:grid-cols-3 gap-6 items-center">
             <div class="text-center">
               <div class="text-5xl font-extrabold" id="rev-avg">0.0</div>
@@ -181,7 +173,6 @@
             <div class="sm:col-span-2 space-y-2" id="rev-bars"></div>
           </div>
 
-          <!-- Formulario (solo cuando elegible) -->
           <div id="rev-form-box" class="mt-6 hidden rounded-2xl border p-5">
             <h3 class="font-semibold mb-3">Escribe tu reseña</h3>
             <div class="flex items-center gap-2 mb-2" id="rev-stars"></div>
@@ -191,14 +182,12 @@
             </div>
           </div>
 
-          <!-- Lista -->
           <div id="rev-list" class="mt-6 space-y-4"></div>
 
           <div class="mt-4 text-center">
             <button id="rev-more" class="px-3 py-2 rounded-lg border hover:bg-slate-50 hidden">Ver más</button>
           </div>
         </section>
-        <!-- =============================================================== -->
 
       </section>
     </div>
@@ -207,12 +196,9 @@
   <footer class="py-10 text-center text-sm text-slate-500">© <span id="y"></span> Toolingo</footer>
   <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
 
-  <!-- Inyecta el ID del artículo desde Django -->
-  <script>
-    window.ART_ID_SERVER = "{{ articulo_id|default_if_none:'' }}";
-  </script>
+  <script> window.ART_ID_SERVER = "{{ articulo_id|default_if_none:'' }}"; </script>
 
-  <!--  Modal Reserva -->
+  <!-- Modal Reserva -->
   <div id="reservaModal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-black/30" data-close="true"></div>
     <div class="absolute inset-0 grid place-items-center p-4">
@@ -265,7 +251,7 @@
     </div>
   </div>
 
-  <!-- ===== Chat Overlay ===== -->
+  <!-- Chat Overlay -->
   <div id="chatBackdrop" class="chat-overlay-backdrop"></div>
   <div id="chatOverlay" class="chat-overlay" role="dialog" aria-modal="true" aria-label="Chat">
     <header>
@@ -276,7 +262,6 @@
   </div>
 
   <script>
-    /*  Utils / Auth  */
     const ownerBox = document.getElementById('owner');
     const fmt = n => Number(n||0).toLocaleString('es-CO');
     const fmtCOP = x => Number(x||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
@@ -307,7 +292,7 @@
       return resp;
     }
 
-    // Publicar -> fuerza login si no hay token
+    // Publicar
     (function(){
       const t = getToken();
       const a = document.getElementById('btnPublicar');
@@ -333,7 +318,7 @@
       } catch(_) {}
     })();
 
-    // Notificaciones
+    // ===== Notificaciones (BACKEND NUEVO) =====
     const notifBell  = document.getElementById('notifBell');
     const notifBadge = document.getElementById('notifBadge');
     const notifPanel = document.getElementById('notifPanel');
@@ -348,37 +333,67 @@
     });
     notifBell?.addEventListener('click',togglePanel);
 
-    async function loadNotifs(){
-      if (!getToken()) return;
-      try{
-        const r = await authFetch('/api/notificaciones/?ordering=-creado&limit=20')
-          .catch(() => ({ ok:false, json: async()=>[] })); // 👈 blindado
-        if(!r.ok) return;
-        const data = await r.json();
-        const list = Array.isArray(data) ? data : (data.results || []);
-        const unread = list.filter(n=>!n.leido).length;
-        notifBadge.classList.toggle('hidden', unread===0);
-        notifBadge.textContent = unread;
-        if (list.length===0){
-          notifList.innerHTML = `<div class="p-3 text-slate-400">Sin notificaciones</div>`;
-        } else {
-          notifList.innerHTML = list.map(n => `
-            <div class="p-2 rounded ${n.leido?'':'bg-slate-50'}">
-              <div class="text-sm ${n.leido?'text-slate-600':'text-slate-900 font-medium'}">${n.texto || 'Notificación'}</div>
-              <div class="text-[11px] text-slate-400">${new Date(n.creado).toLocaleString('es-CO')}</div>
-            </div>`).join('');
-        }
-      }catch(_) {}
+    function notifCard(n){
+      const when = n.created_at ? new Date(n.created_at).toLocaleString('es-CO') : '';
+      const unread = !n.read_at;
+      const title = n.title || 'Notificación';
+      const body  = n.body  || '';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `w-full text-left p-3 rounded-xl ${unread?'bg-slate-50':'bg-white'} hover:bg-slate-50`;
+      btn.innerHTML = `
+        <div class="text-sm ${unread?'text-slate-900 font-medium':'text-slate-700'}">${title}</div>
+        ${body ? `<div class="text-[13px] text-slate-500">${body}</div>` : ''}
+        ${when ? `<div class="text-[11px] text-slate-400 mt-0.5">${when}</div>` : ''}
+      `;
+      btn.addEventListener('click', ()=>{
+        if (n.action_url) window.location.href = n.action_url;
+        notifPanel.classList.add('hidden');
+      });
+      return btn;
     }
+
+    async function loadNotifs(){
+      const token = localStorage.getItem('access');
+      if (!token) return;
+
+      const r = await fetch('/api/notificaciones/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).catch(()=>null);
+      if (!r || !r.ok) return;
+
+      const payload = await r.json();
+      const list = Array.isArray(payload) ? payload : (payload.results || []);
+      const unread = list.filter(n => !n.read_at && (!n.expires_at || new Date().toISOString() <= n.expires_at)).length;
+
+      notifBadge.classList.toggle('hidden', unread === 0);
+      notifBadge.textContent = unread;
+
+      notifList.innerHTML = '';
+      if (!list.length){
+        notifList.innerHTML = `<div class="p-3 text-slate-400">Sin notificaciones</div>`;
+        return;
+      }
+      list.forEach(n => notifList.appendChild(notifCard(n)));
+    }
+
     notifMarkAll?.addEventListener('click', async ()=>{
-      try{ await authFetch('/api/notificaciones/marcar-todas/',{method:'POST'}); }catch(_){}
-      loadNotifs();
+      const token = localStorage.getItem('access');
+      if (!token) return;
+      await fetch('/api/notificaciones/marcar-todas/', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).catch(()=>{});
+      await loadNotifs();
     });
     setInterval(loadNotifs, 10000);
     loadNotifs();
 
     // Datos del artículo
-    function avatarHtml(nameLike){ const txt=(nameLike||'').trim(); const ini=txt?txt[0].toUpperCase():'👤'; return `<div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">${ini}</div>`; }
+    function avatarHtml(nameLike){
+      const txt=(nameLike||'').trim(); const ini=txt?txt[0].toUpperCase():'👤';
+      return `<div class="h-12 w-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-lg font-bold">${ini}</div>`;
+    }
 
     async function fetchByIdOrSlug(idOrSlug){
       const direct = await fetch(`/api/articulos/${encodeURIComponent(idOrSlug)}/`); if (direct.ok) return direct.json();
@@ -416,25 +431,51 @@
       const pricePill=document.getElementById('pricePill'); if(price){ pricePill.textContent=price; pricePill.classList.remove('hidden'); }
       document.getElementById('desc').textContent = a.descripcion || 'Sin descripción.'; renderOwner(a);
 
-      // Galería
       const main=document.getElementById('galleryMain'); const thumbs=document.getElementById('thumbs'); const imgs=[];
       if (a.portada) imgs.push(a.portada);
       if (Array.isArray(a.imagenes)) a.imagenes.forEach(img=>{ const u=(img&&(img.url||img.imagen||img.file))||img; if(u) imgs.push(u); });
       if (imgs.length){
         main.innerHTML=`<img src="${imgs[0]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`;
         thumbs.innerHTML=imgs.map((u,i)=>`<button type="button" class="thumb h-16 w-24 rounded-lg overflow-hidden border smooth" data-i="${i}" ${i===0?'data-active="true"':''}><img src="${u}" class="w-full h-full object-cover" alt="Miniatura ${i+1}"></button>`).join('');
-        thumbs.addEventListener('click',e=>{ const b=e.target.closest('button.thumb'); if(!b) return; const idx=+b.dataset.i; main.innerHTML=`<img src="${imgs[idx]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`; thumbs.querySelectorAll('button.thumb').forEach(x=>x.removeAttribute('data-active')); b.setAttribute('data-active','true'); });
-      } else { main.innerHTML=`<div class="w-full h-full rounded-xl bg-slate-100"></div>`; thumbs.innerHTML=''; }
+        thumbs.addEventListener('click',e=>{
+          const b=e.target.closest('button.thumb'); if(!b) return;
+          const idx=+b.dataset.i;
+          main.innerHTML=`<img src="${imgs[idx]}" class="w-full h-full object-cover rounded-xl smooth" alt="${a.titulo || 'Artículo'}">`;
+          thumbs.querySelectorAll('button.thumb').forEach(x=>x.removeAttribute('data-active'));
+          b.setAttribute('data-active','true');
+        });
+      } else {
+        main.innerHTML=`<div class="w-full h-full rounded-xl bg-slate-100"></div>`;
+        thumbs.innerHTML='';
+      }
 
-      // Botones
       document.getElementById('reservarBtn').addEventListener('click',(e)=>{ e.preventDefault(); openReservaModal(a); });
       document.getElementById('btnContactar').addEventListener('click', ()=> openChatOverlay(a.id || ART_ID_SERVER));
     }
 
+    // --- Helpers de ruta/login (CORREGIDOS) ---
+    function pathLastSegment(){
+      const parts = location.pathname.split('/').filter(Boolean);
+      return parts.length ? parts[parts.length - 1] : "";
+    }
+    function loginNext(urlHash='#opiniones'){
+      const next = encodeURIComponent(location.pathname + urlHash);
+      location.href = `/login/?next=${next}`;
+    }
+
     async function loadArticulo(){
-      const candidate = (ART_ID_SERVER && ART_ID_SERVER !== "None") ? ART_ID_SERVER : location.pathname.split('/').filter(Boolean)[1] || "";
-      try{ const articulo = await fetchByIdOrSlug(candidate); window.__ARTICULO__=articulo; renderArticulo(articulo); }
-      catch(err){ document.getElementById('title').textContent='Artículo no encontrado'; document.getElementById('desc').textContent='No pudimos cargar la información del artículo.'; console.error(err); }
+      const candidate = (ART_ID_SERVER && ART_ID_SERVER !== "None")
+        ? ART_ID_SERVER
+        : pathLastSegment();
+      try{
+        const articulo = await fetchByIdOrSlug(candidate);
+        window.__ARTICULO__=articulo;
+        renderArticulo(articulo);
+      }catch(err){
+        document.getElementById('title').textContent='Artículo no encontrado';
+        document.getElementById('desc').textContent='No pudimos cargar la información del artículo.';
+        console.error(err);
+      }
     }
 
     // Chat Overlay 
@@ -460,7 +501,7 @@
       document.getElementById('chatFrame').src='about:blank';
     };
 
-    // 1) Helpers para leer pagos simulados y formar rangos / sets
+    // ===== Reserva / disponibilidad (con soporte a rangos locales) =====
     function parseRangesFromPaymentItems(items, artId){
       const out=[];
       (items||[]).forEach(it=>{
@@ -472,13 +513,12 @@
       });
       return out;
     }
-
     function getSimPaidRanges(artId){
       const ranges=[];
       try{
         const rawA = localStorage.getItem('tl_payments');
         const rawB = localStorage.getItem('sim_pagos');
-        const lists = []
+        const lists = [];
         if (rawA) lists.push(JSON.parse(rawA));
         if (rawB) lists.push(JSON.parse(rawB));
         lists.forEach(list=>{
@@ -490,7 +530,6 @@
       }catch(_){}
       return ranges;
     }
-
     function buildDisabledDateSet(ranges){
       const set=new Set(); const ONE=24*60*60*1000;
       (ranges||[]).forEach(r=>{
@@ -511,8 +550,6 @@
         return null;
       }).filter(Boolean);
     }
-
-    // 2) Carga combinada: API + fechas precargadas + simulación localStorage
     async function fetchBookedDates(articleId){
       const localRanges = (window.__ARTICULO__?.fechas_ocupadas || []).slice();
 
@@ -528,11 +565,9 @@
       }catch(_){}
 
       const simRanges = getSimPaidRanges(articleId);
-
       return { pricePerDay: apiPrice, booked: [...localRanges, ...apiRanges, ...simRanges] };
     }
 
-    //Reserva 
     let __ART__ = null;
     let __fpInstance = null;
 
@@ -628,17 +663,15 @@
       }catch(e){ alert('No se pudo agregar al carrito.'); }
     });
 
-    // ==========================
-    //   Reseñas (frontend)
-    // ==========================
+    // ===== Reseñas =====
     (function ReviewsModule(){
+      // Usa SIEMPRE el último segmento si no viene inyectado
       const ART_ID = (window.ART_ID_SERVER && window.ART_ID_SERVER !== 'None')
         ? window.ART_ID_SERVER
-        : (location.pathname.split('/').filter(Boolean)[1] || '');
+        : pathLastSegment();
 
       const fmtDate = iso => new Date(iso).toLocaleDateString('es-CO',{year:'numeric',month:'short',day:'2-digit'});
 
-      // fetch autenticado SIN redirigir (no rompe la vista si no hay login)
       async function revFetchAuth(url, opts={}){
         let tk = getToken();
         const h = new Headers(opts.headers||{});
@@ -681,7 +714,7 @@
         }catch(_){}
       }
 
-      // Lista con paginación
+      // Lista
       let page = 1, pageSize = 6, loaded = 0, totalCount = 0;
       async function loadMore(){
         try{
@@ -710,20 +743,31 @@
       }
       document.getElementById('rev-more').addEventListener('click', loadMore);
 
-      // Elegibilidad + formulario
+      // Formulario (con CTA login si 401)
       async function setupForm(){
-        // si no hay token, no mostramos formulario
-        if (!getToken()) return;
         try{
           const r = await revFetchAuth(`/api/articulos/${ART_ID}/reviews/eligibility/`);
-          if (!r.ok){ return; }
+
+          if (r.status === 401){
+            const box = document.getElementById('rev-form-box');
+            box.classList.remove('hidden');
+            box.innerHTML = `
+              <div class="flex items-center gap-3">
+                <div class="text-slate-600">Inicia sesión para dejar tu reseña.</div>
+                <button id="rev-login" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Iniciar sesión</button>
+              </div>
+            `;
+            document.getElementById('rev-login')?.addEventListener('click', ()=> loginNext('#opiniones'));
+            return;
+          }
+
+          if (!r.ok) return;
           const d = await r.json();
           if (!d.eligible) return;
 
           const box = document.getElementById('rev-form-box');
           box.classList.remove('hidden');
 
-          // estrellas
           let score = 5;
           const cont = document.getElementById('rev-stars');
           function renderStars(){
@@ -745,26 +789,47 @@
               method: 'POST',
               body: JSON.stringify({puntaje: score, comentario})
             });
+
+            if (resp.status === 401){
+              loginNext('#opiniones');
+              return;
+            }
+
             if(!resp.ok){
               const err = await resp.json().catch(()=>({detail:'Error'}));
               alert(err.detail || 'No se pudo crear la reseña.');
               return;
             }
-            // refrescar
+
             document.getElementById('rev-list').innerHTML = '';
             page = 1; loaded = 0; totalCount = 0;
             await loadSummary();
             await loadMore();
+
+            try{
+              const tk = getToken();
+              if (tk) await fetch('/api/notificaciones/marcar-todas/', {
+                method:'POST', headers:{Authorization:`Bearer ${tk}`}
+              });
+            }catch(_){}
+
             box.classList.add('hidden');
           });
         }catch(_){}
       }
 
-      // init
-      loadSummary().then(loadMore);
-      setupForm();
+      // Init
+      (async function(){
+        await loadSummary();
+        await loadMore();
+        await setupForm();
+
+        if (location.hash === '#opiniones') {
+          const target = document.getElementById('reviews-root') || document.getElementById('rev-summary');
+          if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+      })();
     })();
-    //  FIN reseñas 
 
     loadArticulo();
   </script>

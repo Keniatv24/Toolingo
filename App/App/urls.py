@@ -8,34 +8,46 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.conf.urls.i18n import i18n_patterns
+
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from App.views import NotificacionesList 
-from App.views import WalletBalanceView, WalletRechargeView 
 
-from App.views import SimularPagoView  
-from users.views import ProfileViewSet, UserViewSet
-from catalog.views import CategoriaViewSet, ArticuloViewSet, AliadosArticuloList
-from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet, CartItemViewSet
-from chat.views import ConversationViewSet
-from catalog.pages import productos_aliados 
-from . import views  
-from rentals.views import (
-    ReviewsByArticuloList,
-    ReviewsByArticuloSummary,
-    ReviewsByArticuloEligibility,
-    ReviewsByArticuloCreate,
+
+# --- Importaciones de vistas propias ---
+from . import views  # pagos_view
+from App.views import (
+    NotificacionesList,
+    NotificacionesMarkAll,       
+    WalletBalanceView,
+    WalletRechargeView,
+    SimularPagoView,
 )
 
+# --- Importaciones de apps ---
+from users.views import ProfileViewSet, UserViewSet
+from catalog.views import CategoriaViewSet, ArticuloViewSet, AliadosArticuloList
+from rentals.views import (
+    AlquilerViewSet, PagoViewSet, CalificacionViewSet, CartItemViewSet,
+    ReviewsByArticuloList, ReviewsByArticuloSummary,
+    ReviewsByArticuloEligibility, ReviewsByArticuloCreate,
+)
+from chat.views import ConversationViewSet
+from catalog.pages import productos_aliados
+
+
+# --- Vista especial del chat (embebible en iframe) ---
 @method_decorator(xframe_options_sameorigin, name="dispatch")
 class ChatWidgetView(TemplateView):
     template_name = "chat/index.html"
 
+
 def articulo_detalle(request, id):
+    """Renderiza el detalle del artículo."""
     return render(request, "catalog/detalle.html", {"articulo_id": str(id)})
 
-# -------- API router --------
+
+# -------- API router principal --------
 router = DefaultRouter()
 router.register(r"users", UserViewSet, basename="users")
 router.register(r"categorias", CategoriaViewSet, basename="categorias")
@@ -48,25 +60,44 @@ router.register(r"carrito", CartItemViewSet, basename="carrito")
 router.register(r"chats", ConversationViewSet, basename="chat")
 
 
+# -------- API ENDPOINTS --------
 urlpatterns = [
-    
+    # --- Simulación de pago ---
     path("api/pagos/simular/", SimularPagoView.as_view(), name="pagos-simular"),
+
+    # --- Notificaciones ---
     path("api/notificaciones/", NotificacionesList.as_view(), name="notificaciones-list"),
+    path("api/notificaciones/marcar-todas/", NotificacionesMarkAll.as_view(), name="notificaciones-mark-all"),
+
+    # --- Routers DRF ---
     path("api/", include(router.urls)),
+
+    # --- JWT Auth ---
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+
+    # --- Esquema / Docs Swagger ---
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
-    path("i18n/", include("django.conf.urls.i18n")),
+
+    # --- Otros endpoints API ---
     path("api/aliados/productos/", AliadosArticuloList.as_view(), name="aliados-productos"),
-    path("admin/", admin.site.urls),
     path("api/wallet/", WalletBalanceView.as_view(), name="wallet-balance"),
     path("api/wallet/recargar/", WalletRechargeView.as_view(), name="wallet-recharge"),
+
+    # --- Endpoints de reseñas ---
     path("api/articulos/<uuid:art_id>/reviews/", ReviewsByArticuloList.as_view(), name="art-reviews-list"),
     path("api/articulos/<uuid:art_id>/reviews/summary/", ReviewsByArticuloSummary.as_view(), name="art-reviews-summary"),
     path("api/articulos/<uuid:art_id>/reviews/eligibility/", ReviewsByArticuloEligibility.as_view(), name="art-reviews-eligibility"),
     path("api/articulos/<uuid:art_id>/reviews/create/", ReviewsByArticuloCreate.as_view(), name="art-reviews-create"),
+
+    # --- Admin ---
+    path("admin/", admin.site.urls),
+
+    # --- Multiidioma ---
+    path("i18n/", include("django.conf.urls.i18n")),
 ]
+
 
 # -------- Páginas HTML con prefijo /es/ o /en/ --------
 urlpatterns += i18n_patterns(
@@ -86,5 +117,7 @@ urlpatterns += i18n_patterns(
     path("wallet/", TemplateView.as_view(template_name="wallet/index.html"), name="wallet"),
 )
 
+
+#  Media en modo DEBUG
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

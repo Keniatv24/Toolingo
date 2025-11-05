@@ -1,33 +1,38 @@
 # App/rentals/views.py
 from datetime import timedelta
+
 from django.db import models
 from django.utils.dateparse import parse_date
 from django.utils.timezone import now
+from common.enums import EstadoPago 
 
-from rest_framework import viewsets, permissions, status
-from rest_framework.viewsets import ModelViewSet
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from catalog.models import Articulo
 from rest_framework.views import APIView
 
-from .models import Alquiler, Pago, Calificacion, CartItem
+from .models import Alquiler, Calificacion, CartItem, Pago
 from .serializers import (
     AlquilerSerializer,
-    PagoSerializer,
+    CalificacionPublicSerializer,
     CalificacionSerializer,
     CartItemSerializer,
-    CalificacionPublicSerializer,
+    PagoSerializer,
 )
 
-
+# ---------------------------------------------------------------------
+# Utilidades
+# ---------------------------------------------------------------------
 def daterange(d1, d2):
     cur = d1
     while cur <= d2:
         yield cur
         cur += timedelta(days=1)
 
+# Alquileres
 
-class AlquilerViewSet(ModelViewSet):
+class AlquilerViewSet(viewsets.ModelViewSet):
     serializer_class = AlquilerSerializer
 
     def get_queryset(self):
@@ -68,22 +73,22 @@ class AlquilerViewSet(ModelViewSet):
             return Response({"detail": "Parámetros inválidos"}, status=400)
 
         bloqueantes = ["SOLICITADO", "APROBADO", "EN_CURSO"]
-        qs = Alquiler.objects.filter(
-            articulo_id=art,
-            estado__in=bloqueantes,
-            fecha_inicio__lte=e,
-            fecha_fin__gte=s,
-        ).order_by("fecha_inicio")
+        qs = (
+            Alquiler.objects.filter(
+                articulo_id=art,
+                estado__in=bloqueantes,
+                fecha_inicio__lte=e,
+                fecha_fin__gte=s,
+            )
+            .order_by("fecha_inicio")
+        )
 
         rangos = []
         dias_ocupados = set()
         for a in qs:
-            rangos.append({
-                "inicio": a.fecha_inicio.isoformat(),
-                "fin": a.fecha_fin.isoformat(),
-                "estado": a.estado,
-            })
-            # rango de intersección para marcar días ocupados
+            rangos.append(
+                {"inicio": a.fecha_inicio.isoformat(), "fin": a.fecha_fin.isoformat(), "estado": a.estado}
+            )
             d0 = max(a.fecha_inicio, s)
             d1 = min(a.fecha_fin, e)
             cur = d0
@@ -91,19 +96,23 @@ class AlquilerViewSet(ModelViewSet):
                 dias_ocupados.add(cur.isoformat())
                 cur += timedelta(days=1)
 
-        return Response({
-            "articulo": art,
-            "from": s.isoformat(),
-            "to": e.isoformat(),
-            "rangos": rangos,
-            "dias_ocupados": sorted(list(dias_ocupados)),
-        })
+        return Response(
+            {
+                "articulo": art,
+                "from": s.isoformat(),
+                "to": e.isoformat(),
+                "rangos": rangos,
+                "dias_ocupados": sorted(list(dias_ocupados)),
+            }
+        )
 
 
-class CartItemViewSet(ModelViewSet):
+# Carrito
+
+class CartItemViewSet(viewsets.ModelViewSet):
     """
-    /api/carrito/  (lista, crea, elimina)
-    /api/carrito/checkout/  (POST) -> crea Alquileres a partir del carrito y lo vacía
+    /api/carrito/            (lista, crea, elimina)
+    /api/carrito/checkout/   (POST) -> crea Alquileres a partir del carrito y lo vacía
     """
     serializer_class = CartItemSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -129,7 +138,7 @@ class CartItemViewSet(ModelViewSet):
             if ser.is_valid():
                 try:
                     obj = ser.save()
-                    creados.append(obj.id)
+                    creados.append(str(obj.id))
                 except Exception as e:
                     errores.append(str(e))
             else:
@@ -141,6 +150,7 @@ class CartItemViewSet(ModelViewSet):
         return Response({"creados": creados, "errores": errores}, status=201 if creados else 400)
 
 
+# pago
 class PagoViewSet(viewsets.ModelViewSet):
     serializer_class = PagoSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -152,6 +162,9 @@ class PagoViewSet(viewsets.ModelViewSet):
         )
 
 
+
+# Calificaciones propias (por usuario)
+
 class CalificacionViewSet(viewsets.ModelViewSet):
     serializer_class = CalificacionSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -160,9 +173,10 @@ class CalificacionViewSet(viewsets.ModelViewSet):
         u = self.request.user
         return Calificacion.objects.filter(models.Q(autor=u) | models.Q(destinatario=u))
 
-#   Reseñas por Artículo
 
+# Reseñas públicas por artículo
 COMPLETED_STATES = ["FINALIZADO", "FINALIZADA", "COMPLETADO", "CERRADO", "TERMINADO"]
+ALMOST_DONE_STATES = ["SOLICITADO", "APROBADO", "EN_CURSO"]
 
 
 class ReviewsByArticuloList(APIView):
@@ -173,9 +187,11 @@ class ReviewsByArticuloList(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, art_id):
-        qs = Calificacion.objects.select_related("alquiler", "autor").filter(
-            alquiler__articulo_id=art_id
-        ).order_by("-fecha")
+        qs = (
+            Calificacion.objects.select_related("alquiler", "autor")
+            .filter(alquiler__articulo_id=art_id)
+            .order_by("-fecha")
+        )
 
         # paginación simple
         try:
@@ -188,12 +204,7 @@ class ReviewsByArticuloList(APIView):
         start = (page - 1) * page_size
         end = start + page_size
         ser = CalificacionPublicSerializer(qs[start:end], many=True)
-        return Response({
-            "count": total,
-            "page": page,
-            "page_size": page_size,
-            "results": ser.data
-        })
+        return Response({"count": total, "page": page, "page_size": page_size, "results": ser.data})
 
 
 class ReviewsByArticuloSummary(APIView):
@@ -207,50 +218,44 @@ class ReviewsByArticuloSummary(APIView):
         qs = Calificacion.objects.filter(alquiler__articulo_id=art_id)
         counts = {i: qs.filter(puntaje=i).count() for i in range(1, 6)}
         total = sum(counts.values()) or 0
-        avg = round(
-            sum(i * counts[i] for i in range(1, 6)) / total, 2
-        ) if total else 0.0
-        return Response({
-            "avg": avg,
-            "total": total,
-            "counts": counts
-        })
+        avg = round(sum(i * counts[i] for i in range(1, 6)) / total, 2) if total else 0.0
+        return Response({"avg": avg, "total": total, "counts": counts})
 
 
 class ReviewsByArticuloEligibility(APIView):
     """
     GET /api/articulos/<uuid:art_id>/reviews/eligibility/
-    ¿El usuario autenticado puede reseñar este artículo?
+    Permitimos reseñas a todo usuario autenticado.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, art_id):
         u = request.user
-        # alquiler terminado del usuario para ese artículo
-        alquiler_qs = Alquiler.objects.filter(
-            articulo_id=art_id, arrendatario=u, estado__in=COMPLETED_STATES
-        ).order_by("-fecha_fin", "-creado")
-        alquiler = alquiler_qs.first()
-        if not alquiler:
-            return Response({"eligible": False})
-
-        # ¿ya calificó este alquiler?
-        exists = Calificacion.objects.filter(alquiler=alquiler, autor=u).exists()
-        return Response({
-            "eligible": not exists,
-            "alquiler_id": alquiler.id if not exists else None
-        })
+        a = (
+            Alquiler.objects
+            .filter(articulo_id=art_id, arrendatario=u)
+            .order_by("-fecha_fin", "-creado")
+            .first()
+        )
+        payload = {"eligible": True}
+        if a:
+            payload["alquiler_id"] = a.id
+        return Response(payload)
 
 
 class ReviewsByArticuloCreate(APIView):
     """
     POST /api/articulos/<uuid:art_id>/reviews/create/
     Body: { "puntaje": 1..5, "comentario": "..." }
-    Crea reseña si el usuario tiene alquiler terminado y no había reseñado.
+
+    Si el usuario no tiene alquiler del artículo, creamos un "alquiler virtual"
+    (hoy→hoy) en estado FINALIZADO para poder colgar la reseña.
+    Evitamos duplicados: 1 reseña por usuario y por artículo.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, art_id):
+        # --- validar entrada
         try:
             puntaje = int(request.data.get("puntaje"))
         except Exception:
@@ -260,22 +265,40 @@ class ReviewsByArticuloCreate(APIView):
             return Response({"detail": "Puntaje debe estar entre 1 y 5."}, status=400)
 
         u = request.user
+
+        # --- evitar duplicado por usuario/artículo
+        if Calificacion.objects.filter(autor=u, alquiler__articulo_id=art_id).exists():
+            return Response({"detail": "Ya dejaste una reseña para este artículo."}, status=400)
+
+        # --- buscar alquiler existente del usuario para el artículo (si lo hay)
         alquiler = (
-            Alquiler.objects.filter(articulo_id=art_id, arrendatario=u, estado__in=COMPLETED_STATES)
+            Alquiler.objects
+            .filter(articulo_id=art_id, arrendatario=u)
             .order_by("-fecha_fin", "-creado")
             .first()
         )
+
+        # --- crear alquiler virtual FINALIZADO si no existe
         if not alquiler:
-            return Response({"detail": "No eres elegible para calificar este artículo."}, status=403)
+            try:
+                articulo = Articulo.objects.get(id=art_id)
+            except Articulo.DoesNotExist:
+                return Response({"detail": "Artículo no encontrado."}, status=404)
+            today = now().date()
+            alquiler = Alquiler.objects.create(
+                articulo=articulo,
+                arrendatario=u,
+                propietario=articulo.propietario,
+                fecha_inicio=today,
+                fecha_fin=today,
+                estado="FINALIZADO",
+            )
 
-        if Calificacion.objects.filter(alquiler=alquiler, autor=u).exists():
-            return Response({"detail": "Ya calificaste este alquiler."}, status=400)
-
-        dest = alquiler.propietario
+        # --- crear calificación
         cal = Calificacion.objects.create(
             alquiler=alquiler,
             autor=u,
-            destinatario=dest,
+            destinatario=alquiler.propietario,
             puntaje=puntaje,
             comentario=comentario,
             fecha=now(),
