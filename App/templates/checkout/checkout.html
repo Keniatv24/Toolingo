@@ -15,19 +15,14 @@
       }}
     }
   </script>
-  <style>
-    /* por si algún user-agent no trae border-box */
-    *,*::before,*::after{ box-sizing:border-box; }
-  </style>
+  <style>*,*::before,*::after{box-sizing:border-box}</style>
 </head>
 <body class="bg-white text-slate-800">
   <!-- NAV -->
   <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-200">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
       <a href="/" class="flex items-center gap-2 shrink-0">
-        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current">
-          <path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/>
-        </svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current"><path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/></svg>
         <span class="text-lg font-extrabold">Toolingo</span>
       </a>
       <nav class="hidden md:flex ml-auto items-center gap-6 text-sm">
@@ -42,7 +37,6 @@
     <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Pago</h1>
     <p class="text-slate-600 mt-1">Selecciona un método de pago y completa tus datos.</p>
 
-    <!-- Resumen grande a la derecha, pero sin overflow -->
     <div class="mt-6 grid xl:grid-cols-12 gap-8">
       <!-- Izquierda -->
       <section class="xl:col-span-6 space-y-4 min-w-0">
@@ -68,11 +62,16 @@
             <div class="font-semibold">SisteCredito</div>
             <div class="text-sm text-slate-500">Crédito fácil y rápido</div>
           </button>
+
+          <!-- NUEVO: Método Billetera (DIP) -->
+          <button data-method="wallet" class="method border rounded-2xl p-4 text-left hover:bg-slate-50 md:col-span-2">
+            <div class="font-semibold">Billetera Toolingo (DIP)</div>
+            <div class="text-sm text-slate-500">Saldo disponible y pago instantáneo</div>
+          </button>
         </div>
 
-        <!-- Formulario -->
+        <!-- Formulario TARJETA -->
         <section id="payForm" class="rounded-2xl border bg-white shadow-soft p-5 overflow-hidden">
-          <!-- Logos -->
           <div id="brandRow" class="flex items-center gap-4 mb-4 min-w-0">
             <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" class="h-6 shrink-0">
             <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-6 shrink-0">
@@ -80,13 +79,10 @@
             <span class="text-xs text-slate-500 truncate">Aceptamos tarjetas principales.</span>
           </div>
 
-          <!-- CREDIT/DEBIT -->
           <form id="cardForm" class="grid md:grid-cols-2 gap-4">
             <label class="grid gap-1 md:col-span-2">
               <span class="text-sm text-slate-600">Número</span>
-              <input id="cardNumber" type="text" inputmode="numeric" maxlength="19"
-                     class="border rounded-xl px-3 py-2 w-full"
-                     placeholder="•••• •••• •••• ••••">
+              <input id="cardNumber" type="text" inputmode="numeric" maxlength="19" class="border rounded-xl px-3 py-2 w-full" placeholder="•••• •••• •••• ••••">
             </label>
 
             <label class="grid gap-1">
@@ -101,7 +97,6 @@
               <input id="cardName" type="text" class="border rounded-xl px-3 py-2 w-full" placeholder="Nombre Apellido">
             </label>
 
-            <!-- Aquí estaba el overflow: ahora es sm:grid-cols-3 y todo w-full -->
             <div class="grid sm:grid-cols-3 gap-3 md:col-span-2">
               <label class="grid gap-1">
                 <span class="text-sm text-slate-600">Vencimiento</span>
@@ -123,14 +118,13 @@
             </label>
 
             <div class="md:col-span-2">
-              <button id="payBtn" type="button"
-                      class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 w-full sm:w-auto">
+              <button id="payBtn" type="button" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 w-full sm:w-auto">
                 Pagar ahora
               </button>
             </div>
           </form>
 
-          <!-- PSE / ADDI / SISTECREDITO -->
+          <!-- PSE / ADDI / SISTE -->
           <div id="altMethod" class="hidden">
             <div class="text-slate-700">
               <p id="altText" class="mb-3">Serás redirigido para completar tu pago.</p>
@@ -139,19 +133,34 @@
               </button>
             </div>
           </div>
+
+          <!-- NUEVO: PANEL BILLETERA -->
+          <div id="walletPane" class="hidden">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-sm text-slate-500">Saldo disponible</div>
+                <div id="walletSaldo" class="text-2xl font-extrabold">—</div>
+              </div>
+              <a href="/wallet/" target="_blank" class="text-sm px-3 py-2 rounded-lg border hover:bg-slate-50">Abrir mi billetera</a>
+            </div>
+            <div class="mt-4">
+              <button id="walletPayBtn" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 w-full sm:w-auto">
+                Pagar con billetera (DIP)
+              </button>
+              <p id="walletHelp" class="mt-2 text-sm text-slate-500"></p>
+            </div>
+          </div>
         </section>
       </section>
 
-      <!-- Derecha: Resumen grande -->
+      <!-- Derecha -->
       <aside class="xl:col-span-6 min-w-0">
         <div class="rounded-2xl border bg-white p-6 shadow-soft sticky top-24 ring-2 ring-brand-100 overflow-hidden">
           <div class="flex items-center justify-between gap-4">
             <h3 class="font-semibold text-xl">Resumen de la orden</h3>
             <span class="text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100 shrink-0">verificación segura</span>
           </div>
-
           <div id="itemsBox" class="mt-5 space-y-4"></div>
-
           <div class="mt-5 space-y-3 text-sm">
             <div class="flex items-center justify-between">
               <span class="text-slate-600">Productos (<span id="count">0</span>)</span>
@@ -161,33 +170,18 @@
               <span>Total</span><span id="total">$0</span>
             </div>
           </div>
-
-          <p class="mt-3 text-[12px] text-slate-500">
-            Las reservas se confirman por cada artículo y rango de fechas.
-          </p>
+          <p class="mt-3 text-[12px] text-slate-500">Las reservas se confirman por cada artículo y rango de fechas.</p>
         </div>
       </aside>
     </div>
 
-    <!-- Franja de beneficios -->
+    <!-- Franja -->
     <section class="mt-12 rounded-2xl bg-brand-600 text-white p-6">
       <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
-        <div class="flex items-center gap-3">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3H3V6Zm0 5h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Zm3 5h4v2H6v-2Z"/></svg>
-          <div><div class="font-semibold">Múltiples medios de pago</div><div class="text-brand-100">Tarjeta, PSE y más</div></div>
-        </div>
-        <div class="flex items-center gap-3">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 3v6c0 5-3.5 9-7 11-3.5-2-7-6-7-11V5l7-3Zm0 5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
-          <div><div class="font-semibold">Seguro y confiable</div><div class="text-brand-100">Protección de datos y pagos</div></div>
-        </div>
-        <div class="flex items-center gap-3">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z"/></svg>
-          <div><div class="font-semibold">Calidad garantizada</div><div class="text-brand-100">Publicaciones verificadas</div></div>
-        </div>
-        <div class="flex items-center gap-3">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h11v7h2l3 3v2h-2a2 2 0 1 1-4 0H9a2 2 0 1 1-4 0H3V6Zm15 8h1.59L18 12.41V14Z"/></svg>
-          <div><div class="font-semibold">Entrega rápida</div><div class="text-brand-100">Coordina con el propietario</div></div>
-        </div>
+        <div class="flex items-center gap-3"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3H3V6Zm0 5h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Zm3 5h4v2H6v-2Z"/></svg><div><div class="font-semibold">Múltiples medios de pago</div><div class="text-brand-100">Tarjeta, PSE y más</div></div></div>
+        <div class="flex items-center gap-3"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 3v6c0 5-3.5 9-7 11-3.5-2-7-6-7-11V5l7-3Zm0 5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg><div><div class="font-semibold">Seguro y confiable</div><div class="text-brand-100">Protección de datos y pagos</div></div></div>
+        <div class="flex items-center gap-3"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z"/></svg><div><div class="font-semibold">Calidad garantizada</div><div class="text-brand-100">Publicaciones verificadas</div></div></div>
+        <div class="flex items-center gap-3"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h11v7h2l3 3v2h-2a2 2 0 1 1-4 0H9a2 2 0 1 1-4 0H3V6Zm15 8h1.59L18 12.41V14Z"/></svg><div><div class="font-semibold">Entrega rápida</div><div class="text-brand-100">Coordina con el propietario</div></div></div>
       </div>
     </section>
   </main>
@@ -218,22 +212,18 @@
       return resp;
     }
 
-    // ===== Cargar carrito en resumen
+    // ===== Carrito -> Resumen
     const itemsBox = document.getElementById('itemsBox');
     const countEl = document.getElementById('count');
     const subtotalEl = document.getElementById('subtotal');
     const totalEl = document.getElementById('total');
-
-    // >>> NUEVO: guardaremos los ítems del carrito para componer el pago
     let __CART_ITEMS__ = [];
 
     async function loadSummary(){
       try{
         const r = await authFetch('/api/carrito/'); 
         const items = await r.json();
-
         __CART_ITEMS__ = Array.isArray(items) ? items : [];
-
         countEl.textContent = __CART_ITEMS__.length;
         let sum = 0;
         itemsBox.innerHTML = __CART_ITEMS__.map(it=>{
@@ -253,45 +243,44 @@
         }).join('') || `<div class="text-sm text-slate-500">Tu carrito está vacío.</div>`;
         subtotalEl.textContent = fmt(sum);
         totalEl.textContent = fmt(sum);
+        updateWalletHelp();
       }catch(e){
         itemsBox.innerHTML = `<div class="text-red-600 text-sm">${e.message}</div>`;
       }
     }
 
-    // ===== UI métodos
+    // ===== Métodos UI
     const methods = document.querySelectorAll('.method');
     const cardForm = document.getElementById('cardForm');
     const altMethod = document.getElementById('altMethod');
     const brandRow = document.getElementById('brandRow');
-    const altText = document.getElementById('altText');
+    const walletPane = document.getElementById('walletPane');
+    const walletSaldoEl = document.getElementById('walletSaldo');
+    const walletHelp = document.getElementById('walletHelp');
 
+    let selectedMethod = 'credit';
     function selectMethod(kind){
       methods.forEach(m=>{
         m.classList.remove('ring-2','ring-brand-100','bg-brand-50/40');
         if(m.dataset.method===kind) m.classList.add('ring-2','ring-brand-100','bg-brand-50/40');
       });
-      if(kind==='credit' || kind==='debit'){
-        cardForm.classList.remove('hidden');
-        altMethod.classList.add('hidden');
-        brandRow.classList.remove('hidden');
-      }else{
-        cardForm.classList.add('hidden');
-        altMethod.classList.remove('hidden');
-        brandRow.classList.add('hidden');
-        altText.textContent = (kind==='pse')
-          ? 'Te llevaremos al banco para completar el pago por PSE.'
-          : (kind==='addi')
-            ? 'Te redirigiremos a ADDI para solicitar el crédito y finalizar el pago.'
-            : 'Te redirigiremos a SisteCredito para continuar con tu financiación.';
-      }
+      // Mostrar panel correcto
+      const isCard = (kind==='credit'||kind==='debit');
+      cardForm.classList.toggle('hidden', !isCard);
+      altMethod.classList.toggle('hidden', !(kind==='pse'||kind==='addi'||kind==='siste'));
+      brandRow.classList.toggle('hidden', !isCard);
+      walletPane.classList.toggle('hidden', kind!=='wallet');
+
+      if(kind==='pse') altText.textContent='Te llevaremos al banco para completar el pago por PSE.';
+      if(kind==='addi') altText.textContent='Te redirigiremos a ADDI para solicitar el crédito y finalizar el pago.';
+      if(kind==='siste') altText.textContent='Te redirigiremos a SisteCredito para continuar con tu financiación.';
+      if(kind==='wallet') fetchWalletSaldo();
       selectedMethod = kind;
     }
-
     methods.forEach(btn=> btn.addEventListener('click', ()=> selectMethod(btn.dataset.method)));
-    let selectedMethod = 'credit';
     selectMethod(selectedMethod);
 
-    // ===== Acciones de pago (demo + guardar simulación)
+    // ===== Pago con TARJETA (simulación localStorage)
     document.getElementById('payBtn').addEventListener('click', ()=>{
       const num = document.getElementById('cardNumber').value.replace(/\s+/g,'');
       const name = document.getElementById('cardName').value.trim();
@@ -299,53 +288,95 @@
       const yy = document.getElementById('expYY').value.trim();
       const cvv = document.getElementById('cvv').value.trim();
       const cuotas = document.getElementById('installments').value || '1';
-
-      // Validación simple para métodos de tarjeta
       if(selectedMethod==='credit' || selectedMethod==='debit'){
         if(num.length < 13 || !name || mm.length!==2 || yy.length!==2 || cvv.length<3){
           alert('Completa los datos de la tarjeta.'); 
           return;
         }
       }
-
-      // Total del carrito
-      const total = (__CART_ITEMS__ || []).reduce((acc, it) => acc + Number(it.total_estimado||0), 0);
-
-      // Objeto de pago simulado
+      const total = (__CART_ITEMS__||[]).reduce((a,it)=>a+Number(it.total_estimado||0),0);
       const pago = {
-        id: `PAY-${Date.now()}`,
-        fecha_iso: new Date().toISOString(),
-        metodo: selectedMethod || 'credit',
-        cuotas,
-        last4: (num || '').slice(-4) || '',
-        total,
-        items: (__CART_ITEMS__ || []).map(it => ({
-          id: it.id || null,
-          articulo_id: it.articulo || it.articulo_id || null,
-          titulo: it.articulo_titulo || 'Artículo',
-          fecha_inicio: it.fecha_inicio,
-          fecha_fin: it.fecha_fin,
-          dias: it.dias,
-          total_estimado: it.total_estimado
+        id:`PAY-${Date.now()}`, fecha_iso:new Date().toISOString(),
+        metodo:selectedMethod||'credit', cuotas, last4:(num||'').slice(-4)||'',
+        total, items:(__CART_ITEMS__||[]).map(it=>({
+          id:it.id||null, articulo_id:it.articulo||it.articulo_id||null,
+          titulo:it.articulo_titulo||'Artículo', fecha_inicio:it.fecha_inicio, fecha_fin:it.fecha_fin,
+          dias:it.dias, total_estimado:it.total_estimado
         }))
       };
-
-      // Guardar en localStorage (historial)
-      try{
-        const arr = JSON.parse(localStorage.getItem('sim_pagos') || '[]');
-        arr.unshift(pago);
-        localStorage.setItem('sim_pagos', JSON.stringify(arr));
-      }catch(_){
-        localStorage.setItem('sim_pagos', JSON.stringify([pago]));
-      }
-
+      try{ const arr=JSON.parse(localStorage.getItem('sim_pagos')||'[]'); arr.unshift(pago); localStorage.setItem('sim_pagos',JSON.stringify(arr)); }
+      catch(_){ localStorage.setItem('sim_pagos', JSON.stringify([pago])); }
       alert('Simulación: pago con tarjeta listo para integrarse ');
-      // Redirigir al historial de pagos
-      window.location.href = '/pagos/';
+      window.location.href='/pagos/';
     });
 
-    document.getElementById('goAlt').addEventListener('click', ()=>{
-      alert('Simulación: redirigir a pasarela externa');
+    document.getElementById('goAlt').addEventListener('click', ()=> alert('Simulación: redirigir a pasarela externa'));
+
+    // ===== Billetera (DIP)
+    async function fetchWalletSaldo(){
+      try{
+        const r = await authFetch('/api/wallet/');
+        const d = await r.json();
+        walletSaldoEl.textContent = fmt(d.saldo||0);
+        updateWalletHelp(d.saldo||0);
+      }catch{ walletSaldoEl.textContent='—'; }
+    }
+    function carritoTotal(){ return (__CART_ITEMS__||[]).reduce((a,it)=>a+Number(it.total_estimado||0),0); }
+    function updateWalletHelp(saldo){
+      const total = carritoTotal();
+      const s = (typeof saldo==='number')?saldo:NaN;
+      const text = `Total a pagar: ${fmt(total)}${Number.isFinite(s)?` — Saldo: ${fmt(s)}`:''}`;
+      walletHelp.textContent = text;
+    }
+
+    const walletPayBtn = document.getElementById('walletPayBtn');
+    walletPayBtn.addEventListener('click', async ()=>{
+      try{
+        walletPayBtn.disabled = true;
+        const total = carritoTotal();
+        if(total<=0){ alert('No hay nada para pagar.'); walletPayBtn.disabled=false; return; }
+        // Llamar a tu endpoint DIP (descuenta saldo en backend)
+        const r = await authFetch('/api/pagos/simular/',{
+          method:'POST', body:JSON.stringify({
+            metodo:'wallet',
+            total: total,
+            payload:{ items:(__CART_ITEMS__||[]).map(it=>({id:it.id, titulo:it.articulo_titulo, total:it.total_estimado})) }
+          })
+        });
+        if(!r.ok){
+          const e = await r.json().catch(()=>({detail:'Error'}));
+          alert(e.detail || 'No fue posible procesar el pago.');
+          walletPayBtn.disabled=false; return;
+        }
+        const data = await r.json(); // {status, wallet_before, wallet_after, id, ...}
+        // Guardamos registro también en historial local
+        const pago = {
+          id: data.id || `WAL-${Date.now()}`,
+          fecha_iso: new Date().toISOString(),
+          metodo: 'wallet',
+          cuotas: '1',
+          last4: '',
+          total: total,
+          items: (__CART_ITEMS__||[]).map(it=>({
+            id:it.id||null, articulo_id:it.articulo||it.articulo_id||null,
+            titulo:it.articulo_titulo||'Artículo', fecha_inicio:it.fecha_inicio, fecha_fin:it.fecha_fin,
+            dias:it.dias, total_estimado:it.total_estimado
+          }))
+        };
+        try{ const arr=JSON.parse(localStorage.getItem('sim_pagos')||'[]'); arr.unshift(pago); localStorage.setItem('sim_pagos',JSON.stringify(arr)); }
+        catch(_){ localStorage.setItem('sim_pagos', JSON.stringify([pago])); }
+
+        // Refrescamos saldo y vamos al historial o a la billetera
+        await fetchWalletSaldo();
+        if(confirm(`Pago aprobado con billetera.\nAntes: ${fmt(data.wallet_before)}\nAhora: ${fmt(data.wallet_after)}\n\nVer mi billetera ahora?`)){
+          window.open('/wallet/','_blank');
+        }
+        window.location.href='/pagos/';
+      }catch(e){
+        alert(e.message||'Error de red.');
+      }finally{
+        walletPayBtn.disabled=false;
+      }
     });
 
     loadSummary();

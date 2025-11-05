@@ -12,8 +12,9 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from App.views import NotificacionesList 
+from App.views import WalletBalanceView, WalletRechargeView 
 
-from App.views import SimularPagoView  # <-- necesitamos esta
+from App.views import SimularPagoView  
 from users.views import ProfileViewSet, UserViewSet
 from catalog.views import CategoriaViewSet, ArticuloViewSet, AliadosArticuloList
 from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet, CartItemViewSet
@@ -53,6 +54,8 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
     path("api/aliados/productos/", AliadosArticuloList.as_view(), name="aliados-productos"),
     path("admin/", admin.site.urls),
+    path("api/wallet/", WalletBalanceView.as_view(), name="wallet-balance"),
+    path("api/wallet/recargar/", WalletRechargeView.as_view(), name="wallet-recharge"),
 ]
 
 # -------- Páginas HTML con prefijo /es/ o /en/ --------
@@ -70,6 +73,7 @@ urlpatterns += i18n_patterns(
     path("pagos/", views.pagos_view, name="pagos"),
     path("articulo/<uuid:id>/", articulo_detalle, name="articulo_detalle"),
     path("productos-aliados/", productos_aliados, name="productos_aliados"),
+    path("wallet/", TemplateView.as_view(template_name="wallet/index.html"), name="wallet"),
 )
 
 if settings.DEBUG:

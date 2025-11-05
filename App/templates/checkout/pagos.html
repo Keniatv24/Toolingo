@@ -42,14 +42,12 @@
         <p class="text-slate-600 mt-1">Aquí verás los pagos que confirmaste en la pantalla de checkout.</p>
       </div>
       <div class="flex flex-wrap gap-2 justify-end">
-        <!-- 🔶 BOTONES DIP NUEVOS -->
         <button id="btnWalletDip" class="px-3 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 text-sm">
           Pagar con billetera (DIP)
         </button>
         <button id="btnChequeDip" class="px-3 py-2 rounded-lg border hover:bg-slate-50 text-sm">
           Generar cheque (PDF DIP)
         </button>
-        <!-- existentes -->
         <button id="btnExport" class="px-3 py-2 rounded-lg border hover:bg-slate-50 text-sm">Exportar JSON</button>
         <button id="btnClear" class="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm">Borrar todos</button>
       </div>
@@ -161,7 +159,7 @@
       URL.revokeObjectURL(a.href);
     });
 
-    // ====== 🔶 INTEGRACIÓN DIP: Wallet & Cheque ======
+    // INTEGRACIÓN DIP: Wallet & Cheque
     const JWT = localStorage.getItem('access');
     function requireAuth(){
       if (!JWT){
@@ -184,7 +182,7 @@
       return resp;
     }
 
-    // Añade el pago (JSON) a la lista local y re-renderiza
+    // Añade el pago a la lista local y re-renderiza
     function addPagoLocal(p){
       const arr = loadAll();
       // normalizamos por si faltan campos

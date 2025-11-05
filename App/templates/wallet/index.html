@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mi Billetera – Toolingo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme:{ extend:{ colors:{brand:{50:'#fff7ed',100:'#ffedd5',600:'#f97316',700:'#c2410c'}}}} }
+  </script>
+</head>
+<body class="bg-white text-slate-800">
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-6">
+      <a href="/" class="flex items-center gap-2"><svg width="26" height="26" viewBox="0 0 24 24" class="text-brand-600 fill-current"><path d="M21 7.5a5.5 5.5 0 0 1-7.53 5.09l-6.44 6.44a1.5 1.5 0 0 1-2.12-2.12l6.44-6.44A5.5 5.5 0 1 1 21 7.5Z"/></svg><span class="text-lg font-extrabold">Toolingo</span></a>
+      <span class="ml-auto font-semibold">Mi Billetera</span>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8">
+    <div class="rounded-2xl border p-6 shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-slate-500 text-sm">Saldo disponible</div>
+          <div id="saldo" class="text-4xl font-extrabold">—</div>
+        </div>
+        <div class="flex gap-2">
+          <button id="btnRef" class="px-3 py-2 rounded-lg border hover:bg-slate-50">Actualizar</button>
+          <!-- Recarga demo opcional -->
+          <button id="btnRec" class="px-3 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Recargar $200.000 (demo)</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="mt-6">
+      <h2 class="text-lg font-semibold">Movimientos (historial local + API)</h2>
+      <div id="movs" class="mt-3 grid gap-3"></div>
+    </section>
+  </main>
+
+  <script>
+    const fmt = n => Number(n||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+    const TOKEN_KEY='access', REFRESH_KEY='refresh';
+    const getToken = ()=> localStorage.getItem(TOKEN_KEY);
+    const getRefresh = ()=> localStorage.getItem(REFRESH_KEY);
+    async function refreshAccessToken(){
+      const refresh = getRefresh(); if(!refresh) return null;
+      const r = await fetch('/api/token/refresh/', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh})});
+      if(!r.ok) return null; const d=await r.json(); if(d.access){ localStorage.setItem(TOKEN_KEY,d.access); return d.access; } return null;
+    }
+    async function authFetch(url, opts={}){
+      const tk = getToken(); if(!tk){ location.replace('/login/?next=/wallet/'); throw new Error('No autenticado'); }
+      const h = new Headers(opts.headers||{}); h.set('Authorization',`Bearer ${tk}`); if(opts.body && !h.has('Content-Type')) h.set('Content-Type','application/json');
+      let resp = await fetch(url,{...opts,headers:h});
+      if(resp.status===401){ const na = await refreshAccessToken(); if(na){ h.set('Authorization',`Bearer ${na}`); resp=await fetch(url,{...opts,headers:h}); } }
+      return resp;
+    }
+
+    async function loadSaldo(){
+      const r = await authFetch('/api/wallet/');
+      const d = await r.json();
+      document.getElementById('saldo').textContent = fmt(d.saldo||0);
+    }
+
+    function loadMovs(){
+      // Usamos lo que ya guardas en localStorage (sim_pagos)
+      const arr = JSON.parse(localStorage.getItem('sim_pagos')||'[]');
+      const box = document.getElementById('movs');
+      if(!arr.length){ box.innerHTML = `<div class="text-sm text-slate-500">Sin movimientos locales.</div>`; return; }
+      box.innerHTML = arr.map(p=>`
+        <article class="rounded-xl border p-4">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">${p.metodo.toUpperCase()} · <span class="text-slate-500">${new Date(p.fecha_iso).toLocaleString('es-CO')}</span></div>
+            <div class="font-bold">${fmt(p.total)}</div>
+          </div>
+          <div class="text-sm text-slate-600 mt-1">Items: ${p.items?.length||0}</div>
+        </article>
+      `).join('');
+    }
+
+    document.getElementById('btnRef').addEventListener('click', loadSaldo);
+    document.getElementById('btnRec').addEventListener('click', async ()=>{
+      const r = await authFetch('/api/wallet/recargar/', {method:'POST', body:JSON.stringify({monto:200000})});
+      if(r.ok){ await loadSaldo(); alert('Recarga demo aplicada.'); }
+      else{ alert('No se pudo recargar.'); }
+    });
+
+    loadSaldo();
+    loadMovs();
+  </script>
+</body>
+</html>
