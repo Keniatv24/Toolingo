@@ -209,4 +209,12 @@ La documentación interactiva (Swagger/ReDoc) está disponible en:
 /api/docs/
 ```
 
+## Diagrama de clases 
+<img width="1919" height="676" alt="image" src="https://github.com/user-attachments/assets/463f0463-df87-4f0a-9224-092b48f75b47" /> 
+
+## Diagrama de arquitectura  
+<img width="1911" height="871" alt="image" src="https://github.com/user-attachments/assets/5fe10003-2079-4bfc-8ac2-d9b58ab8fb6a" />
+
+
+
 
