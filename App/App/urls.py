@@ -21,6 +21,12 @@ from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet, Car
 from chat.views import ConversationViewSet
 from catalog.pages import productos_aliados 
 from . import views  
+from rentals.views import (
+    ReviewsByArticuloList,
+    ReviewsByArticuloSummary,
+    ReviewsByArticuloEligibility,
+    ReviewsByArticuloCreate,
+)
 
 @method_decorator(xframe_options_sameorigin, name="dispatch")
 class ChatWidgetView(TemplateView):
@@ -56,6 +62,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/wallet/", WalletBalanceView.as_view(), name="wallet-balance"),
     path("api/wallet/recargar/", WalletRechargeView.as_view(), name="wallet-recharge"),
+    path("api/articulos/<uuid:art_id>/reviews/", ReviewsByArticuloList.as_view(), name="art-reviews-list"),
+    path("api/articulos/<uuid:art_id>/reviews/summary/", ReviewsByArticuloSummary.as_view(), name="art-reviews-summary"),
+    path("api/articulos/<uuid:art_id>/reviews/eligibility/", ReviewsByArticuloEligibility.as_view(), name="art-reviews-eligibility"),
+    path("api/articulos/<uuid:art_id>/reviews/create/", ReviewsByArticuloCreate.as_view(), name="art-reviews-create"),
 ]
 
 # -------- Páginas HTML con prefijo /es/ o /en/ --------

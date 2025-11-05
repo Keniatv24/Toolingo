@@ -167,6 +167,39 @@
           <button id="shareBtn" type="button" class="px-4 py-3 rounded-xl border hover:bg-slate-50 smooth">Compartir</button>
           <button id="checkoutBtn" type="button" class="px-5 py-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 smooth ml-auto hidden">Continuar compra</button>
         </div>
+
+        <!-- ================= Reseñas del artículo (nuevo) ================= -->
+        <section id="reviews-root" class="mt-14">
+          <h2 class="text-2xl font-extrabold tracking-tight">Opiniones</h2>
+
+          <!-- Resumen -->
+          <div id="rev-summary" class="mt-5 rounded-2xl border p-5 grid sm:grid-cols-3 gap-6 items-center">
+            <div class="text-center">
+              <div class="text-5xl font-extrabold" id="rev-avg">0.0</div>
+              <div class="text-sm text-slate-500" id="rev-total">0 reseñas</div>
+            </div>
+            <div class="sm:col-span-2 space-y-2" id="rev-bars"></div>
+          </div>
+
+          <!-- Formulario (solo cuando elegible) -->
+          <div id="rev-form-box" class="mt-6 hidden rounded-2xl border p-5">
+            <h3 class="font-semibold mb-3">Escribe tu reseña</h3>
+            <div class="flex items-center gap-2 mb-2" id="rev-stars"></div>
+            <textarea id="rev-comment" class="w-full border rounded-xl p-3" rows="3" placeholder="¿Qué tal fue tu experiencia?"></textarea>
+            <div class="mt-3">
+              <button id="rev-send" class="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Publicar reseña</button>
+            </div>
+          </div>
+
+          <!-- Lista -->
+          <div id="rev-list" class="mt-6 space-y-4"></div>
+
+          <div class="mt-4 text-center">
+            <button id="rev-more" class="px-3 py-2 rounded-lg border hover:bg-slate-50 hidden">Ver más</button>
+          </div>
+        </section>
+        <!-- =============================================================== -->
+
       </section>
     </div>
   </main>
@@ -594,6 +627,144 @@
         window.location.href = '/carrito/';
       }catch(e){ alert('No se pudo agregar al carrito.'); }
     });
+
+    // ==========================
+    //   Reseñas (frontend)
+    // ==========================
+    (function ReviewsModule(){
+      const ART_ID = (window.ART_ID_SERVER && window.ART_ID_SERVER !== 'None')
+        ? window.ART_ID_SERVER
+        : (location.pathname.split('/').filter(Boolean)[1] || '');
+
+      const fmtDate = iso => new Date(iso).toLocaleDateString('es-CO',{year:'numeric',month:'short',day:'2-digit'});
+
+      // fetch autenticado SIN redirigir (no rompe la vista si no hay login)
+      async function revFetchAuth(url, opts={}){
+        let tk = getToken();
+        const h = new Headers(opts.headers||{});
+        if (tk) h.set('Authorization', `Bearer ${tk}`);
+        if (opts.body && !h.has('Content-Type')) h.set('Content-Type', 'application/json');
+        let resp = await fetch(url, {...opts, headers:h});
+        if (resp.status === 401){
+          const na = await refreshAccessToken();
+          if (na){
+            h.set('Authorization', `Bearer ${na}`);
+            resp = await fetch(url, {...opts, headers:h});
+          }
+        }
+        return resp;
+      }
+
+      // Resumen
+      async function loadSummary(){
+        try{
+          const r = await fetch(`/api/articulos/${ART_ID}/reviews/summary/`);
+          const d = await r.json();
+          document.getElementById('rev-avg').textContent = (d.avg || 0).toFixed(1);
+          document.getElementById('rev-total').textContent = `${d.total||0} reseña(s)`;
+
+          const bars = document.getElementById('rev-bars');
+          const total = d.total || 0;
+          const c = d.counts || {};
+          bars.innerHTML = [5,4,3,2,1].map(st => {
+            const n = c[st] || 0;
+            const pct = total ? Math.round((n*100)/total) : 0;
+            return `
+              <div class="flex items-center gap-3">
+                <span class="w-10 text-sm">${st} ★</span>
+                <div class="grow h-3 rounded bg-slate-100 overflow-hidden">
+                  <div class="h-3 bg-orange-400" style="width:${pct}%"></div>
+                </div>
+                <span class="w-10 text-right text-sm">${n}</span>
+              </div>`;
+          }).join('');
+        }catch(_){}
+      }
+
+      // Lista con paginación
+      let page = 1, pageSize = 6, loaded = 0, totalCount = 0;
+      async function loadMore(){
+        try{
+          const r = await fetch(`/api/articulos/${ART_ID}/reviews/?page=${page}&page_size=${pageSize}`);
+          const d = await r.json();
+          totalCount = d.count || 0;
+          const box = document.getElementById('rev-list');
+          (d.results||[]).forEach(it=>{
+            box.insertAdjacentHTML('beforeend', `
+              <article class="rounded-2xl border p-4">
+                <div class="flex items-center justify-between">
+                  <div class="font-semibold">${it.autor_nombre || 'Usuario'}</div>
+                  <div class="text-sm text-slate-500">${fmtDate(it.fecha)}</div>
+                </div>
+                <div class="mt-1 text-amber-500">
+                  ${'★'.repeat(it.puntaje)}${'☆'.repeat(5-it.puntaje)}
+                </div>
+                <p class="mt-2 text-slate-700">${(it.comentario||'').replace(/</g,'&lt;')}</p>
+              </article>
+            `);
+          });
+          loaded += (d.results||[]).length;
+          page += 1;
+          document.getElementById('rev-more').classList.toggle('hidden', loaded >= totalCount);
+        }catch(_){}
+      }
+      document.getElementById('rev-more').addEventListener('click', loadMore);
+
+      // Elegibilidad + formulario
+      async function setupForm(){
+        // si no hay token, no mostramos formulario
+        if (!getToken()) return;
+        try{
+          const r = await revFetchAuth(`/api/articulos/${ART_ID}/reviews/eligibility/`);
+          if (!r.ok){ return; }
+          const d = await r.json();
+          if (!d.eligible) return;
+
+          const box = document.getElementById('rev-form-box');
+          box.classList.remove('hidden');
+
+          // estrellas
+          let score = 5;
+          const cont = document.getElementById('rev-stars');
+          function renderStars(){
+            cont.innerHTML = '';
+            for(let i=1;i<=5;i++){
+              const b = document.createElement('button');
+              b.type = 'button';
+              b.textContent = i <= score ? '★' : '☆';
+              b.className = 'text-2xl text-amber-500';
+              b.addEventListener('click', ()=>{ score=i; renderStars(); });
+              cont.appendChild(b);
+            }
+          }
+          renderStars();
+
+          document.getElementById('rev-send').addEventListener('click', async ()=>{
+            const comentario = document.getElementById('rev-comment').value.trim();
+            const resp = await revFetchAuth(`/api/articulos/${ART_ID}/reviews/create/`, {
+              method: 'POST',
+              body: JSON.stringify({puntaje: score, comentario})
+            });
+            if(!resp.ok){
+              const err = await resp.json().catch(()=>({detail:'Error'}));
+              alert(err.detail || 'No se pudo crear la reseña.');
+              return;
+            }
+            // refrescar
+            document.getElementById('rev-list').innerHTML = '';
+            page = 1; loaded = 0; totalCount = 0;
+            await loadSummary();
+            await loadMore();
+            box.classList.add('hidden');
+          });
+        }catch(_){}
+      }
+
+      // init
+      loadSummary().then(loadMore);
+      setupForm();
+    })();
+    //  FIN reseñas 
 
     loadArticulo();
   </script>
