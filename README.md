@@ -7,23 +7,38 @@ Permite a propietarios publicar sus artículos y a arrendatarios explorar, reser
 -  Kenia Margarita Toscano Vasquez
 
 
-##  Características principales
+## Características principales
 
--  **Publicación de artículos** con imágenes, precio por día y disponibilidad.  
--  **Catálogo navegable** con buscador rápido por título, descripción o ubicación.  
--  **Galería de imágenes** con portada y miniaturas.  
--  **Propietarios visibles**: muestra nombre, email, teléfono y ubicación de quien publicó el artículo.  
--  **Interacciones**: botones para reservar, contactar y compartir.  
--  **Frontend responsivo** en **TailwindCSS**, con animaciones suaves y diseño moderno.  
--  **Backend REST API** con **Django REST Framework**.
+- Catálogo navegable con buscador por título / descripción / ciudad.
+- Detalle de artículos con carrusel de imágenes.
+- Creación de artículos con geocodificación automática (`ubicación → lat/lng`).
+- Carrito de alquiler.
+- Pagos simulados (wallet + cheque PDF).
+- Chat entre arrendatario ↔ propietario.
+- Sistema de reseñas con elegibilidad.
+- Paginación, ordenación y filtros en DRF.
+- **Servicio JSON público** para ser consumido por otro equipo.
+- **Consumo del servicio JSON del equipo anterior**.
+- Multilenguaje (ES/EN) vía `{% trans %}` y mensajes en `.po`.
 
--  ##  Tecnologías
+---
 
-- **Backend**: Django + Django REST Framework  
-- **Frontend**: HTML + TailwindCSS + Vanilla JS  
-- **Base de datos**: SQLite (dev) / PostgreSQL (prod)  
-- **Autenticación**: JWT  
-- **Infraestructura**: Python 3.12+, Node.js
+## Tecnologías y Arquitectura
+
+| Capa | Tecnología |
+|---|---|
+| Backend | Django 5 + Django REST Framework |
+| Autenticación | JWT (Simple JWT) |
+| Proyecto API | DRF Router + ViewSets + Serializers |
+| Base de datos | SQLite (dev) / PostgreSQL (prod) |
+| Frontend | HTML + TailwindCSS + Vanilla JS |
+| Arquitectura | MVC + Services + **DI (Interfaz + 2 Implementaciones)** |
+| Servicios externos | Nominatim (OpenStreetMap) – geocodificación |
+| API Aliado | Consumo servicio JSON de otro equipo |
+| Documentación API | drf-spectacular → `/api/docs/` |
+| Internacionalización | **2 idiomas: ES / EN** (sin textos quemados) |
+
+---
 
  ##  Instalación
 
@@ -74,34 +89,54 @@ El backend estará disponible en http://localhost:8000
 
 ```bash
 Toolingo/
-├── App/                                # Proyecto Django principal
-│   ├── App/                            # Configuración Django (settings, urls, wsgi, asgi)
+├── App/                                 # Proyecto Django principal
+│   ├── App/                             # settings / urls / wsgi / asgi
 │   │   ├── __init__.py
-│   │   ├── settings.py                  # Configuración principal
-│   │   ├── urls.py                      # URLs globales
+│   │   ├── settings.py
+│   │   ├── urls.py
 │   │   ├── wsgi.py
 │   │   └── asgi.py
 │   │
-│   ├── catalog/                         # App de Catálogo (artículos, categorías, imágenes)
+│   ├── common/                          # Servicios / Interfaces / Utils
+│   │   ├── interfaces/
+│   │   │   └── payments.py              # INTERFAZ PaymentProcessor  ← DIP
+│   │   ├── services/
+│   │   │   ├── geocoding.py             # consumo API externa Nominatim
+│   │   │   ├── wallet_processor.py      # implementación 1
+│   │   │   └── cheque_pdf_processor.py  # implementación 2 (PDF cheque)
+│   │   ├── payment_factory.py           # fabrica (elige implementaciones)
+│   │   └── utils.py
+│   │
+│   ├── catalog/                         # artículos
 │   │   ├── migrations/
 │   │   ├── templates/catalog/
-│   │   │   ├── detalle.html             # Vista detalle artículo
-│   │   │   ├── listado.html             # Catálogo general
+│   │   │   ├── index.html
+│   │   │   ├── detalle.html
+│   │   │   ├── publicar.html
+│   │   │   ├── productos_aliados.html    # muestra consumo API equipo previo
 │   │   │   └── ...
 │   │   ├── admin.py
 │   │   ├── apps.py
 │   │   ├── models.py
-│   │   ├── serializers.py               # Serializadores DRF
+│   │   ├── serializers.py
 │   │   ├── urls.py
-│   │   ├── views.py
+│   │   ├── views.py                     # incluye endpoint “cerca”
+│   │   ├── pages.py                     # consumo servicio equipo previo
+│   │   ├── utils.py                     # Haversine
 │   │   └── tests.py
 │   │
-│   ├── users/                           # App de Usuarios y Perfiles
+│   ├── rentals/                         # Alquiler + Wallet + Pagos
 │   │   ├── migrations/
-│   │   ├── templates/users/
-│   │   │   ├── perfil.html
-│   │   │   ├── perfil_editar.html
-│   │   │   └── ...
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── urls.py
+│   │   ├── views.py                     # usa PaymentProcessor vía factory
+│   │   └── tests.py
+│   │
+│   ├── chat/                            # Mensajería
+│   │   ├── migrations/
 │   │   ├── admin.py
 │   │   ├── apps.py
 │   │   ├── models.py
@@ -110,12 +145,34 @@ Toolingo/
 │   │   ├── views.py
 │   │   └── tests.py
 │   │
-│   ├── templates/                       # Templates compartidos
-│   │   ├── base.html
-│   │   ├── landing/index.html           # Landing principal
-│   │   └── ...
+│   ├── users/                           # usuarios y perfiles
+│   │   ├── migrations/
+│   │   ├── templates/users/
+│   │   │   ├── login.html
+│   │   │   ├── registro.html
+│   │   │   ├── perfil.html
+│   │   │   └── perfil_editar.html
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── urls.py
+│   │   ├── views.py
+│   │   └── tests.py
 │   │
-│   ├── static/                          # Archivos estáticos (CSS, JS, imágenes)
+│   ├── templates/                       # Template globales (i18n)
+│   │   ├── base.html
+│   │   ├── landing/
+│   │   │   └── index.html
+│   │   └── _partials/
+│   │       ├── header.html
+│   │       └── footer.html
+│   │
+│   ├── locale/
+│   │   ├── es/LC_MESSAGES/django.po
+│   │   └── en/LC_MESSAGES/django.po
+│   │
+│   ├── static/
 │   │   ├── css/
 │   │   ├── js/
 │   │   ├── img/
@@ -123,29 +180,12 @@ Toolingo/
 │   │
 │   └── manage.py
 │
-├── Frontend/                            # Cliente React + Vite (opcional)
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── home.jsx
-│   │   │   ├── methods/
-│   │   │   └── ...
-│   │   ├── pages/
-│   │   │   ├── CatalogPage.jsx
-│   │   │   ├── DetailPage.jsx
-│   │   │   └── ...
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── index.css
-│   ├── public/index.html
-│   ├── package.json
-│   └── vite.config.js
-│
-├── media/                               # Archivos subidos (imágenes de artículos/perfiles)
+├── media/                                # archivos subidos
 │   ├── articulos/
 │   └── profiles/
 │
-├── requirements.txt                     # Dependencias Python
-├── README.md                            # Documentación del proyecto
+├── requirements.txt
+├── README.md
 └── .gitignore
 
 ```
