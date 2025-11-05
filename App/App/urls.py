@@ -8,19 +8,18 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.conf.urls.i18n import i18n_patterns
-
-# ViewSets / routers
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from App.views import NotificacionesList 
 
 from App.views import SimularPagoView  # <-- necesitamos esta
 from users.views import ProfileViewSet, UserViewSet
 from catalog.views import CategoriaViewSet, ArticuloViewSet, AliadosArticuloList
 from rentals.views import AlquilerViewSet, PagoViewSet, CalificacionViewSet, CartItemViewSet
 from chat.views import ConversationViewSet
-from catalog.pages import productos_aliados  # página HTML que consume externos
-from . import views  # pagos_view
+from catalog.pages import productos_aliados 
+from . import views  
 
 @method_decorator(xframe_options_sameorigin, name="dispatch")
 class ChatWidgetView(TemplateView):
@@ -41,29 +40,18 @@ router.register(r"perfiles", ProfileViewSet, basename="perfiles")
 router.register(r"carrito", CartItemViewSet, basename="carrito")
 router.register(r"chats", ConversationViewSet, basename="chat")
 
-# -------- URLs sin prefijo de idioma (API/admin/docs/i18n) --------
+
 urlpatterns = [
-    # 1) RUTA ESPECÍFICA ANTES DEL ROUTER (para evitar el 405)
+    
     path("api/pagos/simular/", SimularPagoView.as_view(), name="pagos-simular"),
-
-    # 2) API del router
+    path("api/notificaciones/", NotificacionesList.as_view(), name="notificaciones-list"),
     path("api/", include(router.urls)),
-
-    # 3) JWT
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-
-    # 4) API schema & docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
-
-    # 5) Cambio de idioma
     path("i18n/", include("django.conf.urls.i18n")),
-
-    # 6) Servicio público JSON para equipos aliados:
     path("api/aliados/productos/", AliadosArticuloList.as_view(), name="aliados-productos"),
-
-    # 7) Admin
     path("admin/", admin.site.urls),
 ]
 
@@ -84,6 +72,5 @@ urlpatterns += i18n_patterns(
     path("productos-aliados/", productos_aliados, name="productos_aliados"),
 )
 
-# Archivos MEDIA en dev
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

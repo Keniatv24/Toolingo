@@ -14,7 +14,7 @@ class NotificacionesList(APIView):
     Stub de notificaciones para no romper el detalle.
     Retorna una lista vacía (ajústalo luego a tu lógica real).
     """
-    permission_classes = [permissions.IsAuthenticated]  # o AllowAny si quieres verlo sin login
+    permission_classes = [permissions.IsAuthenticated]  
 
     def get(self, request):
         return Response([])

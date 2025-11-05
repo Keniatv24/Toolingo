@@ -1,7 +1,6 @@
 from datetime import timedelta
 from django.db import models
 from django.utils.dateparse import parse_date
-
 from rest_framework import viewsets, permissions, status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
@@ -16,12 +15,15 @@ from .serializers import (
 )
 
 
+# Función auxiliar de fechas
+
 def daterange(d1, d2):
     cur = d1
     while cur <= d2:
         yield cur
         cur += timedelta(days=1)
 
+# VIEWSET: Alquileres
 
 class AlquilerViewSet(ModelViewSet):
     serializer_class = AlquilerSerializer
@@ -47,6 +49,7 @@ class AlquilerViewSet(ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def mios(self, request):
+        """Devuelve los alquileres del usuario actual (arrendatario)."""
         qs = self.get_queryset().filter(arrendatario=request.user)
         page = self.paginate_queryset(qs)
         if page is not None:
@@ -56,6 +59,7 @@ class AlquilerViewSet(ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="disponibilidad", permission_classes=[permissions.AllowAny])
     def disponibilidad(self, request):
+        """Consulta pública para ver días ocupados por un artículo."""
         art = request.query_params.get("articulo")
         s = parse_date(request.query_params.get("from") or "")
         e = parse_date(request.query_params.get("to") or "")
@@ -89,12 +93,12 @@ class AlquilerViewSet(ModelViewSet):
             "rangos": rangos,
             "dias_ocupados": sorted(list(dias_ocupados)),
         })
-
+# VIEWSET: Carrito
 
 class CartItemViewSet(ModelViewSet):
     """
-    /api/carrito/  (lista, crea, elimina)
-    /api/carrito/checkout/  (POST) -> crea Alquileres a partir del carrito y lo vacía
+    /api/carrito/  → lista, crea y elimina ítems del carrito.
+    /api/carrito/checkout/  (POST) → crea alquileres a partir del carrito y lo vacía.
     """
     serializer_class = CartItemSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -102,8 +106,24 @@ class CartItemViewSet(ModelViewSet):
     def get_queryset(self):
         return CartItem.objects.select_related("articulo").filter(user=self.request.user)
 
+    def create(self, request, *args, **kwargs):
+        """
+        Sobreescribimos create() para mostrar errores de validación claros.
+        """
+        ser = self.get_serializer(data=request.data)
+        if not ser.is_valid():
+            print(" Errores del carrito =>", ser.errors)
+            return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        self.perform_create(ser)
+        headers = self.get_success_headers(ser.data)
+        return Response(ser.data, status=status.HTTP_201_CREATED, headers=headers)
+
     @action(detail=False, methods=["post"])
     def checkout(self, request):
+        """
+        Convierte los ítems del carrito en Alquileres y luego limpia el carrito.
+        """
         items = list(self.get_queryset())
         if not items:
             return Response({"detail": "El carrito está vacío."}, status=400)
@@ -126,12 +146,13 @@ class CartItemViewSet(ModelViewSet):
             else:
                 errores.append(ser.errors)
 
-        # si al menos 1 se creó, vaciamos los correspondientes
         if creados:
             CartItem.objects.filter(id__in=[i.id for i in items]).delete()
 
         return Response({"creados": creados, "errores": errores}, status=201 if creados else 400)
 
+
+# VIEWSET: Pagos
 
 class PagoViewSet(viewsets.ModelViewSet):
     serializer_class = PagoSerializer
@@ -144,6 +165,8 @@ class PagoViewSet(viewsets.ModelViewSet):
         )
 
 
+
+# VIEWSET: Calificaciones
 class CalificacionViewSet(viewsets.ModelViewSet):
     serializer_class = CalificacionSerializer
     permission_classes = [permissions.IsAuthenticated]

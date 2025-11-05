@@ -1,6 +1,15 @@
+from datetime import date, datetime
 from rest_framework import serializers
 from django.db.models import Q
+from django.utils.timezone import now
 from .models import Alquiler, Pago, Calificacion, CartItem
+
+
+def _as_date(v):
+    """Soporta date o datetime sin romper."""
+    if isinstance(v, datetime):
+        return v.date()
+    return v  # ya es date o None
 
 
 class AlquilerSerializer(serializers.ModelSerializer):
@@ -89,7 +98,6 @@ class CartItemSerializer(serializers.ModelSerializer):
         read_only_fields = ("dias", "precio_por_dia", "total_estimado", "creado")
 
     def get_articulo_portada(self, obj):
-        # usa serializer context para request y construir URL absoluta si quieres
         try:
             return obj.articulo.imagenes.first().imagen.url if obj.articulo.imagenes.exists() else obj.articulo.portada
         except Exception:
@@ -99,14 +107,38 @@ class CartItemSerializer(serializers.ModelSerializer):
         inicio = data.get("fecha_inicio")
         fin = data.get("fecha_fin")
         art = data.get("articulo")
+
         if not inicio or not fin or inicio > fin:
             raise serializers.ValidationError("Rango de fechas inválido.")
+
+        # Evitar pasado (soporta date y datetime)
+        if _as_date(inicio) < date.today():
+            raise serializers.ValidationError("La fecha inicio no puede ser en el pasado.")
 
         user = self.context["request"].user
         if art and art.propietario_id == user.id:
             raise serializers.ValidationError("No puedes agregar tu propio artículo al carrito.")
 
-        # calcular días y totales para guardar “congelado” en carrito
+        # Solapes con alquileres existentes
+        bloqueantes = ["SOLICITADO", "APROBADO", "EN_CURSO"]
+        if Alquiler.objects.filter(
+            articulo=art,
+            estado__in=bloqueantes,
+            fecha_inicio__lte=fin,
+            fecha_fin__gte=inicio,
+        ).exists():
+            raise serializers.ValidationError("Las fechas seleccionadas no están disponibles.")
+
+        # Solapes dentro del mismo carrito del usuario
+        if CartItem.objects.filter(
+            user=user,
+            articulo=art,
+            fecha_inicio__lte=fin,
+            fecha_fin__gte=inicio,
+        ).exclude(pk=getattr(self.instance, "pk", None)).exists():
+            raise serializers.ValidationError("Ya tienes este artículo en el carrito para un rango que se cruza.")
+
+        # Calcular totales
         dias = (fin - inicio).days + 1
         if dias < 1:
             dias = 1
